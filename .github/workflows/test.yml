@@ -1,0 +1,58 @@
+name: Pytest
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Cache Python dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-python-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-python-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Check if there are any test files
+        id: check_test_files
+        run: |
+          if [ -z "$(find tests -name 'test_*.py')" ]; then
+            echo "No test files found"
+            echo "NO_TEST_FILES=true" >> $GITHUB_ENV
+            exit 0
+          fi
+        
+      - name: Install pytest
+        run: |
+          pip install pytest
+
+      - name: Skip further steps if no test files
+        if: env.NO_TEST_FILES == 'true'
+        run: |
+          echo "No test files found, skipping further steps."
+
+      - name: Run tests with pytest
+        if: env.NO_TEST_FILES != 'true'
+        run: |
+          pytest

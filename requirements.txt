@@ -1,0 +1,7 @@
+pip
+pytest
+flake8
+numpy
+pandas
+matplotlib
+python-dotenv
