@@ -2,20 +2,93 @@
 Code to download or generate data
 """
 
-from pathlib import Path
-
-from src.config import PROCESSED_DATA_DIR, RAW_DATA_DIR
-
-
-def main(
-    # ---- REPLACE DEFAULT PATHS AS APPROPRIATE ----
-    input_path: Path = RAW_DATA_DIR / "dataset.csv",
-    output_path: Path = PROCESSED_DATA_DIR / "dataset.csv"
-    # ----------------------------------------------
-):
-
-    pass
+# from pathlib import Path
+import pandas as pd
+import torch
+from src.config import RAW_DATA_DIR
+import torchvision
+import torchvision.transforms as transforms
+from torch.utils.data import ConcatDataset, Dataset, TensorDataset
+from models.cifar10 import Cifar10
+from models.heart_disease import HeartDisease
 
 
-if __name__ == "__main__":
-    main()
+# def main(
+#     # ---- REPLACE DEFAULT PATHS AS APPROPRIATE ----
+#     input_path: Path = RAW_DATA_DIR / "dataset.csv",
+#     output_path: Path = PROCESSED_DATA_DIR / "dataset.csv"
+#     # ----------------------------------------------
+# ):
+
+#     pass
+
+
+# if __name__ == "__main__":
+#     main()
+
+class DataSetFactory:
+    @classmethod
+    def get_data_set(cls, data_set_name: str) -> Dataset:
+        match data_set_name:
+            case 'cifar10':
+                return cls._get_cifar10_data_set()
+            case 'heart_disease':
+                return cls._get_heart_disease_data_set()
+            case _:
+                raise ValueError(f'Unsupported data set: {data_set_name}')
+
+    @classmethod
+    def _get_cifar10_data_set(cls) -> ConcatDataset:
+        train_transforms = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomRotation(degrees=15),
+            transforms.RandomCrop(32, padding=4)])
+
+        train_set = torchvision.datasets.CIFAR10(
+            root=RAW_DATA_DIR / 'cifar10',
+            train=True,
+            download=True,
+            transform=train_transforms
+        )
+        test_set = torchvision.datasets.CIFAR10(
+            root=RAW_DATA_DIR / 'cifar10',
+            train=True,
+            download=True,
+            transform=train_transforms
+        )
+        return ConcatDataset([train_set, test_set])
+
+    @classmethod
+    def _get_heart_disease_data_set(cls) -> ConcatDataset:
+        data_path = RAW_DATA_DIR / "heart+disease.data"
+        df = pd.read_csv(data_path, sep=";", header=0, na_values=["?"])
+        num_classes = df["target"].nunique()
+
+        df = df.dropna().copy()
+
+        if df["target"].dtype in ["float64", "int64"]:
+            df["target"] = pd.cut(df["target"], bins=num_classes, labels=range(num_classes))
+
+        X = df.drop(columns=["target"])
+        y = df["target"]
+
+        X_tensor = torch.tensor(X.values, dtype=torch.float32)
+        y_tensor = torch.tensor(y.astype(int).values, dtype=torch.long)
+
+        full_dataset = TensorDataset(X_tensor, y_tensor)
+
+        return full_dataset
+
+
+DATA_SETS = {
+    'cifar10': {
+        "data_set": lambda: DataSetFactory.get_data_set('cifar10'),
+        "model": Cifar10
+    },
+    'heart_disease': {
+        "data_set": lambda: DataSetFactory.get_data_set('heart_disease'),
+        "model": HeartDisease
+    }
+}

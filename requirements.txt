@@ -5,3 +5,9 @@ numpy
 pandas
 matplotlib
 python-dotenv
+tqdm
+torch
+torchvision
+tqdm
+cma
+scikit-learn

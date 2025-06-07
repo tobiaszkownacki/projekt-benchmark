@@ -1,21 +1,176 @@
-"""
-Code to train models
-"""
+import torch.nn as nn
+import torch
+from torch.utils.data import DataLoader, TensorDataset
+import cma
+import numpy as np
+from src.config import Config, CMAOptimizerConfig, GradientOptimizerConfig
+import sys
+from src.arg_parse import get_args
+from src.dataset import DATA_SETS
+from tqdm import tqdm
 
-from pathlib import Path
 
-from src.config import MODELS_DIR, PROCESSED_DATA_DIR
+def select_training(config: Config) -> callable:
+    if isinstance(config.optimizer_config, GradientOptimizerConfig):
+        return train_gradient
+    if isinstance(config.optimizer_config, CMAOptimizerConfig):
+        return train_cma
+
+    raise ValueError(
+        f"Unsupported optimizer configuration: {config.optimizer_config.optimizer_name}"
+    )
 
 
-def main(
-    # ---- REPLACE DEFAULT PATHS AS APPROPRIATE ----
-    features_path: Path = PROCESSED_DATA_DIR / "features.csv",
-    labels_path: Path = PROCESSED_DATA_DIR / "labels.csv",
-    model_path: Path = MODELS_DIR / "model.pkl",
-    # -----------------------------------------
+def train_gradient(
+    model: torch.nn.Module,
+    train_dataset: TensorDataset,
+    config: Config,
 ):
-    pass
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters())
+    gradient_counter = 0
+    train_losses = []
+    train_accuracies = []
+    while gradient_counter <= config.gradient_counter_stop:
+
+        model.train()
+        model.to(device)
+        running_loss = 0.0
+        correct = 0
+        total = 0
+
+        for inputs, targets in tqdm(train_loader, desc="Training"):
+            inputs, targets = inputs.to(device), targets.to(device)
+            if gradient_counter > config.gradient_counter_stop:
+                break
+
+            optimizer.zero_grad()
+
+            output = model(inputs)
+            loss = criterion(output, targets)
+            gradient_counter += 1
+            loss = loss.to(device)
+            loss.backward()
+            optimizer.step()
+
+            running_loss += loss.item()
+
+            _, predicted = torch.max(output, 1)
+            total += targets.size(0)
+            correct += (predicted == targets).sum().item()
+        print(f"Gradient counter: {gradient_counter}")
+        train_loss = running_loss / total
+        train_losses.append(train_loss)
+        train_accuracy = 100 * correct / total
+        train_accuracies.append(train_accuracy)
+        print(f"Train loss: {train_loss}, Train accuracy: {train_accuracy}")
+    return train_losses, train_accuracies
+
+
+def train_cma(model: torch.nn.Module, train_dataset: TensorDataset, config: Config):
+    all_params = np.concatenate(
+        [p.detach().cpu().numpy().ravel() for p in model.parameters()]
+    )
+    print(len(all_params))
+    sigma = 0.5
+    train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
+    criterion = nn.CrossEntropyLoss()
+    es = cma.CMAEvolutionStrategy(all_params, sigma)
+
+    reaching_count = 0
+    losses_per_reach = []
+    accuracies_per_reach = []
+
+    while reaching_count <= config.reaching_count and not es.stop():
+        solutions = es.ask()
+        losses = []
+
+        for s in solutions:
+            idx = 0
+            flat_params = np.array(s)
+            for param in model.parameters():
+                numel = param.numel()
+                param.data.copy_(
+                    torch.from_numpy(
+                        flat_params[idx: idx + numel].reshape(param.shape)
+                    )
+                )
+                idx += numel
+
+            model.eval()
+            total_loss = 0.0
+            total = 0
+            correct = 0
+            with torch.no_grad():
+                for inputs, targets in train_loader:
+                    if reaching_count >= config.reaching_count:
+                        break
+                    outputs = model(inputs)
+                    loss = criterion(outputs, targets)
+                    batch_loss = loss.item()
+                    total_loss += loss.item() * inputs.size(0)
+
+                    _, predicted = torch.max(outputs, 1)
+                    total += targets.size(0)
+                    correct += (predicted == targets).sum().item()
+
+                    batch_accuracy = (predicted == targets).sum().item() / targets.size(
+                        0
+                    )
+                    accuracies_per_reach.append(batch_accuracy)
+                    losses_per_reach.append(batch_loss)
+                    reaching_count += 1
+                print(f"Total loss: {total_loss}")
+            if total != 0:
+                avg_loss = total_loss / total
+                losses.append(avg_loss)
+            else:
+                losses.append(0)
+
+        es.tell(solutions, losses)
+
+    # Ustawienie w modelu najlepszych parametrów
+    best_params = es.best.x
+    idx = 0
+    flat_params = np.array(s)
+    for param in model.parameters():
+        numel = param.numel()
+        param.data.copy_(
+            torch.from_numpy(best_params[idx: idx + numel].reshape(param.shape))
+        )
+        idx += numel
+    return losses_per_reach, accuracies_per_reach
+
+
+def main(arguments):
+    args = get_args(arguments)
+    config = Config(
+        dataset_name=args.dataset,
+        batch_size=args.batch_size,
+        reaching_count=args.reaching_count,
+        gradient_counter_stop=args.gradient_counter_stop,
+        random_seed=args.random_seed,
+        optimizer_config=(
+            CMAOptimizerConfig(args.optimizer)
+            if args.optimizer in ["cma-es"]
+            else GradientOptimizerConfig(args.optimizer)
+        ),
+    )
+    if config.random_seed is not None:
+        torch.manual_seed(config.random_seed)
+        np.random.seed(config.random_seed)
+
+    # data_path = ""
+    # df = read_data(data_path)
+    # X_train, y_train = prepare_data(df)
+    # train_dataset = torch.utils.data.TensorDataset(X_train, y_train)
+    model = DATA_SETS[config.dataset_name]["model"]
+    data_set = DATA_SETS[config.dataset_name]["data_set"]()
+    training_function = select_training(config)
+    training_function(model=model(), train_dataset=data_set, config=config)
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

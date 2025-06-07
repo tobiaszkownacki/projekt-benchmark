@@ -2,6 +2,8 @@
 __pycache__/
 *.py[cod]
 *$py.class
+venv
+data/raw/cifar10
 
 # C extensions
 *.so
