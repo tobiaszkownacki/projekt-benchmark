@@ -1,5 +1,6 @@
 from torch.optim import Adam, SGD, AdamW, RMSprop
 from torch.optim import Optimizer
+from cma import CMAEvolutionStrategy
 
 
 class OptimizerFactory:
@@ -7,12 +8,14 @@ class OptimizerFactory:
     def get_optimizer(optimizer_name: str) -> Optimizer:
         match optimizer_name:
             case 'adam':
-                return Adam()
+                return Adam
             case 'adamw':
-                return AdamW()
+                return AdamW
             case 'sgd':
-                return SGD()
+                return SGD
             case 'rmsprop':
-                return RMSprop()
+                return RMSprop
+            case 'cma-es':
+                return CMAEvolutionStrategy
             case _:
                 raise ValueError(f'Unsupported optimizer: {optimizer_name}')

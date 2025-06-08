@@ -8,6 +8,7 @@ import sys
 from src.arg_parse import get_args
 from src.dataset import DATA_SETS
 from tqdm import tqdm
+from src.optimizers import OptimizerFactory
 
 
 def select_training(config: Config) -> callable:
@@ -25,11 +26,12 @@ def train_gradient(
     model: torch.nn.Module,
     train_dataset: TensorDataset,
     config: Config,
+    optimizer: torch.optim.Optimizer
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters())
+    optimizer = optimizer(model.parameters())
     gradient_counter = 0
     train_losses = []
     train_accuracies = []
@@ -69,7 +71,12 @@ def train_gradient(
     return train_losses, train_accuracies
 
 
-def train_cma(model: torch.nn.Module, train_dataset: TensorDataset, config: Config):
+def train_cma(
+    model: torch.nn.Module,
+    train_dataset: TensorDataset,
+    config: Config,
+    optimizer: cma.CMAEvolutionStrategy,
+):
     all_params = np.concatenate(
         [p.detach().cpu().numpy().ravel() for p in model.parameters()]
     )
@@ -77,7 +84,7 @@ def train_cma(model: torch.nn.Module, train_dataset: TensorDataset, config: Conf
     sigma = 0.5
     train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
     criterion = nn.CrossEntropyLoss()
-    es = cma.CMAEvolutionStrategy(all_params, sigma)
+    es = optimizer(all_params, sigma)
 
     reaching_count = 0
     losses_per_reach = []
@@ -162,14 +169,11 @@ def main(arguments):
         torch.manual_seed(config.random_seed)
         np.random.seed(config.random_seed)
 
-    # data_path = ""
-    # df = read_data(data_path)
-    # X_train, y_train = prepare_data(df)
-    # train_dataset = torch.utils.data.TensorDataset(X_train, y_train)
     model = DATA_SETS[config.dataset_name]["model"]
     data_set = DATA_SETS[config.dataset_name]["data_set"]()
+    optimizer = OptimizerFactory.get_optimizer(config.optimizer_config.optimizer_name)
     training_function = select_training(config)
-    training_function(model=model(), train_dataset=data_set, config=config)
+    training_function(model=model(), train_dataset=data_set, config=config, optimizer=optimizer)
 
 
 if __name__ == "__main__":
