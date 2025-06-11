@@ -8,7 +8,7 @@ def get_args(arguments):
     parser.add_argument(
         "dataset",
         type=str,
-        choices=["cifar10", "heart_disease"],
+        choices=["cifar10", "heart_disease", "wine_quality"],
         help="Name of the dataset to use for training",
     )
     parser.add_argument(

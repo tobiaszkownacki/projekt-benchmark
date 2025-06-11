@@ -11,6 +11,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import ConcatDataset, Dataset, TensorDataset
 from models.cifar10 import Cifar10
 from models.heart_disease import HeartDisease
+from models.wine_quality import WineQuality
 
 
 # def main(
@@ -34,6 +35,8 @@ class DataSetFactory:
                 return cls._get_cifar10_data_set()
             case 'heart_disease':
                 return cls._get_heart_disease_data_set()
+            case 'wine_quality':
+                return cls._get_wine_quality_data_set()
             case _:
                 raise ValueError(f'Unsupported data set: {data_set_name}')
 
@@ -81,6 +84,31 @@ class DataSetFactory:
 
         return full_dataset
 
+    @classmethod
+    def _get_wine_quality_data_set(cls) -> ConcatDataset:
+        data_path_red = RAW_DATA_DIR / "winequality-red.csv"
+        data_path_white = RAW_DATA_DIR / "winequality-white.csv"
+
+        df_white = pd.read_csv(data_path_red, sep=';')
+        df_red = pd.read_csv(data_path_white, sep=';')
+
+        df_red['color'] = 'red'
+        df_white['color'] = 'white'
+
+        df_wines = pd.concat([df_red, df_white], ignore_index=True)
+        df_wines = df_wines.sample(frac=1).reset_index(drop=True)
+
+        y = df_wines['color']
+        y_binary = (y == 'white').astype(int)
+        X = df_wines.drop('color', axis=1)
+
+        X_tensor = torch.tensor(X.values, dtype=torch.float32)
+        y_tensor = torch.tensor(y_binary.astype(int).values, dtype=torch.long)
+
+        full_dataset = TensorDataset(X_tensor, y_tensor)
+
+        return full_dataset
+
 
 DATA_SETS = {
     'cifar10': {
@@ -90,5 +118,9 @@ DATA_SETS = {
     'heart_disease': {
         "data_set": lambda: DataSetFactory.get_data_set('heart_disease'),
         "model": HeartDisease
+    },
+    'wine_quality': {
+        "data_set": lambda: DataSetFactory.get_data_set('wine_quality'),
+        "model": WineQuality
     }
 }
