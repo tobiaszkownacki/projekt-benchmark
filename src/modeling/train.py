@@ -84,7 +84,10 @@ def train_cma(
     sigma = 0.5
     train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
     criterion = nn.CrossEntropyLoss()
-    es = optimizer(all_params, sigma)
+    opts = {
+        'seed': config.random_seed,
+    }
+    es = optimizer(all_params, sigma, opts)
 
     reaching_count = 0
     losses_per_reach = []
@@ -112,8 +115,8 @@ def train_cma(
             correct = 0
             with torch.no_grad():
                 for inputs, targets in train_loader:
-                    if reaching_count >= config.reaching_count:
-                        break
+                    # if reaching_count >= config.reaching_count:
+                    #     break
                     outputs = model(inputs)
                     loss = criterion(outputs, targets)
                     batch_loss = loss.item()
@@ -129,13 +132,13 @@ def train_cma(
                     accuracies_per_reach.append(batch_accuracy)
                     losses_per_reach.append(batch_loss)
                     reaching_count += 1
-                print(f"Total loss: {total_loss}")
             if total != 0:
                 avg_loss = total_loss / total
                 losses.append(avg_loss)
             else:
                 losses.append(0)
-
+        print(f'Average loss per one epoch {sum(losses) / len(losses)}')
+        print(f'Reaching_count: {reaching_count}')
         es.tell(solutions, losses)
 
     # Ustawienie w modelu najlepszych parametrów
@@ -148,6 +151,20 @@ def train_cma(
             torch.from_numpy(best_params[idx: idx + numel].reshape(param.shape))
         )
         idx += numel
+    # Ocena accuracy modelu
+    model.eval()
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for inputs, targets in train_loader:
+            outputs = model(inputs)
+            _, predicted = torch.max(outputs, dim=1)
+            total += targets.size(0)
+            correct += (predicted == targets).sum().item()
+
+    best_accuracy = correct / total
+    print(f"Best CMA-ES model accuracy: {best_accuracy * 100:.2f}%")
+
     return losses_per_reach, accuracies_per_reach
 
 
