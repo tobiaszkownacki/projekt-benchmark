@@ -9,9 +9,12 @@ from src.config import RAW_DATA_DIR
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import ConcatDataset, Dataset, TensorDataset
+from sklearn.datasets import load_digits
+import numpy as np
 from models.cifar10 import Cifar10
 from models.heart_disease import HeartDisease
 from models.wine_quality import WineQuality
+from models.digits import Digits
 
 
 # def main(
@@ -37,6 +40,8 @@ class DataSetFactory:
                 return cls._get_heart_disease_data_set()
             case 'wine_quality':
                 return cls._get_wine_quality_data_set()
+            case 'digits':
+                return cls._get_digits_data_set()
             case _:
                 raise ValueError(f'Unsupported data set: {data_set_name}')
 
@@ -109,6 +114,23 @@ class DataSetFactory:
 
         return full_dataset
 
+    @classmethod
+    def _get_digits_data_set(cls) -> ConcatDataset:
+        digits = load_digits()
+        X = digits.data
+        y = digits.target
+
+        X = X.reshape(-1, 1, 8, 8)
+
+        X_tensor = torch.tensor(X, dtype=torch.float32)
+        y_tensor = torch.tensor(y, dtype=torch.long)
+
+        X_tensor = X_tensor / 16.0  # digits data is originally in range [0, 16]
+
+        full_dataset = TensorDataset(X_tensor, y_tensor)
+
+        return full_dataset
+
 
 DATA_SETS = {
     'cifar10': {
@@ -122,5 +144,9 @@ DATA_SETS = {
     'wine_quality': {
         "data_set": lambda: DataSetFactory.get_data_set('wine_quality'),
         "model": WineQuality
+    },
+    'digits': {
+        "data_set": lambda: DataSetFactory.get_data_set('digits'),
+        "model": Digits
     }
 }
