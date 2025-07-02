@@ -40,9 +40,14 @@ class CMAOptimizerConfig(BaseOptimizerConfig):
 
 
 @dataclass
+class LBFGSOptimizerConfig(BaseOptimizerConfig):
+    optimizer_name = "lbfgs"
+
+
+@dataclass
 class Config:
     dataset_name: str
-    optimizer_config: GradientOptimizerConfig | CMAOptimizerConfig
+    optimizer_config: GradientOptimizerConfig | CMAOptimizerConfig | LBFGSOptimizerConfig
     batch_size: int
     reaching_count: int
     gradient_counter_stop: int

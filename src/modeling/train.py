@@ -3,7 +3,7 @@ import torch
 from torch.utils.data import DataLoader, TensorDataset
 import cma
 import numpy as np
-from src.config import Config, CMAOptimizerConfig, GradientOptimizerConfig
+from src.config import Config, CMAOptimizerConfig, GradientOptimizerConfig, LBFGSOptimizerConfig
 import sys
 from src.arg_parse import get_args
 from src.dataset import DATA_SETS
@@ -16,6 +16,8 @@ def select_training(config: Config) -> callable:
         return train_gradient
     if isinstance(config.optimizer_config, CMAOptimizerConfig):
         return train_cma
+    if isinstance(config.optimizer_config, LBFGSOptimizerConfig):
+        return train_lbfgs
 
     raise ValueError(
         f"Unsupported optimizer configuration: {config.optimizer_config.optimizer_name}"
@@ -31,12 +33,12 @@ def train_gradient(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optimizer(model.parameters())
+    optimizer_instance = optimizer(model.parameters())
     gradient_counter = 0
     train_losses = []
     train_accuracies = []
-    while gradient_counter <= config.gradient_counter_stop:
 
+    while gradient_counter <= config.gradient_counter_stop:
         model.train()
         model.to(device)
         running_loss = 0.0
@@ -48,20 +50,72 @@ def train_gradient(
             if gradient_counter > config.gradient_counter_stop:
                 break
 
-            optimizer.zero_grad()
+            optimizer_instance.zero_grad()
 
             output = model(inputs)
             loss = criterion(output, targets)
             gradient_counter += 1
             loss = loss.to(device)
             loss.backward()
-            optimizer.step()
+            optimizer_instance.step()
 
             running_loss += loss.item()
 
             _, predicted = torch.max(output, 1)
             total += targets.size(0)
             correct += (predicted == targets).sum().item()
+        print(f"Gradient counter: {gradient_counter}")
+        train_loss = running_loss / total
+        train_losses.append(train_loss)
+        train_accuracy = 100 * correct / total
+        train_accuracies.append(train_accuracy)
+        print(f"Train loss: {train_loss}, Train accuracy: {train_accuracy}")
+    return train_losses, train_accuracies
+
+
+def train_lbfgs(
+    model: torch.nn.Module,
+    train_dataset: TensorDataset,
+    config: Config,
+    optimizer: torch.optim.Optimizer
+):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
+    criterion = nn.CrossEntropyLoss()
+    optimizer_instance = optimizer(model.parameters())
+    gradient_counter = 0
+    train_losses = []
+    train_accuracies = []
+
+    while gradient_counter <= config.gradient_counter_stop:
+        model.train()
+        model.to(device)
+        running_loss = 0.0
+        correct = 0
+        total = 0
+
+        for inputs, targets in tqdm(train_loader, desc="Training"):
+            inputs, targets = inputs.to(device), targets.to(device)
+            if gradient_counter > config.gradient_counter_stop:
+                break
+
+            def closure():
+                optimizer_instance.zero_grad()
+                output = model(inputs)
+                loss = criterion(output, targets)
+                loss.backward()
+                return loss
+
+            loss = optimizer_instance.step(closure)
+            gradient_counter += 1
+
+            with torch.no_grad():
+                output = model(inputs)
+                running_loss += loss.item()
+                _, predicted = torch.max(output, 1)
+                total += targets.size(0)
+                correct += (predicted == targets).sum().item()
+
         print(f"Gradient counter: {gradient_counter}")
         train_loss = running_loss / total
         train_losses.append(train_loss)
@@ -179,6 +233,8 @@ def main(arguments):
         optimizer_config=(
             CMAOptimizerConfig(args.optimizer)
             if args.optimizer in ["cma-es"]
+            else LBFGSOptimizerConfig(args.optimizer)
+            if args.optimizer in ["lbfgs"]
             else GradientOptimizerConfig(args.optimizer)
         ),
     )

@@ -1,4 +1,4 @@
-from torch.optim import Adam, SGD, AdamW, RMSprop
+from torch.optim import Adam, SGD, AdamW, RMSprop, LBFGS
 from torch.optim import Optimizer
 from cma import CMAEvolutionStrategy
 
@@ -15,6 +15,8 @@ class OptimizerFactory:
                 return SGD
             case 'rmsprop':
                 return RMSprop
+            case 'lbfgs':
+                return LBFGS
             case 'cma-es':
                 return CMAEvolutionStrategy
             case _:

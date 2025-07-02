@@ -14,7 +14,7 @@ def get_args(arguments):
     parser.add_argument(
         "optimizer",
         type=str,
-        choices=["adam", "adamw", "sgd", "rmsprop", "cma-es"],
+        choices=["adam", "adamw", "sgd", "rmsprop", "lbfgs", "cma-es"],
         help="Optimizer to use for training the model",
     )
     parser.add_argument(
