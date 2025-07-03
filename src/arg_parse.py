@@ -1,4 +1,5 @@
 import argparse
+import random
 
 
 def get_args(arguments):
@@ -26,8 +27,14 @@ def get_args(arguments):
     parser.add_argument(
         "--reaching_count",
         type=int,
-        default=5000,
+        default=500,
         help="Number of times to reach the dataset during non-gradient training (default: 500)",
+    )
+    parser.add_argument(
+        "--max_epochs",
+        type=int,
+        default=10,
+        help="Number of epochs to train the model (default: 10)",
     )
     parser.add_argument(
         "--gradient_counter_stop",
@@ -38,7 +45,7 @@ def get_args(arguments):
     parser.add_argument(
         "--random_seed",
         type=int,
-        default=None,
+        default=random.randrange(2**32),
         help="Random seed for reproducibility (default: None)",
     )
 

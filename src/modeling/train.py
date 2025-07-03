@@ -9,6 +9,7 @@ from src.arg_parse import get_args
 from src.dataset import DATA_SETS
 from tqdm import tqdm
 from src.optimizers import OptimizerFactory
+from src.modeling.predict import cma_predict
 
 
 def select_training(config: Config) -> callable:
@@ -140,86 +141,75 @@ def train_cma(
     criterion = nn.CrossEntropyLoss()
     opts = {
         'seed': config.random_seed,
+
     }
     es = optimizer(all_params, sigma, opts)
+    starting_accuracy = cma_predict(model, train_loader)
+    print(f"Starting accuracy: {starting_accuracy * 100:.2f}%")
+    losses_per_epoch, accuracies_per_epoch = train_cma_batch_based(
+        model=model,
+        train_loader=train_loader,
+        config=config,
+        es=es,
+        criterion=criterion,
+    )
 
-    reaching_count = 0
-    losses_per_reach = []
-    accuracies_per_reach = []
+    return losses_per_epoch, accuracies_per_epoch
 
-    while reaching_count <= config.reaching_count and not es.stop():
-        solutions = es.ask()
-        losses = []
 
-        for s in solutions:
-            idx = 0
-            flat_params = np.array(s)
-            for param in model.parameters():
-                numel = param.numel()
-                param.data.copy_(
-                    torch.from_numpy(
-                        flat_params[idx: idx + numel].reshape(param.shape)
-                    )
-                )
-                idx += numel
+def train_cma_batch_based(
+    model: torch.nn.Module,
+    train_loader: TensorDataset,
+    config: Config,
+    es: cma.CMAEvolutionStrategy,
+    criterion: nn.Module,
+):
+    epoch_count = 0
+    losses_per_epoch = []
+    accuracies_per_epoch = []
+    while epoch_count <= config.max_epochs and not es.stop():
+        model.eval()
+        loss_in_epoch = 0.0
+        with torch.no_grad():
+            for inputs, targets in train_loader:
+                losses = []
+                correct = 0
+                solutions = es.ask()
+                for s in solutions:
+                    cma_set_params(model, np.array(s))
 
-            model.eval()
-            total_loss = 0.0
-            total = 0
-            correct = 0
-            with torch.no_grad():
-                for inputs, targets in train_loader:
-                    # if reaching_count >= config.reaching_count:
-                    #     break
                     outputs = model(inputs)
-                    loss = criterion(outputs, targets)
-                    batch_loss = loss.item()
-                    total_loss += loss.item() * inputs.size(0)
+                    loss = criterion(outputs, targets).item() / inputs.size(0)
 
                     _, predicted = torch.max(outputs, 1)
-                    total += targets.size(0)
                     correct += (predicted == targets).sum().item()
+                    batch_accuracy = (predicted == targets).sum().item() / targets.size(0)
+                    losses.append(loss)
+                es.tell(solutions, losses)
+                print(f'Average loss per one batch {sum(losses):.2f}')
+                loss_in_epoch += sum(losses) / len(losses)
+                print(f"Batch accuracy: {batch_accuracy * 100:.2f}%")
+            epoch_count += 1
+            losses_per_epoch.append(loss_in_epoch / len(train_loader))
+            cma_set_params(model, es.best.x)
+            best_accuracy = cma_predict(model, train_loader)
+            print("\nEPOCH SUMMARY")
+            print(f"Loss in the last epoch: {loss_in_epoch / len(train_loader):.2f}")
+            print(f"CMA-ES model accuracy: {best_accuracy * 100:.2f}%")
+            print(f"The lowest loss: {es.best.f:.2f}\n")
+            accuracies_per_epoch.append(best_accuracy)
 
-                    batch_accuracy = (predicted == targets).sum().item() / targets.size(
-                        0
-                    )
-                    accuracies_per_reach.append(batch_accuracy)
-                    losses_per_reach.append(batch_loss)
-                    reaching_count += 1
-            if total != 0:
-                avg_loss = total_loss / total
-                losses.append(avg_loss)
-            else:
-                losses.append(0)
-        print(f'Average loss per one epoch {sum(losses) / len(losses)}')
-        print(f'Reaching_count: {reaching_count}')
-        es.tell(solutions, losses)
+    return losses_per_epoch, accuracies_per_epoch
 
-    # Ustawienie w modelu najlepszych parametrów
-    best_params = es.best.x
+
+def cma_set_params(model: torch.nn.Module, best_params: np.ndarray):
     idx = 0
-    flat_params = np.array(s)
     for param in model.parameters():
         numel = param.numel()
         param.data.copy_(
             torch.from_numpy(best_params[idx: idx + numel].reshape(param.shape))
         )
         idx += numel
-    # Ocena accuracy modelu
-    model.eval()
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        for inputs, targets in train_loader:
-            outputs = model(inputs)
-            _, predicted = torch.max(outputs, dim=1)
-            total += targets.size(0)
-            correct += (predicted == targets).sum().item()
-
-    best_accuracy = correct / total
-    print(f"Best CMA-ES model accuracy: {best_accuracy * 100:.2f}%")
-
-    return losses_per_reach, accuracies_per_reach
 
 
 def main(arguments):
@@ -237,10 +227,10 @@ def main(arguments):
             if args.optimizer in ["lbfgs"]
             else GradientOptimizerConfig(args.optimizer)
         ),
+        max_epochs=args.max_epochs,
     )
-    if config.random_seed is not None:
-        torch.manual_seed(config.random_seed)
-        np.random.seed(config.random_seed)
+    torch.manual_seed(config.random_seed)
+    np.random.seed(config.random_seed)
 
     model = DATA_SETS[config.dataset_name]["model"]
     data_set = DATA_SETS[config.dataset_name]["data_set"]()
