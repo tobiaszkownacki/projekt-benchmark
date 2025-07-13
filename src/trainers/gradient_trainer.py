@@ -18,7 +18,11 @@ class GradientTrainer(BaseTrainer):
         train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
         criterion = CrossEntropyLoss()
         optimizer = self._get_optimizer(config.optimizer_config.optimizer_name)(model.parameters())
-        log = Log(output_file=config.dataset_name+"-"+config.optimizer_config.optimizer_name+"-"+str(config.batch_size)+".csv")
+        log = Log(
+            output_file=f"{self.__class__.__name__}-"
+                        f"{config.dataset_name}-"
+                        f"{config.optimizer_config.optimizer_name}-"
+                        f"{config.batch_size}.csv")
         gradient_counter = 0
         train_losses = []
         train_accuracies = []
@@ -46,7 +50,7 @@ class GradientTrainer(BaseTrainer):
 
                 log.increment_number_of_samples(targets.size(0))
                 log.increment_mini_batches(1)
-                log.log(round(loss.item(),4), config.save_interval)
+                log.log(round(loss.item(), 4), config.save_interval)
 
                 running_loss += loss.item()
 

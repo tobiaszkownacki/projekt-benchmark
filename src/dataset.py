@@ -11,7 +11,6 @@ import torchvision.transforms as transforms
 from torch.utils.data import ConcatDataset, Dataset, TensorDataset
 from sklearn.datasets import load_digits
 from sklearn.preprocessing import StandardScaler
-import numpy as np
 from models.cifar10 import Cifar10
 from models.heart_disease import HeartDisease
 from models.wine_quality import WineQuality

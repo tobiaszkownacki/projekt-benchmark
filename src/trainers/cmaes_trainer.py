@@ -1,5 +1,6 @@
 from src.trainers.base_trainer import BaseTrainer
 from src.config import Config
+from src.logging import Log
 import torch
 from torch.utils.data import DataLoader
 from torch.nn import CrossEntropyLoss
@@ -27,41 +28,62 @@ class CmaesTrainer(BaseTrainer):
         starting_accuracy = self.predict(model, train_loader)
         print(f"Starting accuracy: {starting_accuracy * 100:.2f}%")
 
+        log = Log(
+            output_file=f"{self.__class__.__name__}-"
+                        f"{config.dataset_name}-"
+                        f"{config.optimizer_config.optimizer_name}-"
+                        f"{config.batch_size}.csv")
         epoch_count = 0
         losses_per_epoch = []
         accuracies_per_epoch = []
         while epoch_count <= config.max_epochs and not optimizer.stop():
             model.eval()
-            loss_in_epoch = 0.0
+            epoch_loss = 0.0
+            correct_total = 0
+            total_samples = 0
+
             with torch.no_grad():
                 for inputs, targets in train_loader:
                     losses = []
-                    correct = 0
+                    batch_avg_loss = 0.0
                     solutions = optimizer.ask()
                     for s in solutions:
                         self._set_params(model, np.array(s))
 
                         outputs = model(inputs)
-                        loss = criterion(outputs, targets).item() / inputs.size(0)
-
-                        _, predicted = torch.max(outputs, 1)
-                        correct += (predicted == targets).sum().item()
-                        batch_accuracy = (predicted == targets).sum().item() / targets.size(0)
+                        loss = criterion(outputs, targets).item()
                         losses.append(loss)
+
                     optimizer.tell(solutions, losses)
-                    print(f'Average loss per one batch {sum(losses):.2f}')
-                    loss_in_epoch += sum(losses) / len(losses)
-                    print(f"Batch accuracy: {batch_accuracy * 100:.2f}%")
+                    print(f'Total loss over population for batch {sum(losses):.2f}')
+                    batch_avg_loss += sum(losses) / len(losses)
+                    epoch_loss += batch_avg_loss
+
+                    log.increment_number_of_samples(targets.size(0))
+                    log.increment_mini_batches(1)
+                    log.log(round(batch_avg_loss, 4), config.save_interval)
+
+                    self._set_params(model, optimizer.best.x)  # Best individual
+                    outputs = model(inputs)
+                    _, predicted = torch.max(outputs, 1)
+                    correct_total += (predicted == targets).sum().item()
+                    total_samples += targets.size(0)
+
+                    print(f"Batch average loss (population): {batch_avg_loss:.4f}")
+                    batch_accuracy = 100 * (predicted == targets).sum().item() / targets.size(0)
+                    print(f"Batch accuracy (best individual): {batch_accuracy:.2f}%\n")
+
                 epoch_count += 1
-                losses_per_epoch.append(loss_in_epoch / len(train_loader))
-                self._set_params(model, optimizer.best.x)
+                epoch_avg_loss = epoch_loss / len(train_loader)
+                losses_per_epoch.append(epoch_avg_loss)
+
                 best_accuracy = self.predict(model, train_loader)
+                accuracies_per_epoch.append(best_accuracy)
                 print("\nEPOCH SUMMARY")
-                print(f"Loss in the last epoch: {loss_in_epoch / len(train_loader):.2f}")
+                print(f"Avg loss in epoch: {epoch_avg_loss:.2f}")
                 print(f"CMA-ES model accuracy: {best_accuracy * 100:.2f}%")
                 print(f"The lowest loss: {optimizer.best.f:.2f}\n")
-                accuracies_per_epoch.append(best_accuracy)
-
+            
         return losses_per_epoch, accuracies_per_epoch
 
     def _get_optimizer(
