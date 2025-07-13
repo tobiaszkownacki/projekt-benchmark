@@ -1,5 +1,6 @@
 from src.trainers.base_trainer import BaseTrainer
 from src.config import Config
+from src.logging import Log
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -16,12 +17,18 @@ class LbfgsTrainer(BaseTrainer):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
         criterion = CrossEntropyLoss()
-        optimizer = self._get_optimizer(config.optimizer_config.optimizer_name)(model.parameters())
+        optimizer = self._get_optimizer(
+            config.optimizer_config.optimizer_name)(model.parameters())
+        log = Log(
+            output_file=f"{self.__class__.__name__}-"
+                        f"{config.dataset_name}-"
+                        f"{config.optimizer_config.optimizer_name}-"
+                        f"{config.batch_size}.csv")
         gradient_counter = 0
         train_losses = []
         train_accuracies = []
 
-        while gradient_counter <= config.gradient_counter_stop:
+        while gradient_counter < config.gradient_counter_stop:
             model.train()
             model.to(device)
             running_loss = 0.0
@@ -30,7 +37,7 @@ class LbfgsTrainer(BaseTrainer):
 
             for inputs, targets in tqdm(train_loader, desc="Training"):
                 inputs, targets = inputs.to(device), targets.to(device)
-                if gradient_counter > config.gradient_counter_stop:
+                if gradient_counter >= config.gradient_counter_stop:
                     break
 
                 def closure():
@@ -41,6 +48,10 @@ class LbfgsTrainer(BaseTrainer):
                     return loss
 
                 loss = optimizer.step(closure)
+                log.increment_number_of_samples(inputs.size(0))
+                log.increment_mini_batches(1)
+                log.log(round(loss.item(), 4), config.save_interval)
+
                 gradient_counter += 1
 
                 with torch.no_grad():
