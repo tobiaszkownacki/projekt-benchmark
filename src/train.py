@@ -46,6 +46,7 @@ def main(arguments):
         random_seed=args.random_seed,
         optimizer_config=get_optimizer_config(args.optimizer),
         max_epochs=args.max_epochs,
+        save_interval=args.save_interval
     )
     torch.manual_seed(config.random_seed)
     np.random.seed(config.random_seed)

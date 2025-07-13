@@ -48,6 +48,12 @@ def get_args(arguments):
         default=random.randrange(2**32),
         help="Random seed for reproducibility (default: None)",
     )
+    parser.add_argument(
+        "--save_interval",
+        type=int,
+        default=10,
+        help="Every how many mini-batches logs are saved to file",
+    )
 
     args = parser.parse_args(arguments[1:])
     return args

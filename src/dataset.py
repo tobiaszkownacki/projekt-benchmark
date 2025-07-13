@@ -10,6 +10,7 @@ import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import ConcatDataset, Dataset, TensorDataset
 from sklearn.datasets import load_digits
+from sklearn.preprocessing import StandardScaler
 import numpy as np
 from models.cifar10 import Cifar10
 from models.heart_disease import HeartDisease
@@ -82,7 +83,10 @@ class DataSetFactory:
         X = df.drop(columns=["target"])
         y = df["target"]
 
-        X_tensor = torch.tensor(X.values, dtype=torch.float32)
+        scaler = StandardScaler()
+        X = scaler.fit_transform(X)
+
+        X_tensor = torch.tensor(X, dtype=torch.float32)
         y_tensor = torch.tensor(y.astype(int).values, dtype=torch.long)
 
         full_dataset = TensorDataset(X_tensor, y_tensor)

@@ -53,3 +53,4 @@ class Config:
     gradient_counter_stop: int
     random_seed: int
     max_epochs: int
+    save_interval: int
