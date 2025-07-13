@@ -1,7 +1,9 @@
 import torch
 import numpy as np
+import os
 from src.config import Config, CMAOptimizerConfig, GradientOptimizerConfig, LBFGSOptimizerConfig, BaseOptimizerConfig
 import sys
+from datetime import datetime
 from src.arg_parse import get_args
 from src.dataset import DATA_SETS
 from src.trainers.base_trainer import BaseTrainer
@@ -52,6 +54,7 @@ def main(arguments):
     np.random.seed(config.random_seed)
 
     model = DATA_SETS[config.dataset_name]["model"]()
+    save_model = args.save_model
     data_set = DATA_SETS[config.dataset_name]["data_set"]()
     trainer = select_training(config)
     trainer.train(
@@ -59,6 +62,12 @@ def main(arguments):
         train_dataset=data_set,
         config=config,
     )
+    if save_model:
+        save_dir = 'weights'
+        current_time = datetime.now().strftime("%Y-%m-%d_%H-%M")
+        name = args.optimizer + "_" + args.dataset + "_" + current_time
+        torch.save(model.state_dict(), os.path.join(save_dir, name))
+        print(f"Model weights saved to: {save_dir}/{name}")
 
 
 if __name__ == "__main__":

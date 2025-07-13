@@ -54,6 +54,11 @@ def get_args(arguments):
         default=10,
         help="Every how many mini-batches logs are saved to file",
     )
+    parser.add_argument(
+        "--save_model",
+        action="store_true",
+        help="If set, saves the trained weights"
+    )
 
     args = parser.parse_args(arguments[1:])
     return args
