@@ -38,6 +38,27 @@ def get_optimizer_config(optimizer_name: str) -> BaseOptimizerConfig:
             raise ValueError(f"Unsupported optimizer: {optimizer_name}")
 
 
+def load_weights(model, path):
+    try:
+        load_dir = 'weights'
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        state_dict = torch.load(os.path.join(load_dir, path), map_location=device)
+
+        model_keys = set(model.state_dict().keys())
+        state_keys = set(state_dict.keys())
+        if not state_keys.issubset(model_keys):
+            raise RuntimeError("Weights are not matching the models architecture.")
+
+        model.load_state_dict(state_dict)
+        model.eval()
+        return model
+
+    except RuntimeError as e:
+        print(f"Error while loadign from path: {path}")
+        print("Error details:")
+        raise e
+
+
 def main(arguments):
     args = get_args(arguments)
     config = Config(
@@ -54,6 +75,9 @@ def main(arguments):
     np.random.seed(config.random_seed)
 
     model = DATA_SETS[config.dataset_name]["model"]()
+    load_model = args.load_model
+    if load_model:
+        model = load_weights(model, load_model)
     save_model = args.save_model
     data_set = DATA_SETS[config.dataset_name]["data_set"]()
     trainer = select_training(config)

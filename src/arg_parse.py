@@ -57,7 +57,13 @@ def get_args(arguments):
     parser.add_argument(
         "--save_model",
         action="store_true",
-        help="If set, saves the trained weights"
+        help="If set, saves the trained weights into the /weights directory"
+    )
+    parser.add_argument(
+        "--load_model",
+        type=str,
+        default=None,
+        help="If set, loads the weights into the model from a file with the given name. Weights are loaded from the /weights directory",
     )
 
     args = parser.parse_args(arguments[1:])
