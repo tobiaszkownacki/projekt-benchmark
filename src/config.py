@@ -45,9 +45,18 @@ class LBFGSOptimizerConfig(BaseOptimizerConfig):
 
 
 @dataclass
+class SchedulerConfig:
+    scheduler_name: str
+    step_size: int = 10
+    gamma: float = 0.5
+    patience: int = 5
+
+
+@dataclass
 class Config:
     dataset_name: str
     optimizer_config: GradientOptimizerConfig | CMAOptimizerConfig | LBFGSOptimizerConfig
+    scheduler_config: SchedulerConfig
     batch_size: int
     reaching_count: int
     gradient_counter_stop: int

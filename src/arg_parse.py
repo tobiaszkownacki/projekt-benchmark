@@ -19,6 +19,31 @@ def get_args(arguments):
         help="Optimizer to use for training the model",
     )
     parser.add_argument(
+        "--scheduler",
+        type=str,
+        choices=["none", "steplr", "exponentiallr", "reduceonplateau", "cosineannealinglr"],
+        default="none",
+        help="Learning rate scheduler to use (default: none)",
+    )
+    parser.add_argument(
+        "--step_size",
+        type=int,
+        default=10,
+        help="Step size for StepLR scheduler (default: 10)",
+    )
+    parser.add_argument(
+        "--gamma",
+        type=float,
+        default=0.5,
+        help="Gamma for StepLR/ExponentialLR/ReduceLROnPlateau scheduler (default: 0.5)",
+    )
+    parser.add_argument(
+        "--patience",
+        type=int,
+        default=1,
+        help="Patience for ReduceLROnPlateau scheduler (default: 5)",
+    )
+    parser.add_argument(
         "--batch_size",
         type=int,
         default=16,

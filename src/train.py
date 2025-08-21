@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 import os
-from src.config import Config, CMAOptimizerConfig, GradientOptimizerConfig, LBFGSOptimizerConfig, BaseOptimizerConfig
+from src.config import Config, SchedulerConfig, CMAOptimizerConfig, GradientOptimizerConfig, LBFGSOptimizerConfig, BaseOptimizerConfig
 import sys
 from datetime import datetime
 from src.arg_parse import get_args
@@ -61,8 +61,17 @@ def load_weights(model, path):
 
 def main(arguments):
     args = get_args(arguments)
+
+    scheduler_config = SchedulerConfig(
+        scheduler_name=args.scheduler,
+        step_size=args.step_size,
+        gamma=args.gamma,
+        patience=args.patience
+    )
+
     config = Config(
         dataset_name=args.dataset,
+        scheduler_config=scheduler_config,
         batch_size=args.batch_size,
         reaching_count=args.reaching_count,
         gradient_counter_stop=args.gradient_counter_stop,

@@ -12,7 +12,7 @@ class Log:
 
         with open(self.output_file, mode="w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(["samples", "mini_batches", "train_loss"])
+            writer.writerow(["samples", "mini_batches", "train_loss", "lr"])
 
     def increment_number_of_samples(self, inc: int):
         self.number_of_samples += inc
@@ -20,8 +20,8 @@ class Log:
     def increment_mini_batches(self, inc: int):
         self.number_of_mini_batches += inc
 
-    def log(self, train_loss: float, save_interval: int):
-        self.records.append((self.number_of_samples, self.number_of_mini_batches, train_loss))
+    def log(self, train_loss: float, save_interval: int, learning_rate: float ="none"):
+        self.records.append((self.number_of_samples, self.number_of_mini_batches, train_loss, learning_rate))
         if self.number_of_mini_batches % save_interval == 0:
             self.save_to_csv()
 
