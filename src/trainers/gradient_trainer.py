@@ -1,6 +1,7 @@
 from src.trainers.base_trainer import BaseTrainer
 from src.config import Config, SchedulerConfig
 from src.logging import Log
+from src.plots import ModelAnalyzer
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -15,6 +16,11 @@ class GradientTrainer(BaseTrainer):
         config: Config,
     ):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        if config.initialization_xavier:
+            analyzer = ModelAnalyzer()
+            initial_weights = analyzer.capture_initial_weights(model, "xavier_uniform")
+
         train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
         criterion = CrossEntropyLoss()
         optimizer = self._get_optimizer(config.optimizer_config.optimizer_name)(model.parameters())
@@ -83,6 +89,28 @@ class GradientTrainer(BaseTrainer):
                 print(f"Learning rate: {current_lr:.8f}")
             else:
                 print("No samples processes in this epoch")
+
+        if config.initialization_xavier:
+            if train_losses and train_accuracies:
+                final_loss = train_losses[-1]
+                final_accuracy = train_accuracies[-1]
+
+                config_dict = {
+                    "dataset": config.dataset_name,
+                    "optimizer": config.optimizer_config.optimizer_name,
+                    "scheduler": config.scheduler_config.scheduler_name,
+                    "batch_size": config.batch_size,
+                    "gradient_counter_stop": config.gradient_counter_stop
+                }
+
+                analyzer.analyze_model(
+                    model=model,
+                    config=config_dict,
+                    final_loss=final_loss,
+                    final_accuracy=final_accuracy,
+                    initialization_type="xavier_uniform"
+                )
+
         return train_losses, train_accuracies
 
     def _get_optimizer(

@@ -90,6 +90,11 @@ def get_args(arguments):
         default=None,
         help="If set, loads the weights into the model from a file with the given name. Weights are loaded from the /weights directory",
     )
+    parser.add_argument(
+        "--init_xavier",
+        action="store_true",
+        help="if xavier_uniform initialization"
+    )
 
     args = parser.parse_args(arguments[1:])
     return args

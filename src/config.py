@@ -63,3 +63,4 @@ class Config:
     random_seed: int
     max_epochs: int
     save_interval: int
+    initialization_xavier: bool

@@ -1,9 +1,11 @@
 import torch
 import numpy as np
 import os
+import glob
 from src.config import Config, SchedulerConfig, CMAOptimizerConfig, GradientOptimizerConfig, LBFGSOptimizerConfig, BaseOptimizerConfig
 import sys
 from datetime import datetime
+from src.plots import ModelAnalyzer
 from src.arg_parse import get_args
 from src.dataset import DATA_SETS
 from src.trainers.base_trainer import BaseTrainer
@@ -78,7 +80,8 @@ def main(arguments):
         random_seed=args.random_seed,
         optimizer_config=get_optimizer_config(args.optimizer),
         max_epochs=args.max_epochs,
-        save_interval=args.save_interval
+        save_interval=args.save_interval,
+        initialization_xavier=args.init_xavier
     )
     torch.manual_seed(config.random_seed)
     np.random.seed(config.random_seed)
@@ -104,4 +107,7 @@ def main(arguments):
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    analyzer = ModelAnalyzer()
+    analysis_files = glob.glob("reports/model_analysis/analysis_*.json")
+    analyzer.compare_initializations(analysis_files)
+    #main(sys.argv)
