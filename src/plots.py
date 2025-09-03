@@ -216,13 +216,14 @@ class ModelAnalyzer:
         
         print(f"Wizualizacja zapisana do: {self.output_dir / plot_filename}")
     
-    def compare_initializations(self, analysis_files: List[str]):
+    def compare_initializations(self, analysis_files: List[str], dataset_to_compare: str, optimizer_to_compare: str):
         analyses = []
         
         for file_path in analysis_files:
             with open(file_path, 'r') as f:
                 analysis = json.load(f)
-                analyses.append(analysis)
+                if analysis["config"]["dataset"] == dataset_to_compare and analysis["config"]["optimizer"] == optimizer_to_compare:
+                    analyses.append(analysis)
         
         fig, axes = plt.subplots(2, 2, figsize=(15, 10))
         fig.suptitle('Porównanie inicjalizacji', fontsize=16)
@@ -231,6 +232,9 @@ class ModelAnalyzer:
         final_losses = [a["final_metrics"]["loss"] for a in analyses]
         final_accuracies = [a["final_metrics"]["accuracy"] for a in analyses]
         
+        if len(set(init_types)) == 1:
+            for i in range(len(init_types)):
+                init_types[i] = init_types[i] + f"_{i+1}"
         # 1. Porównanie finalnych metryk
         x_pos = range(len(init_types))
         axes[0, 0].bar(x_pos, final_losses, alpha=0.7)

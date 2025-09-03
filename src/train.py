@@ -107,7 +107,4 @@ def main(arguments):
 
 
 if __name__ == "__main__":
-    analyzer = ModelAnalyzer()
-    analysis_files = glob.glob("reports/model_analysis/analysis_*.json")
-    analyzer.compare_initializations(analysis_files)
-    #main(sys.argv)
+    main(sys.argv)
