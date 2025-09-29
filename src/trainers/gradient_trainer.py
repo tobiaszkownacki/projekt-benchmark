@@ -12,16 +12,15 @@ class GradientTrainer(BaseTrainer):
     def train(
         self,
         model: torch.nn.Module,
-        train_dataset: torch.utils.data.TensorDataset,
+        train_dataset: torch.utils.data.Dataset,
+        val_dataset: torch.utils.data.Dataset,
         config: Config,
     ):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        if config.initialization_xavier:
-            analyzer = ModelAnalyzer()
-            initial_weights = analyzer.capture_initial_weights(model, "xavier_uniform")
-
         train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
+        val_loader= DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False)
+        
         criterion = CrossEntropyLoss()
         optimizer = self._get_optimizer(config.optimizer_config.optimizer_name)(model.parameters())
         scheduler = self._get_scheduler(config.scheduler_config, optimizer)
@@ -36,6 +35,8 @@ class GradientTrainer(BaseTrainer):
         gradient_counter = 0
         train_losses = []
         train_accuracies = []
+        val_losses= []
+        val_accuracies = []
 
         while gradient_counter < config.gradient_counter_stop:
             model.train()
@@ -61,8 +62,7 @@ class GradientTrainer(BaseTrainer):
 
                 current_lr = optimizer.param_groups[0]["lr"]
 
-                log.increment_number_of_samples(targets.size(0))
-                log.increment_mini_batches(1)
+                log.add_number_of_samples(targets.size(0))
                 log.log(round(loss.item(), 4), config.save_interval, round(current_lr, 8))
 
                 running_loss += loss.item()
@@ -71,6 +71,12 @@ class GradientTrainer(BaseTrainer):
                 _, predicted = torch.max(output, 1)
                 total += targets.size(0)
                 correct += (predicted == targets).sum().item()
+
+
+            val_loss, val_accuracy = self._validate(model, val_loader, criterion, device)
+            val_losses.append(val_loss)
+            val_accuracies.append(val_accuracy)
+
             print(f"Gradient counter: {gradient_counter}")
             if batch_count > 0:
                 train_loss = running_loss / batch_count
@@ -91,27 +97,62 @@ class GradientTrainer(BaseTrainer):
                 print("No samples processes in this epoch")
 
         if config.initialization_xavier:
-            if train_losses and train_accuracies:
-                final_loss = train_losses[-1]
-                final_accuracy = train_accuracies[-1]
+            self._analyze_model(model, config, train_losses, train_accuracies, val_losses, val_accuracies)
 
-                config_dict = {
-                    "dataset": config.dataset_name,
-                    "optimizer": config.optimizer_config.optimizer_name,
-                    "scheduler": config.scheduler_config.scheduler_name,
-                    "batch_size": config.batch_size,
-                    "gradient_counter_stop": config.gradient_counter_stop
-                }
+        return {
+            "train_losses": train_losses,
+            "train_accuracies": train_accuracies,
+            "val_losses": val_losses,
+            "val_accuracies": val_accuracies
+        }
+    
+    def _analyze_model(self, model, config, train_losses, train_accuracies, val_losses, val_accuracies):
+        analyzer = ModelAnalyzer()
+        if train_losses and train_accuracies:
+            final_train_loss = train_losses[-1]
+            final_train_accuracy = train_accuracies[-1]
+            final_val_loss = val_losses[-1]
+            final_val_accuracy = val_accuracies[-1]
 
-                analyzer.analyze_model(
-                    model=model,
-                    config=config_dict,
-                    final_loss=final_loss,
-                    final_accuracy=final_accuracy,
-                    initialization_type="xavier_uniform"
-                )
+            config_dict = {
+                "dataset": config.dataset_name,
+                "optimizer": config.optimizer_config.optimizer_name,
+                "scheduler": config.scheduler_config.scheduler_name,
+                "batch_size": config.batch_size,
+                "gradient_counter_stop": config.gradient_counter_stop
+            }
 
-        return train_losses, train_accuracies
+            analyzer.create_loss_plot(train_losses, val_losses, config, train_accuracies, val_accuracies)
+
+            #analyzer.analyze_model(
+            #     model=model,
+            #     config=config_dict,
+            #     final_loss=final_val_loss,
+            #     final_accuracy=final_val_accuracy,
+            #     initialization_type="xavier_uniform"
+            # )
+
+    def _validate(self, model, val_loader, criterion, device):
+        model.eval()
+        val_loss = 0.0
+        correct = 0
+        total = 0
+        
+        with torch.no_grad():
+            for inputs, targets in val_loader:
+                inputs, targets = inputs.to(device), targets.to(device)
+                outputs = model(inputs)
+                loss = criterion(outputs, targets)
+                
+                val_loss += loss.item()
+                _, predicted = torch.max(outputs, 1)
+                total += targets.size(0)
+                correct += (predicted == targets).sum().item()
+        
+        avg_val_loss = val_loss / len(val_loader)
+        val_accuracy = 100 * correct / total
+        
+        return avg_val_loss, val_accuracy
 
     def _get_optimizer(
         self,

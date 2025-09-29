@@ -2,7 +2,6 @@ from torch import flatten
 import torch.nn as nn
 import torch.nn.functional as F
 
-
 class Cifar10(nn.Module):
     def __init__(self):
         super().__init__()
@@ -16,6 +15,26 @@ class Cifar10(nn.Module):
         self.fc1 = nn.Linear(32 * 8 * 8, 400)
         self.bn_fc1 = nn.BatchNorm1d(400)
         self.fc2 = nn.Linear(400, 10)
+
+        self._initialize_weights()
+    
+
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm1d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
 
     def forward(self, x):
         x = self.pool(F.relu(self.bn1((self.conv1(x)))))

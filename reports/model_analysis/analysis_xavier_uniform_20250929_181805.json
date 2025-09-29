@@ -1,0 +1,104 @@
+{
+  "timestamp": "2025-09-29T18:18:05.775000",
+  "config": {
+    "dataset": "heart_disease",
+    "optimizer": "adam",
+    "scheduler": "none",
+    "batch_size": 16,
+    "gradient_counter_stop": 5000
+  },
+  "initialization_type": "xavier_uniform",
+  "final_metrics": {
+    "loss": 5.228109359741211,
+    "accuracy": 50.0
+  },
+  "layer_statistics": {
+    "fc.0.weight": {
+      "layer_name": "fc.0.weight",
+      "shape": [
+        128,
+        13
+      ],
+      "num_parameters": 1664,
+      "mean": -0.00514144916087389,
+      "std": 0.22719649970531464,
+      "min": -0.6015727519989014,
+      "max": 0.5897781848907471,
+      "median": 0.003115124301984906,
+      "l1_norm": 321.44293212890625,
+      "l2_norm": 9.270207405090332,
+      "percentage_zero": 0.0,
+      "percentage_negative": 49.81971153846153
+    },
+    "fc.2.weight": {
+      "layer_name": "fc.2.weight",
+      "shape": [
+        64,
+        128
+      ],
+      "num_parameters": 8192,
+      "mean": 0.02185707353055477,
+      "std": 0.11934740841388702,
+      "min": -0.5510922074317932,
+      "max": 0.5196899771690369,
+      "median": 0.024830132722854614,
+      "l1_norm": 784.3450927734375,
+      "l2_norm": 10.981749534606934,
+      "percentage_zero": 0.0,
+      "percentage_negative": 41.455078125
+    },
+    "fc.4.weight": {
+      "layer_name": "fc.4.weight",
+      "shape": [
+        32,
+        64
+      ],
+      "num_parameters": 2048,
+      "mean": 0.028407974168658257,
+      "std": 0.17929872870445251,
+      "min": -0.6354687213897705,
+      "max": 0.6668851971626282,
+      "median": 0.032849833369255066,
+      "l1_norm": 295.3760986328125,
+      "l2_norm": 8.215347290039062,
+      "percentage_zero": 0.0,
+      "percentage_negative": 43.017578125
+    },
+    "fc.6.weight": {
+      "layer_name": "fc.6.weight",
+      "shape": [
+        5,
+        32
+      ],
+      "num_parameters": 160,
+      "mean": -0.060179680585861206,
+      "std": 0.30203816294670105,
+      "min": -1.0014173984527588,
+      "max": 0.5239902138710022,
+      "median": -0.03127548098564148,
+      "l1_norm": 39.8939323425293,
+      "l2_norm": 3.895610809326172,
+      "percentage_zero": 0.0,
+      "percentage_negative": 52.5
+    }
+  },
+  "global_statistics": {
+    "weights": {
+      "total_parameters": 12064,
+      "mean": 0.01815720833837986,
+      "std": 0.15376195311546326,
+      "min": -1.0014173984527588,
+      "max": 0.6668851971626282,
+      "l1_norm": 1441.05810546875,
+      "l2_norm": 17.005979537963867,
+      "weight_range": 1.6683025360107422
+    },
+    "biases": {
+      "total_parameters": 229,
+      "mean": 0.030392225831747055,
+      "std": 0.14560292661190033,
+      "min": -0.3339294195175171,
+      "max": 0.3574422597885132
+    }
+  }
+}

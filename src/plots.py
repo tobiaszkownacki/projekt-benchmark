@@ -6,12 +6,12 @@ from pathlib import Path
 import torch
 import numpy as np
 import json
-import os
+from src.config import Config
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from pathlib import Path
 import matplotlib.pyplot as plt
 import seaborn as sns
-from typing import Dict, Any, List
 
 # def main(
 #     # ---- REPLACE DEFAULT PATHS AS APPROPRIATE ----
@@ -32,44 +32,60 @@ class ModelAnalyzer:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
     
-    def capture_initial_weights(self, model: torch.nn.Module, initialization_type: str) -> Dict[str, Any]:
-        """Zapisz początkowe wagi modelu"""
-        initial_weights = {
-            "timestamp": datetime.now().isoformat(),
-            "initialization_type": initialization_type,
-            "initial_layer_statistics": {},
-            "initial_global_statistics": {}
-        }
+    def create_loss_plot(self,
+                        train_losses: List[float],
+                        val_losses: List[float],
+                        config: Config, 
+                        train_accuracies: Optional[List[float]] = None,
+                        val_accuracies: Optional[List[float]] = None
+                        ):
+
+        if len(train_losses) != len(val_losses):
+            print(f"Warning - different length of lists - train: {len(train_losses)}, val: {len(val_losses)}")
+            min_len = min(len(train_losses), len(val_losses))
+            train_losses = train_losses[:min_len]
+            val_losses = val_losses[:min_len]
+            if train_accuracies and val_accuracies:
+                train_accuracies = train_accuracies[:min_len] 
+                val_accuracies = val_accuracies[:min_len]
+    
+        epochs = range(1, len(train_losses) + 1)
         
-        all_weights = []
-        for name, param in model.named_parameters():
-            if param.requires_grad and 'weight' in name:
-                weights = param.data.cpu().numpy().flatten()
-                all_weights.extend(weights)
-                
-                layer_stat = {
-                    "layer_name": name,
-                    "shape": list(param.shape),
-                    "mean": float(np.mean(weights)),
-                    "std": float(np.std(weights)),
-                    "min": float(np.min(weights)),
-                    "max": float(np.max(weights)),
-                    "median": float(np.median(weights))
-                }
-                initial_weights["initial_layer_statistics"][name] = layer_stat
+        if train_accuracies is not None and val_accuracies is not None:
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+        else:
+            fig, ax1 = plt.subplots(1, 1, figsize=(10, 6))
         
-        if all_weights:
-            initial_weights["initial_global_statistics"]["weights"] = {
-                "total_parameters": len(all_weights),
-                "mean": float(np.mean(all_weights)),
-                "std": float(np.std(all_weights)),
-                "min": float(np.min(all_weights)),
-                "max": float(np.max(all_weights)),
-                "weight_range": float(np.max(all_weights) - np.min(all_weights))
-            }
         
-        return initial_weights
+        # Wykres strat
+        ax1.plot(epochs, train_losses, 'b-', label='Training Loss', linewidth=1, marker='o', markersize=2)
+        ax1.plot(epochs, val_losses, 'r-', label='Validation Loss', linewidth=1, marker='s', markersize=2)
+        
+        ax1.set_xlabel('Epoch')
+        ax1.set_ylabel('Loss')
+        ax1.set_title('Training loss vs validation loss')
+        ax1.legend()
+        ax1.grid(True, alpha=0.3)
+
+        if train_accuracies is not None and val_accuracies is not None:
+            ax2.plot(epochs, train_accuracies, 'g-', label='Training Accuracy', linewidth=1, marker='o', markersize=2)
+            ax2.plot(epochs, val_accuracies, 'm-', label='Validation Accuracy', linewidth=1, marker='s', markersize=2)
             
+            ax2.set_xlabel('Epoch')
+            ax2.set_ylabel('Accuracy (%)')
+            ax2.set_title('Training accuracy vs validation accuracy')
+            ax2.legend()
+            ax2.grid(True, alpha=0.3)
+
+        plt.tight_layout()
+    
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        plot_filename = f"loss_plot_{config.dataset_name}_{config.optimizer_config.optimizer_name}_{timestamp}.png"
+        plt.savefig(self.output_dir / plot_filename, dpi=300, bbox_inches='tight')
+        plt.close()
+    
+        print(f"Loss plot written in: {self.output_dir / plot_filename}")
+
     def analyze_model(self, model: torch.nn.Module, config: Dict[str, Any], 
                      final_loss: float, final_accuracy: float, 
                      initialization_type: str = "default") -> Dict[str, Any]:
@@ -275,5 +291,3 @@ class ModelAnalyzer:
         comparison_filename = f"initialization_comparison_{timestamp}.png"
         plt.savefig(self.output_dir / comparison_filename, dpi=300, bbox_inches='tight')
         plt.close()
-        
-        print(f"Porównanie zapisane do: {self.output_dir / comparison_filename}")

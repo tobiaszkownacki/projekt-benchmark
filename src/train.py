@@ -91,13 +91,21 @@ def main(arguments):
     if load_model:
         model = load_weights(model, load_model)
     save_model = args.save_model
-    data_set = DATA_SETS[config.dataset_name]["data_set"]()
+    train_dataset, val_dataset = DATA_SETS[config.dataset_name]["data_set"]()
     trainer = select_training(config)
-    trainer.train(
+    results = trainer.train(
         model=model,
-        train_dataset=data_set,
+        train_dataset=train_dataset,
+        val_dataset=val_dataset,
         config=config,
     )
+
+    print(f"\nFinal Results:")
+    print(f"Train Loss: {results['train_losses'][-1]:.4f}")
+    print(f"Train Accuracy: {results['train_accuracies'][-1]:.2f}%")
+    print(f"Val Loss: {results['val_losses'][-1]:.4f}")
+    print(f"Val Accuracy: {results['val_accuracies'][-1]:.2f}%")
+
     if save_model:
         save_dir = 'weights'
         current_time = datetime.now().strftime("%Y-%m-%d_%H-%M")

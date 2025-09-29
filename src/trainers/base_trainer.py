@@ -8,7 +8,8 @@ class BaseTrainer(ABC):
     def train(
         self,
         model: torch.nn.Module,
-        train_dataset: torch.utils.data.TensorDataset,
+        train_dataset: torch.utils.data.Dataset,
+        val_dataset: torch.utils.data.Dataset,
         config: Config,
     ):
         pass

@@ -59,8 +59,7 @@ class CmaesTrainer(BaseTrainer):
                     batch_avg_loss += sum(losses) / len(losses)
                     epoch_loss += batch_avg_loss
 
-                    log.increment_number_of_samples(targets.size(0))
-                    log.increment_mini_batches(1)
+                    log.add_number_of_samples(targets.size(0))
                     log.log(round(batch_avg_loss, 4), config.save_interval)
 
                     self._set_params(model, optimizer.best.x)  # Best individual
