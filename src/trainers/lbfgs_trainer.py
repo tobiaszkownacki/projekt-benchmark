@@ -1,5 +1,5 @@
 from src.trainers.base_trainer import BaseTrainer
-from src.config import Config
+from src.config import BenchmarkConfig
 from src.logging import Log
 import torch
 from torch.utils.data import DataLoader
@@ -12,18 +12,22 @@ class LbfgsTrainer(BaseTrainer):
         self,
         model: torch.nn.Module,
         train_dataset: torch.utils.data.TensorDataset,
-        config: Config,
+        config: BenchmarkConfig,
     ):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
+        train_loader = DataLoader(
+            train_dataset, batch_size=config.batch_size, shuffle=True
+        )
         criterion = CrossEntropyLoss()
-        optimizer = self._get_optimizer(
-            config.optimizer_config.optimizer_name)(model.parameters())
+        optimizer = self._get_optimizer(config.optimizer_config.optimizer_name)(
+            model.parameters()
+        )
         log = Log(
             output_file=f"{self.__class__.__name__}-"
-                        f"{config.dataset_name}-"
-                        f"{config.optimizer_config.optimizer_name}-"
-                        f"{config.batch_size}.csv")
+            f"{config.dataset_name}-"
+            f"{config.optimizer_config.optimizer_name}-"
+            f"{config.batch_size}.csv"
+        )
         gradient_counter = 0
         train_losses = []
         train_accuracies = []
@@ -74,7 +78,7 @@ class LbfgsTrainer(BaseTrainer):
         optimizer_name: str,
     ) -> callable:
         match optimizer_name:
-            case 'lbfgs':
+            case "lbfgs":
                 return torch.optim.LBFGS
             case _:
-                raise ValueError(f'Unsupported optimizer: {optimizer_name}')
+                raise ValueError(f"Unsupported optimizer: {optimizer_name}")

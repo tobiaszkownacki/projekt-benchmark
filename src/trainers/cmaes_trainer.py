@@ -1,5 +1,5 @@
 from src.trainers.base_trainer import BaseTrainer
-from src.config import Config
+from src.config import BenchmarkConfig
 from src.logging import Log
 import torch
 from torch.utils.data import DataLoader
@@ -13,15 +13,17 @@ class CmaesTrainer(BaseTrainer):
         self,
         model: torch.nn.Module,
         train_dataset: torch.utils.data.TensorDataset,
-        config: Config,
+        config: BenchmarkConfig,
     ):
         all_params = np.concatenate(
             [p.detach().cpu().numpy().ravel() for p in model.parameters()]
         )
         sigma = 0.5
-        train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
+        train_loader = DataLoader(
+            train_dataset, batch_size=config.batch_size, shuffle=True
+        )
         criterion = CrossEntropyLoss()
-        opts = {'seed': config.random_seed}
+        opts = {"seed": config.random_seed}
         optimizer = self._get_optimizer(config.optimizer_config.optimizer_name)(
             all_params, sigma, opts
         )
@@ -30,9 +32,10 @@ class CmaesTrainer(BaseTrainer):
 
         log = Log(
             output_file=f"{self.__class__.__name__}-"
-                        f"{config.dataset_name}-"
-                        f"{config.optimizer_config.optimizer_name}-"
-                        f"{config.batch_size}.csv")
+            f"{config.dataset_name}-"
+            f"{config.optimizer_config.optimizer_name}-"
+            f"{config.batch_size}.csv"
+        )
         epoch_count = 0
         losses_per_epoch = []
         accuracies_per_epoch = []
@@ -55,7 +58,7 @@ class CmaesTrainer(BaseTrainer):
                         losses.append(loss)
 
                     optimizer.tell(solutions, losses)
-                    print(f'Total loss over population for batch {sum(losses):.2f}')
+                    print(f"Total loss over population for batch {sum(losses):.2f}")
                     batch_avg_loss += sum(losses) / len(losses)
                     epoch_loss += batch_avg_loss
 
@@ -70,7 +73,9 @@ class CmaesTrainer(BaseTrainer):
                     total_samples += targets.size(0)
 
                     print(f"Batch average loss (population): {batch_avg_loss:.4f}")
-                    batch_accuracy = 100 * (predicted == targets).sum().item() / targets.size(0)
+                    batch_accuracy = (
+                        100 * (predicted == targets).sum().item() / targets.size(0)
+                    )
                     print(f"Batch accuracy (best individual): {batch_accuracy:.2f}%\n")
 
                 epoch_count += 1
@@ -83,7 +88,7 @@ class CmaesTrainer(BaseTrainer):
                 print(f"Avg loss in epoch: {epoch_avg_loss:.2f}")
                 print(f"CMA-ES model accuracy: {best_accuracy * 100:.2f}%")
                 print(f"The lowest loss: {optimizer.best.f:.2f}\n")
-            
+
         return losses_per_epoch, accuracies_per_epoch
 
     def _get_optimizer(

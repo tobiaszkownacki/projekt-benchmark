@@ -1,0 +1,13 @@
+# This is an example configuration file for training a model using the specified dataset, optimizer, and scheduler.
+# You can modify the parameters as needed and add more
+# to use this file, run the training script with:
+# python3 -m src.train --config-path ../user_configs --config-name my_config from the project root directory.
+# Not described parameters will take default values from the data classes in src/config.py
+
+dataset: cifar10
+optimizer: sgd
+batch_size: 64
+scheduler:
+  name: steplr
+  step_size: 1000
+init_xavier: true

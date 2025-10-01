@@ -1,12 +1,19 @@
+from dataclasses import MISSING
+import hydra
+from omegaconf import OmegaConf
 import torch
 import numpy as np
 import os
-import glob
-from src.config import Config, SchedulerConfig, CMAOptimizerConfig, GradientOptimizerConfig, LBFGSOptimizerConfig, BaseOptimizerConfig
-import sys
+from src.config import (
+    BenchmarkConfig,
+    CMAOptimizerConfig,
+    GradientOptimizerConfig,
+    LBFGSOptimizerConfig,
+    BaseOptimizerConfig,
+)
 from datetime import datetime
 from src.plots import ModelAnalyzer
-from src.arg_parse import get_args
+from src.config import ALLOWED_DATASETS, ALLOWED_OPTIMIZERS, ALLOWED_SCHEDULERS, UserConfig
 from src.dataset import DATA_SETS
 from src.trainers.base_trainer import BaseTrainer
 from src.trainers.gradient_trainer import GradientTrainer
@@ -14,7 +21,7 @@ from src.trainers.cmaes_trainer import CmaesTrainer
 from src.trainers.lbfgs_trainer import LbfgsTrainer
 
 
-def select_training(config: Config) -> BaseTrainer:
+def select_training(config: BenchmarkConfig) -> BaseTrainer:
     match config.optimizer_config:
         case GradientOptimizerConfig():
             return GradientTrainer()
@@ -42,7 +49,7 @@ def get_optimizer_config(optimizer_name: str) -> BaseOptimizerConfig:
 
 def load_weights(model, path):
     try:
-        load_dir = 'weights'
+        load_dir = "weights"
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         state_dict = torch.load(os.path.join(load_dir, path), map_location=device)
 
@@ -61,36 +68,46 @@ def load_weights(model, path):
         raise e
 
 
-def main(arguments):
-    args = get_args(arguments)
+def validate_input(cfg: UserConfig):
+    if cfg.dataset is MISSING or cfg.optimizer is MISSING:
+        raise ValueError("Both dataset and optimizer must be specified.")
+    if cfg.dataset not in ALLOWED_DATASETS:
+        raise ValueError(f"Unsupported dataset: {cfg.dataset}")
+    if cfg.optimizer not in ALLOWED_OPTIMIZERS:
+        raise ValueError(f"Unsupported optimizer: {cfg.optimizer}")
+    if cfg.scheduler.name not in ALLOWED_SCHEDULERS:
+        raise ValueError(f"Unsupported scheduler: {cfg.scheduler}")
 
-    scheduler_config = SchedulerConfig(
-        scheduler_name=args.scheduler,
-        step_size=args.step_size,
-        gamma=args.gamma,
-        patience=args.patience
-    )
+    # print cfg to yaml
+    print("Configuration:")
+    print(OmegaConf.to_yaml(cfg))
 
-    config = Config(
-        dataset_name=args.dataset,
-        scheduler_config=scheduler_config,
-        batch_size=args.batch_size,
-        reaching_count=args.reaching_count,
-        gradient_counter_stop=args.gradient_counter_stop,
-        random_seed=args.random_seed,
-        optimizer_config=get_optimizer_config(args.optimizer),
-        max_epochs=args.max_epochs,
-        save_interval=args.save_interval,
-        initialization_xavier=args.init_xavier
+
+@hydra.main(version_base=None, config_name="user_config")
+def main(cfg: UserConfig):
+
+    cfg = OmegaConf.merge(UserConfig(), cfg)
+    validate_input(cfg)
+    config = BenchmarkConfig(
+        dataset_name=cfg.dataset,
+        scheduler_config=cfg.scheduler,
+        batch_size=cfg.batch_size,
+        reaching_count=cfg.reaching_count,
+        gradient_counter_stop=cfg.gradient_counter_stop,
+        random_seed=cfg.random_seed,
+        optimizer_config=get_optimizer_config(cfg.optimizer),
+        max_epochs=cfg.max_epochs,
+        save_interval=cfg.save_interval,
+        initialization_xavier=cfg.init_xavier,
     )
     torch.manual_seed(config.random_seed)
     np.random.seed(config.random_seed)
 
     model = DATA_SETS[config.dataset_name]["model"]()
-    load_model = args.load_model
+    load_model = cfg.load_model
     if load_model:
         model = load_weights(model, load_model)
-    save_model = args.save_model
+    save_model = cfg.save_model
     data_set = DATA_SETS[config.dataset_name]["data_set"]()
     trainer = select_training(config)
     trainer.train(
@@ -99,12 +116,12 @@ def main(arguments):
         config=config,
     )
     if save_model:
-        save_dir = 'weights'
+        save_dir = "weights"
         current_time = datetime.now().strftime("%Y-%m-%d_%H-%M")
-        name = args.optimizer + "_" + args.dataset + "_" + current_time
+        name = cfg.optimizer + "_" + cfg.dataset + "_" + current_time
         torch.save(model.state_dict(), os.path.join(save_dir, name))
         print(f"Model weights saved to: {save_dir}/{name}")
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    main()

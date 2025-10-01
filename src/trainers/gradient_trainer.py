@@ -1,5 +1,5 @@
 from src.trainers.base_trainer import BaseTrainer
-from src.config import Config, SchedulerConfig
+from src.config import BenchmarkConfig, SchedulerConfig
 from src.logging import Log
 from src.plots import ModelAnalyzer
 import torch
@@ -13,7 +13,7 @@ class GradientTrainer(BaseTrainer):
         self,
         model: torch.nn.Module,
         train_dataset: torch.utils.data.TensorDataset,
-        config: Config,
+        config: BenchmarkConfig,
     ):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -21,18 +21,23 @@ class GradientTrainer(BaseTrainer):
             analyzer = ModelAnalyzer()
             initial_weights = analyzer.capture_initial_weights(model, "xavier_uniform")
 
-        train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
+        train_loader = DataLoader(
+            train_dataset, batch_size=config.batch_size, shuffle=True
+        )
         criterion = CrossEntropyLoss()
-        optimizer = self._get_optimizer(config.optimizer_config.optimizer_name)(model.parameters())
+        optimizer = self._get_optimizer(config.optimizer_config.optimizer_name)(
+            model.parameters()
+        )
         scheduler = self._get_scheduler(config.scheduler_config, optimizer)
-        
+
         log = Log(
             output_file=f"{self.__class__.__name__}-"
-                        f"{config.dataset_name}-"
-                        f"{config.optimizer_config.optimizer_name}-"
-                        f"{config.batch_size}-"
-                        f"{config.scheduler_config.scheduler_name}.csv")
-        
+            f"{config.dataset_name}-"
+            f"{config.optimizer_config.optimizer_name}-"
+            f"{config.batch_size}-"
+            f"{config.scheduler_config.name}.csv"
+        )
+
         gradient_counter = 0
         train_losses = []
         train_accuracies = []
@@ -63,7 +68,9 @@ class GradientTrainer(BaseTrainer):
 
                 log.increment_number_of_samples(targets.size(0))
                 log.increment_mini_batches(1)
-                log.log(round(loss.item(), 4), config.save_interval, round(current_lr, 8))
+                log.log(
+                    round(loss.item(), 4), config.save_interval, round(current_lr, 8)
+                )
 
                 running_loss += loss.item()
                 batch_count += 1
@@ -77,7 +84,7 @@ class GradientTrainer(BaseTrainer):
                 train_losses.append(train_loss)
                 train_accuracy = 100 * correct / total
                 train_accuracies.append(train_accuracy)
-                
+
                 if scheduler is not None:
                     if config.scheduler_config.scheduler_name == "reduceonplateau":
                         scheduler.step(train_loss)
@@ -100,7 +107,7 @@ class GradientTrainer(BaseTrainer):
                     "optimizer": config.optimizer_config.optimizer_name,
                     "scheduler": config.scheduler_config.scheduler_name,
                     "batch_size": config.batch_size,
-                    "gradient_counter_stop": config.gradient_counter_stop
+                    "gradient_counter_stop": config.gradient_counter_stop,
                 }
 
                 analyzer.analyze_model(
@@ -108,7 +115,7 @@ class GradientTrainer(BaseTrainer):
                     config=config_dict,
                     final_loss=final_loss,
                     final_accuracy=final_accuracy,
-                    initialization_type="xavier_uniform"
+                    initialization_type="xavier_uniform",
                 )
 
         return train_losses, train_accuracies
@@ -118,47 +125,45 @@ class GradientTrainer(BaseTrainer):
         optimizer_name: str,
     ) -> callable:
         match optimizer_name:
-            case 'adam':
+            case "adam":
                 return torch.optim.Adam
-            case 'adamw':
+            case "adamw":
                 return torch.optim.AdamW
-            case 'sgd':
+            case "sgd":
                 return torch.optim.SGD
-            case 'rmsprop':
+            case "rmsprop":
                 return torch.optim.RMSprop
             case _:
-                raise ValueError(f'Unsupported optimizer: {optimizer_name}')
-    
+                raise ValueError(f"Unsupported optimizer: {optimizer_name}")
+
     def _get_scheduler(
-            self,
-            scheduler_config: SchedulerConfig,
-            optimizer: torch.optim
+        self, scheduler_config: SchedulerConfig, optimizer: torch.optim
     ) -> callable:
-        match scheduler_config.scheduler_name:
+        match scheduler_config.name:
             case "none":
                 return None
             case "steplr":
                 return torch.optim.lr_scheduler.StepLR(
                     optimizer,
                     step_size=scheduler_config.step_size,
-                    gamma=scheduler_config.gamma
+                    gamma=scheduler_config.gamma,
                 )
             case "exponentiallr":
                 return torch.optim.lr_scheduler.ExponentialLR(
-                    optimizer, 
-                    gamma=scheduler_config.gamma
+                    optimizer, gamma=scheduler_config.gamma
                 )
             case "reduceonplateau":
                 return torch.optim.lr_scheduler.ReduceLROnPlateau(
-                    optimizer, 
-                    mode='min', 
-                    factor=scheduler_config.gamma, 
-                    patience=scheduler_config.patience
+                    optimizer,
+                    mode="min",
+                    factor=scheduler_config.gamma,
+                    patience=scheduler_config.patience,
                 )
             case "cosineannealinglr":
                 return torch.optim.lr_scheduler.CosineAnnealingLR(
-                    optimizer, 
-                    T_max=scheduler_config.step_size
+                    optimizer, T_max=scheduler_config.step_size
                 )
             case _:
-                raise ValueError(f'Unsupported scheduler: {scheduler_config.scheduler_name}')
+                raise ValueError(
+                    f"Unsupported scheduler: {scheduler_config.scheduler_name}"
+                )

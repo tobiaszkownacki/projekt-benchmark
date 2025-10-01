@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import torch
-from src.config import Config
+from src.config import BenchmarkConfig
 
 
 class BaseTrainer(ABC):
@@ -9,7 +9,7 @@ class BaseTrainer(ABC):
         self,
         model: torch.nn.Module,
         train_dataset: torch.utils.data.TensorDataset,
-        config: Config,
+        config: BenchmarkConfig,
     ):
         pass
 
