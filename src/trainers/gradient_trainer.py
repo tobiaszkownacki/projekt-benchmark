@@ -86,7 +86,7 @@ class GradientTrainer(BaseTrainer):
                 train_accuracies.append(train_accuracy)
 
                 if scheduler is not None:
-                    if config.scheduler_config.scheduler_name == "reduceonplateau":
+                    if config.scheduler_config.name == "reduceonplateau":
                         scheduler.step(train_loss)
                     else:
                         scheduler.step()

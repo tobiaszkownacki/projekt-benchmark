@@ -179,4 +179,7 @@ cython_debug/
 .pypirc
 
 # output files
-output/
+outputs/
+
+# user_configs
+user_configs/*.yaml
