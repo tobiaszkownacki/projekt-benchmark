@@ -12,6 +12,9 @@ from datetime import datetime
 from pathlib import Path
 import matplotlib.pyplot as plt
 import seaborn as sns
+from copy import deepcopy
+from src.train import load_weights
+from src.train import evaluate
 
 # def main(
 #     # ---- REPLACE DEFAULT PATHS AS APPROPRIATE ----
@@ -404,3 +407,47 @@ class ModelAnalyzer:
         plot_filename = f"min_weights_comparison_{timestamp}.png"
         plt.savefig(self.output_dir / plot_filename, dpi=300, bbox_inches='tight')
         plt.close()
+
+    
+    def visualization_of_interpolated_models(
+            self,
+            model: torch.nn.Module, 
+            val_loader: torch.utils.data.DataLoader,
+            device: torch.device,
+            criterion: torch.nn.Module,
+            path_to_model1: str = "sgd_heart_disease_2025-10-05_17-39", 
+            path_to_model2: str = "sgd_heart_disease_2025-10-05_17-40"
+    ) -> None:
+        
+        modelA = load_weights(model, path_to_model1)
+        modelB = load_weights(model, path_to_model2)
+        loss = evaluate(modelA, val_loader, criterion)
+        alphas = np.linspace(0, 1, 20)
+        losses = []
+
+        for alpha in alphas:
+            model_interp = self._interpolate_models(modelA, modelB, alpha).to(device)
+            loss = evaluate(model_interp, val_loader, criterion)
+            losses.append(loss)
+            print(f"alfa = {alpha:.2f}, Val Loss = {loss:.8f}")
+
+        plt.figure(figsize=(8,5))
+        plt.plot(alphas, losses, marker='o', color='royalblue')
+        plt.title("Loss Landscape Interpolation between Model A and B")
+        plt.xlabel("alfa (interpolation factor)")
+        plt.ylabel("Validation Loss")
+        min_loss = min(losses)
+        max_loss = max(losses)
+        loss_range = max_loss - min_loss
+        margin = loss_range * 0.05
+        plt.ylim(min_loss - margin, max_loss + margin)
+        plt.grid(True)
+        plt.show()
+
+    
+    def _interpolate_models(modelA, modelB, alpha):
+        model_interp = deepcopy(modelA)
+        with torch.no_grad():
+            for pA, pB, pI in zip(modelA.parameters(), modelB.parameters(), model_interp.parameters()):
+                pI.copy_(alpha * pA + (1 - alpha) * pB)
+        return model_interp

@@ -15,7 +15,6 @@ from src.trainers.gradient_trainer import GradientTrainer
 from src.trainers.cmaes_trainer import CmaesTrainer
 from src.trainers.lbfgs_trainer import LbfgsTrainer
 from src.plots import ModelAnalyzer
-from copy import deepcopy
 from torch.utils.data import DataLoader
 
 def select_training(config: Config) -> BaseTrainer:
@@ -115,7 +114,6 @@ def main(arguments):
     
     load_model = args.load_model
     save_model = args.save_model
-   
     if load_model:
         model = load_weights(model, load_model)
         loss, accuracy = evaluate(model, val_dataset, torch.nn.CrossEntropyLoss())
@@ -174,6 +172,8 @@ def main(arguments):
 
         analysis_files = glob.glob("reports/model_analysis/analysis_*.json")
         analyzer.compare_initializations(analysis_files)
+
+
 
 
 if __name__ == "__main__":
