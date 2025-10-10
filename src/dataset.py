@@ -55,6 +55,11 @@ class DataSetFactory:
             transforms.RandomRotation(degrees=15),
             transforms.RandomCrop(32, padding=4)])
         
+        val_transforms = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+    ])
+
 
         train_set = torchvision.datasets.CIFAR10(
             root=RAW_DATA_DIR / 'cifar10',
@@ -66,6 +71,7 @@ class DataSetFactory:
             root=RAW_DATA_DIR / 'cifar10',
             train=False,
             download=True,
+            transform=val_transforms
         )
         return train_set, val_set
 

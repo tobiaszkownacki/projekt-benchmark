@@ -86,6 +86,61 @@ class ModelAnalyzer:
     
         print(f"Loss plot written in: {self.output_dir / plot_filename}")
 
+    def create_box_plots(self, val_loss_from_results, acc_from_results, config):
+        fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+        sns.boxplot(y=val_loss_from_results, ax=axes[0], color="skyblue",  medianprops={'color': 'red', 'linewidth': 2})
+        axes[0].set_title("Boxplot Val Loss")
+        sns.boxplot(y=acc_from_results, ax=axes[1], color="lightgreen",  medianprops={'color': 'red', 'linewidth': 2})
+        axes[1].set_title("Boxplot Val Accuracy")
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        plot_filename = f"boxplot_plot_{config.dataset_name}_{config.optimizer_config.optimizer_name}_{timestamp}.png"
+        plt.savefig(self.output_dir / "figures" / plot_filename)
+        plt.show()
+    
+
+    def create_violin_plots(self, val_loss_from_results, acc_from_results, config):
+        fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+        sns.violinplot(y=val_loss_from_results, ax=axes[0], color="skyblue",  inner="quartile",
+                   inner_kws=dict(color="red", linewidth=2))
+        
+        axes[0].set_title("Violin Plot Val Loss")
+        sns.violinplot(y=acc_from_results, ax=axes[1], color="lightgreen",  inner="quartile",
+                   inner_kws=dict(color="red", linewidth=2))
+        axes[1].set_title("Violin Plot Accuracy")
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        plot_filename = f"violin_plot_{config.dataset_name}_{config.optimizer_config.optimizer_name}_{timestamp}.png"
+        plt.savefig(self.output_dir / "figures" / plot_filename)
+        plt.show()
+    
+
+    def create_n_seed_losses_plot(self, all_val_losses, config):
+        all_val_losses = np.array(all_val_losses)
+
+        final_losses = all_val_losses[:, -1]
+        median_final = np.median(final_losses)
+        closest_idx = np.argmin(np.abs(final_losses - median_final))
+
+        plt.figure(figsize=(10, 6))
+        for i, loss_curve in enumerate(all_val_losses):
+            if i == closest_idx:
+                plt.plot(loss_curve, color="red", linewidth=2.5, label="Median seed")
+            else:
+                plt.plot(loss_curve, color="gray", alpha=0.5, linewidth=1)
+
+        plt.xlabel("Epoch")
+        plt.ylabel("Validation Loss")
+        plt.title("Validation Loss across seeds")
+        plt.legend()
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        plot_filename = f"n_seed_plot_{config.dataset_name}_{config.optimizer_config.optimizer_name}_{timestamp}.png"
+        plt.savefig(self.output_dir / "figures" / plot_filename)
+        plt.show()
+    
     def analyze_model(self, model: torch.nn.Module, config: Dict[str, Any], 
                      final_loss: float, final_accuracy: float, 
                      initialization_type: str = "default") -> Dict[str, Any]:
@@ -156,7 +211,7 @@ class ModelAnalyzer:
             }
         
         self._save_analysis(analysis, initialization_type)
-        self._create_visualizations(model, analysis, initialization_type)
+        #self._create_visualizations(model, analysis, initialization_type)
         
         return analysis
     
@@ -232,62 +287,120 @@ class ModelAnalyzer:
         
         print(f"Wizualizacja zapisana do: {self.output_dir / plot_filename}")
     
-    def compare_initializations(self, analysis_files: List[str], dataset_to_compare: str, optimizer_to_compare: str):
+
+    def compare_initializations(self, analysis_files: List[str]):
         analyses = []
         
         for file_path in analysis_files:
             with open(file_path, 'r') as f:
                 analysis = json.load(f)
-                if analysis["config"]["dataset"] == dataset_to_compare and analysis["config"]["optimizer"] == optimizer_to_compare:
-                    analyses.append(analysis)
+                analyses.append(analysis)
         
         fig, axes = plt.subplots(2, 2, figsize=(15, 10))
-        fig.suptitle('Porównanie inicjalizacji', fontsize=16)
+        fig.suptitle('Initializations comparsion', fontsize=16)
         
         init_types = [a.get("initialization_type", "unknown") for a in analyses]
         final_losses = [a["final_metrics"]["loss"] for a in analyses]
         final_accuracies = [a["final_metrics"]["accuracy"] for a in analyses]
-        
-        if len(set(init_types)) == 1:
-            for i in range(len(init_types)):
-                init_types[i] = init_types[i] + f"_{i+1}"
+       
         # 1. Porównanie finalnych metryk
         x_pos = range(len(init_types))
         axes[0, 0].bar(x_pos, final_losses, alpha=0.7)
-        axes[0, 0].set_title('Finalna strata')
-        axes[0, 0].set_xlabel('Typ inicjalizacji')
-        axes[0, 0].set_ylabel('Strata')
-        axes[0, 0].set_xticks(x_pos)
-        axes[0, 0].set_xticklabels(init_types, rotation=45)
+        axes[0, 0].set_title('Final loss')
+        axes[0, 0].set_ylabel('Loss')
         
         axes[0, 1].bar(x_pos, final_accuracies, alpha=0.7, color='green')
-        axes[0, 1].set_title('Finalna dokładność')
-        axes[0, 1].set_xlabel('Typ inicjalizacji')
-        axes[0, 1].set_ylabel('Dokładność (%)')
-        axes[0, 1].set_xticks(x_pos)
-        axes[0, 1].set_xticklabels(init_types, rotation=45)
+        axes[0, 1].set_title('Final Accuracy')
+        axes[0, 1].set_ylabel('Accuracy (%)')
+    
         
         # 2. Porównanie statystyk wag
         global_means = [a["global_statistics"]["weights"]["mean"] for a in analyses]
         global_stds = [a["global_statistics"]["weights"]["std"] for a in analyses]
         
         axes[1, 0].bar(x_pos, global_means, alpha=0.7, color='orange')
-        axes[1, 0].set_title('Średnia globalna wag')
-        axes[1, 0].set_xlabel('Typ inicjalizacji')
-        axes[1, 0].set_ylabel('Średnia')
-        axes[1, 0].set_xticks(x_pos)
-        axes[1, 0].set_xticklabels(init_types, rotation=45)
+        axes[1, 0].set_title('Global mean of weights')
+        axes[1, 0].set_ylabel('Mean')
         
         axes[1, 1].bar(x_pos, global_stds, alpha=0.7, color='purple')
-        axes[1, 1].set_title('Odchylenie standardowe wag')
-        axes[1, 1].set_xlabel('Typ inicjalizacji')
+        axes[1, 1].set_title('Standard deviation of weights')
         axes[1, 1].set_ylabel('Std')
-        axes[1, 1].set_xticks(x_pos)
-        axes[1, 1].set_xticklabels(init_types, rotation=45)
         
         plt.tight_layout()
         
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         comparison_filename = f"initialization_comparison_{timestamp}.png"
         plt.savefig(self.output_dir / comparison_filename, dpi=300, bbox_inches='tight')
+        plt.close()
+        
+        print(f"Porównanie zapisane do: {self.output_dir / comparison_filename}")
+
+
+        layer_names = list(analyses[0]["layer_statistics"].keys())
+        num_layers = len(layer_names)
+        
+        fig, axes = plt.subplots(1, num_layers, figsize=(5 * num_layers, 6))
+        fig.suptitle('Porównanie maksymalnych wag per warstwa', fontsize=16)
+        
+        if num_layers == 1:
+            axes = [axes]
+        
+        for layer_idx, layer_name in enumerate(layer_names):
+            max_weights = []
+            
+            for analysis in analyses:
+                if layer_name in analysis["layer_statistics"]:
+                    max_weights.append(analysis["layer_statistics"][layer_name]["max"])
+                else:
+                    max_weights.append(0)
+            
+            x_pos = range(len(init_types))
+            bars = axes[layer_idx].bar(x_pos, max_weights, alpha=0.7, 
+                                    color=plt.cm.tab10(layer_idx))
+            
+            axes[layer_idx].set_title(f'{layer_name.split(".")[-2]}.{layer_name.split(".")[-1]}')
+            axes[layer_idx].set_ylabel('Max waga')
+            axes[layer_idx].grid(True, alpha=0.3)
+            
+            for i, (bar, value) in enumerate(zip(bars, max_weights)):
+                axes[layer_idx].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.001,
+                                    f'{value:.3f}', ha='center', va='bottom', fontsize=8)
+        
+        plt.tight_layout()
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        plot_filename = f"max_weights_comparison_{timestamp}.png"
+        plt.savefig(self.output_dir / plot_filename, dpi=300, bbox_inches='tight')
+        
+
+        fig, axes = plt.subplots(1, num_layers, figsize=(5 * num_layers, 6))
+        fig.suptitle('Porównanie minimalnych wag per warstwa', fontsize=16)
+        
+        if num_layers == 1:
+            axes = [axes]
+        
+        for layer_idx, layer_name in enumerate(layer_names):
+            max_weights = []
+            
+            for analysis in analyses:
+                if layer_name in analysis["layer_statistics"]:
+                    max_weights.append(analysis["layer_statistics"][layer_name]["min"])
+                else:
+                    max_weights.append(0)
+            
+            x_pos = range(len(init_types))
+            bars = axes[layer_idx].bar(x_pos, max_weights, alpha=0.7, 
+                                    color=plt.cm.tab10(layer_idx))
+            
+            axes[layer_idx].set_title(f'{layer_name.split(".")[-2]}.{layer_name.split(".")[-1]}')
+            axes[layer_idx].set_ylabel('Min waga')
+            axes[layer_idx].grid(True, alpha=0.3)
+            
+            for i, (bar, value) in enumerate(zip(bars, max_weights)):
+                axes[layer_idx].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.001,
+                                    f'{value:.3f}', ha='center', va='bottom', fontsize=8)
+        
+        plt.tight_layout()
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        plot_filename = f"min_weights_comparison_{timestamp}.png"
+        plt.savefig(self.output_dir / plot_filename, dpi=300, bbox_inches='tight')
         plt.close()

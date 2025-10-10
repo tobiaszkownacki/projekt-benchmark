@@ -15,6 +15,7 @@ class GradientTrainer(BaseTrainer):
         train_dataset: torch.utils.data.Dataset,
         val_dataset: torch.utils.data.Dataset,
         config: Config,
+        lr: float
     ):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -22,7 +23,7 @@ class GradientTrainer(BaseTrainer):
         val_loader= DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False)
         
         criterion = CrossEntropyLoss()
-        optimizer = self._get_optimizer(config.optimizer_config.optimizer_name)(model.parameters())
+        optimizer = self._get_optimizer(config.optimizer_config.optimizer_name)(model.parameters(), lr=lr)
         scheduler = self._get_scheduler(config.scheduler_config, optimizer)
         
         log = Log(
@@ -124,13 +125,13 @@ class GradientTrainer(BaseTrainer):
 
             analyzer.create_loss_plot(train_losses, val_losses, config, train_accuracies, val_accuracies)
 
-            #analyzer.analyze_model(
-            #     model=model,
-            #     config=config_dict,
-            #     final_loss=final_val_loss,
-            #     final_accuracy=final_val_accuracy,
-            #     initialization_type="xavier_uniform"
-            # )
+            analyzer.analyze_model(
+                model=model,
+                config=config_dict,
+                final_loss=final_val_loss,
+                final_accuracy=final_val_accuracy,
+                initialization_type="xavier_uniform"
+            )
 
     def _validate(self, model, val_loader, criterion, device):
         model.eval()
