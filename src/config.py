@@ -8,6 +8,8 @@ from omegaconf import MISSING
 import random
 from typing import Optional
 from hydra.core.config_store import ConfigStore
+from torch import nn
+from enum import Enum
 
 # from dotenv import load_dotenv
 
@@ -28,9 +30,19 @@ MODELS_DIR = PROJ_ROOT / "models"
 REPORTS_DIR = PROJ_ROOT / "reports"
 FIGURES_DIR = REPORTS_DIR / "figures"
 
+
+class typeOfTask(Enum):
+    CLASSIFICATION = "classification"
+    REGRESSION = "regression"
+
+
 ALLOWED_DATASETS = ["cifar10", "heart_disease", "wine_quality", "digits"]
 ALLOWED_OPTIMIZERS = ["adam", "adamw", "sgd", "rmsprop", "lbfgs", "cma-es"]
 ALLOWED_SCHEDULERS = ["none", "steplr", "exponentiallr", "reduceonplateau", "cosineannealinglr"]
+ALLOWED_CRITERIONS = {
+    typeOfTask.CLASSIFICATION: ["cross_entropy"],
+    typeOfTask.REGRESSION: ["mse_loss", "mae_loss", ]
+}
 
 
 @dataclass
@@ -75,12 +87,14 @@ class BenchmarkConfig:
     max_epochs: int
     save_interval: int
     initialization_xavier: bool
+    criterion: nn.Module
 
 
 @dataclass
 class UserConfig:
     dataset: str = MISSING
     optimizer: str = MISSING
+    criterion: str = MISSING
 
     scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
     batch_size: int = 16

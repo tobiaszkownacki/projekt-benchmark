@@ -24,7 +24,7 @@ class GradientTrainer(BaseTrainer):
         train_loader = DataLoader(
             train_dataset, batch_size=config.batch_size, shuffle=True
         )
-        criterion = CrossEntropyLoss()
+        criterion = config.criterion
         optimizer = self._get_optimizer(config.optimizer_config.optimizer_name)(
             model.parameters()
         )

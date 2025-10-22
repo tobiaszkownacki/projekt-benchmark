@@ -22,7 +22,7 @@ class CmaesTrainer(BaseTrainer):
         train_loader = DataLoader(
             train_dataset, batch_size=config.batch_size, shuffle=True
         )
-        criterion = CrossEntropyLoss()
+        criterion = config.criterion
         opts = {"seed": config.random_seed}
         optimizer = self._get_optimizer(config.optimizer_config.optimizer_name)(
             all_params, sigma, opts

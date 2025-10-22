@@ -5,7 +5,7 @@ Code to download or generate data
 # from pathlib import Path
 import pandas as pd
 import torch
-from src.config import RAW_DATA_DIR
+from src.config import RAW_DATA_DIR, typeOfTask
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import ConcatDataset, Dataset, TensorDataset
@@ -145,17 +145,21 @@ DATA_SETS = {
     "cifar10": {
         "data_set": lambda: DataSetFactory.get_data_set("cifar10"),
         "model": Cifar10,
+        "type_of_task": typeOfTask.CLASSIFICATION,
     },
     "heart_disease": {
         "data_set": lambda: DataSetFactory.get_data_set("heart_disease"),
         "model": HeartDisease,
+        "type_of_task": typeOfTask.CLASSIFICATION,
     },
     "wine_quality": {
         "data_set": lambda: DataSetFactory.get_data_set("wine_quality"),
         "model": WineQuality,
+        "type_of_task": typeOfTask.CLASSIFICATION
     },
     "digits": {
         "data_set": lambda: DataSetFactory.get_data_set("digits"),
         "model": Digits,
+        "type_of_task": typeOfTask.CLASSIFICATION,
     },
 }

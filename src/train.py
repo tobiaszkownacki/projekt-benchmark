@@ -12,13 +12,19 @@ from src.config import (
     BaseOptimizerConfig,
 )
 from datetime import datetime
-from src.plots import ModelAnalyzer
-from src.config import ALLOWED_DATASETS, ALLOWED_OPTIMIZERS, ALLOWED_SCHEDULERS, UserConfig
+from src.config import (
+    ALLOWED_DATASETS,
+    ALLOWED_OPTIMIZERS,
+    ALLOWED_SCHEDULERS,
+    UserConfig,
+)
 from src.dataset import DATA_SETS
 from src.trainers.base_trainer import BaseTrainer
 from src.trainers.gradient_trainer import GradientTrainer
 from src.trainers.cmaes_trainer import CmaesTrainer
 from src.trainers.lbfgs_trainer import LbfgsTrainer
+from src.criterion import CriterionFactory
+from src.config import ALLOWED_CRITERIONS
 
 
 def select_training(config: BenchmarkConfig) -> BaseTrainer:
@@ -78,6 +84,13 @@ def validate_input(cfg: UserConfig):
     if cfg.scheduler.name not in ALLOWED_SCHEDULERS:
         raise ValueError(f"Unsupported scheduler: {cfg.scheduler}")
 
+    typeOfTask = DATA_SETS[cfg.dataset]["type_of_task"]
+    if cfg.criterion not in ALLOWED_CRITERIONS[typeOfTask]:
+        raise ValueError(
+            f"Unsupported criterion: {cfg.criterion} for task type: {typeOfTask}. "
+            f"Allowed criterions are: {ALLOWED_CRITERIONS[typeOfTask]}"
+        )
+
     # print cfg to yaml
     print("Configuration:")
     print(OmegaConf.to_yaml(cfg))
@@ -99,6 +112,7 @@ def main(cfg: UserConfig):
         max_epochs=cfg.max_epochs,
         save_interval=cfg.save_interval,
         initialization_xavier=cfg.init_xavier,
+        criterion=CriterionFactory.get_criterion(cfg.criterion),
     )
     torch.manual_seed(config.random_seed)
     np.random.seed(config.random_seed)
