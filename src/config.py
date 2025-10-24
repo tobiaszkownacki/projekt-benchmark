@@ -36,7 +36,7 @@ class typeOfTask(Enum):
     REGRESSION = "regression"
 
 
-ALLOWED_DATASETS = ["cifar10", "heart_disease", "wine_quality", "digits"]
+ALLOWED_DATASETS = ["cifar10", "heart_disease", "wine_quality", "digits", "abalone"]
 ALLOWED_OPTIMIZERS = ["adam", "adamw", "sgd", "rmsprop", "lbfgs", "cma-es"]
 ALLOWED_SCHEDULERS = ["none", "steplr", "exponentiallr", "reduceonplateau", "cosineannealinglr"]
 ALLOWED_CRITERIONS = {
@@ -74,11 +74,19 @@ class SchedulerConfig:
 
 
 @dataclass
+class GradientOptimizerParams:
+    learning_rate: float = 0.001
+    weight_decay: float = 0.0
+
+
+@dataclass
 class BenchmarkConfig:
     dataset_name: str
     optimizer_config: (
         GradientOptimizerConfig | CMAOptimizerConfig | LBFGSOptimizerConfig
     )
+    criterion: nn.Module
+    gradient_optimizer_params: GradientOptimizerParams
     scheduler_config: SchedulerConfig
     batch_size: int
     reaching_count: int
@@ -87,7 +95,6 @@ class BenchmarkConfig:
     max_epochs: int
     save_interval: int
     initialization_xavier: bool
-    criterion: nn.Module
 
 
 @dataclass
@@ -97,6 +104,7 @@ class UserConfig:
     criterion: str = MISSING
 
     scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
+    gradient_optimizer_params: GradientOptimizerParams = field(default_factory=GradientOptimizerParams)
     batch_size: int = 16
     reaching_count: int = 500
     max_epochs: int = 10

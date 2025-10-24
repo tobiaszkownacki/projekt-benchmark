@@ -26,7 +26,9 @@ class GradientTrainer(BaseTrainer):
         )
         criterion = config.criterion
         optimizer = self._get_optimizer(config.optimizer_config.optimizer_name)(
-            model.parameters()
+            model.parameters(),
+            lr=config.gradient_optimizer_params.learning_rate,
+            weight_decay=config.gradient_optimizer_params.weight_decay,
         )
         scheduler = self._get_scheduler(config.scheduler_config, optimizer)
 

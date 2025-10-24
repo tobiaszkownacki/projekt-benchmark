@@ -104,6 +104,8 @@ def main(cfg: UserConfig):
     config = BenchmarkConfig(
         dataset_name=cfg.dataset,
         scheduler_config=cfg.scheduler,
+        criterion=CriterionFactory.get_criterion(cfg.criterion),
+        gradient_optimizer_params=cfg.gradient_optimizer_params,
         batch_size=cfg.batch_size,
         reaching_count=cfg.reaching_count,
         gradient_counter_stop=cfg.gradient_counter_stop,
@@ -112,7 +114,6 @@ def main(cfg: UserConfig):
         max_epochs=cfg.max_epochs,
         save_interval=cfg.save_interval,
         initialization_xavier=cfg.init_xavier,
-        criterion=CriterionFactory.get_criterion(cfg.criterion),
     )
     torch.manual_seed(config.random_seed)
     np.random.seed(config.random_seed)

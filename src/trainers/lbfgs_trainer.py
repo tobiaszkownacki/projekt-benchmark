@@ -20,7 +20,7 @@ class LbfgsTrainer(BaseTrainer):
         )
         criterion = config.criterion
         optimizer = self._get_optimizer(config.optimizer_config.optimizer_name)(
-            model.parameters()
+            model.parameters(),
         )
         log = Log(
             output_file=f"{self.__class__.__name__}-"
