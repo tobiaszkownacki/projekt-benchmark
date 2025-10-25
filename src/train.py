@@ -7,14 +7,14 @@ import sys
 import matplotlib.pyplot as plt
 import seaborn as sns
 from datetime import datetime
-from src.plots import ModelAnalyzer
+from src.analyzers.model_analyzer import ModelAnalyzer
 from src.arg_parse import get_args
 from src.dataset import DATA_SETS
 from src.trainers.base_trainer import BaseTrainer
 from src.trainers.gradient_trainer import GradientTrainer
 from src.trainers.cmaes_trainer import CmaesTrainer
 from src.trainers.lbfgs_trainer import LbfgsTrainer
-from src.plots import ModelAnalyzer
+from src.analyzers.model_analyzer import ModelAnalyzer
 from torch.utils.data import DataLoader
 
 def select_training(config: Config) -> BaseTrainer:

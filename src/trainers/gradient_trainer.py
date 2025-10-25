@@ -1,7 +1,7 @@
 from src.trainers.base_trainer import BaseTrainer
 from src.config import Config, SchedulerConfig
 from src.logging import Log
-from src.plots import ModelAnalyzer
+from src.analyzers.model_analyzer import ModelAnalyzer
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm

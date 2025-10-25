@@ -4,13 +4,13 @@ class HeartDisease(nn.Module):
     def __init__(self, input_size=13, output_size=5):
         super(HeartDisease, self).__init__()
         self.fc = nn.Sequential(
-            nn.Linear(input_size, 128),
-            nn.ReLU(),
-            nn.Linear(128, 64),
+            nn.Linear(input_size, 64),
             nn.ReLU(),
             nn.Linear(64, 32),
             nn.ReLU(),
-            nn.Linear(32, output_size)
+            nn.Linear(32, 16),
+            nn.ReLU(),
+            nn.Linear(16, output_size)
         )
 
         self._initialize_weights()
