@@ -1,7 +1,6 @@
 from src.trainers.base_trainer import BaseTrainer
 from src.config import BenchmarkConfig, SchedulerConfig
 from src.logging import Log
-from src.analyzers.model_analyzer import ModelAnalyzer
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -16,10 +15,6 @@ class GradientTrainer(BaseTrainer):
         config: BenchmarkConfig,
     ):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-        if config.initialization_xavier:
-            analyzer = ModelAnalyzer()
-            initial_weights = analyzer.capture_initial_weights(model, "xavier_uniform")
 
         train_loader = DataLoader(
             train_dataset, batch_size=config.batch_size, shuffle=True

@@ -6,7 +6,7 @@ from pathlib import Path
 import torch
 import numpy as np
 import json
-from src.config import Config
+from src.config import BenchmarkConfig
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from pathlib import Path
@@ -38,7 +38,7 @@ class ModelAnalyzer:
     def create_loss_plot(self,
                         train_losses: List[float],
                         val_losses: List[float],
-                        config: Config, 
+                        config: BenchmarkConfig, 
                         train_accuracies: Optional[List[float]] = None,
                         val_accuracies: Optional[List[float]] = None
                         ):

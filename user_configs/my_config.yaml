@@ -9,5 +9,5 @@ optimizer: sgd
 batch_size: 64
 scheduler:
   name: steplr
-  step_size: 1000
-init_xavier: true
+  step_size: 5
+init_xavier: false

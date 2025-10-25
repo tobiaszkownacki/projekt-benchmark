@@ -100,6 +100,7 @@ def main(cfg: UserConfig):
         initialization_xavier=cfg.init_xavier,
     )
     np.random.seed(config.random_seed)
+    torch.manual_seed(config.random_seed)
 
     model = DATA_SETS[config.dataset_name]["model"]()
     load_model = cfg.load_model
