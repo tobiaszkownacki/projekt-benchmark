@@ -1,7 +1,7 @@
 from src.trainers.base_trainer import BaseTrainer
 from src.config import BenchmarkConfig, SchedulerConfig
 from src.logging import Log
-from src.plots import ModelAnalyzer
+from src.analyzers.model_analyzer import ModelAnalyzer
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -66,11 +66,8 @@ class GradientTrainer(BaseTrainer):
 
                 current_lr = optimizer.param_groups[0]["lr"]
 
-                log.increment_number_of_samples(targets.size(0))
-                log.increment_mini_batches(1)
-                log.log(
-                    round(loss.item(), 4), config.save_interval, round(current_lr, 8)
-                )
+                log.add_number_of_samples(targets.size(0))
+                log.log(round(loss.item(), 4), config.save_interval, round(current_lr, 8))
 
                 running_loss += loss.item()
                 batch_count += 1
@@ -78,6 +75,8 @@ class GradientTrainer(BaseTrainer):
                 _, predicted = torch.max(output, 1)
                 total += targets.size(0)
                 correct += (predicted == targets).sum().item()
+
+
             print(f"Gradient counter: {gradient_counter}")
             if batch_count > 0:
                 train_loss = running_loss / batch_count
@@ -96,29 +95,29 @@ class GradientTrainer(BaseTrainer):
                 print(f"Learning rate: {current_lr:.8f}")
             else:
                 print("No samples processes in this epoch")
+        
 
-        if config.initialization_xavier:
-            if train_losses and train_accuracies:
-                final_loss = train_losses[-1]
-                final_accuracy = train_accuracies[-1]
-
-                config_dict = {
-                    "dataset": config.dataset_name,
-                    "optimizer": config.optimizer_config.optimizer_name,
-                    "scheduler": config.scheduler_config.scheduler_name,
-                    "batch_size": config.batch_size,
-                    "gradient_counter_stop": config.gradient_counter_stop,
-                }
-
-                analyzer.analyze_model(
-                    model=model,
-                    config=config_dict,
-                    final_loss=final_loss,
-                    final_accuracy=final_accuracy,
-                    initialization_type="xavier_uniform",
-                )
-
-        return train_losses, train_accuracies
+    def _validate(self, model, val_loader, criterion, device):
+        model.eval()
+        val_loss = 0.0
+        correct = 0
+        total = 0
+        
+        with torch.no_grad():
+            for inputs, targets in val_loader:
+                inputs, targets = inputs.to(device), targets.to(device)
+                outputs = model(inputs)
+                loss = criterion(outputs, targets)
+                
+                val_loss += loss.item()
+                _, predicted = torch.max(outputs, 1)
+                total += targets.size(0)
+                correct += (predicted == targets).sum().item()
+        
+        avg_val_loss = val_loss / len(val_loader)
+        val_accuracy = 100 * correct / total
+        
+        return avg_val_loss, val_accuracy
 
     def _get_optimizer(
         self,

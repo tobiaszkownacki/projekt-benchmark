@@ -19,7 +19,8 @@ from src.trainers.base_trainer import BaseTrainer
 from src.trainers.gradient_trainer import GradientTrainer
 from src.trainers.cmaes_trainer import CmaesTrainer
 from src.trainers.lbfgs_trainer import LbfgsTrainer
-
+from src.analyzers.model_analyzer import ModelAnalyzer
+from torch.utils.data import DataLoader
 
 def select_training(config: BenchmarkConfig) -> BaseTrainer:
     match config.optimizer_config:
@@ -100,7 +101,6 @@ def main(cfg: UserConfig):
         save_interval=cfg.save_interval,
         initialization_xavier=cfg.init_xavier,
     )
-    torch.manual_seed(config.random_seed)
     np.random.seed(config.random_seed)
 
     model = DATA_SETS[config.dataset_name]["model"]()

@@ -52,8 +52,7 @@ class LbfgsTrainer(BaseTrainer):
                     return loss
 
                 loss = optimizer.step(closure)
-                log.increment_number_of_samples(inputs.size(0))
-                log.increment_mini_batches(1)
+                log.add_number_of_samples(inputs.size(0))
                 log.log(round(loss.item(), 4), config.save_interval)
 
                 gradient_counter += 1
