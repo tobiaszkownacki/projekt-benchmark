@@ -12,15 +12,13 @@ from src.config import (
     BaseOptimizerConfig,
 )
 from datetime import datetime
-from src.plots import ModelAnalyzer
 from src.config import ALLOWED_DATASETS, ALLOWED_OPTIMIZERS, ALLOWED_SCHEDULERS, UserConfig
 from src.dataset import DATA_SETS
 from src.trainers.base_trainer import BaseTrainer
 from src.trainers.gradient_trainer import GradientTrainer
 from src.trainers.cmaes_trainer import CmaesTrainer
 from src.trainers.lbfgs_trainer import LbfgsTrainer
-from src.analyzers.model_analyzer import ModelAnalyzer
-from torch.utils.data import DataLoader
+
 
 def select_training(config: BenchmarkConfig) -> BaseTrainer:
     match config.optimizer_config:
