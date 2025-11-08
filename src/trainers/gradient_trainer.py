@@ -5,7 +5,7 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from torch.nn import CrossEntropyLoss
-
+from src.optimizers.lion_optimizers.lion_pytorch import Lion
 
 class GradientTrainer(BaseTrainer):
     def train(
@@ -125,6 +125,8 @@ class GradientTrainer(BaseTrainer):
                 return torch.optim.AdamW
             case "sgd":
                 return torch.optim.SGD
+            case "lion":
+                return Lion
             case "rmsprop":
                 return torch.optim.RMSprop
             case _:
