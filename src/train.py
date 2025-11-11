@@ -36,7 +36,7 @@ def select_training(config: BenchmarkConfig) -> BaseTrainer:
 
 def get_optimizer_config(optimizer_name: str) -> BaseOptimizerConfig:
     match optimizer_name:
-        case name if name in ["adam", "adamw", "sgd", "rmsprop","lion"]:
+        case name if name in ["adam", "adamw", "sgd", "rmsprop", "lion"]:
             return GradientOptimizerConfig(optimizer_name=optimizer_name)
         case "cma-es":
             return CMAOptimizerConfig(optimizer_name=optimizer_name)

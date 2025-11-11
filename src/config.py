@@ -29,8 +29,14 @@ REPORTS_DIR = PROJ_ROOT / "reports"
 FIGURES_DIR = REPORTS_DIR / "figures"
 
 ALLOWED_DATASETS = ["cifar10", "heart_disease", "wine_quality", "digits"]
-ALLOWED_OPTIMIZERS = ["adam", "adamw", "sgd", "rmsprop", "lbfgs", "cma-es","lion"]
-ALLOWED_SCHEDULERS = ["none", "steplr", "exponentiallr", "reduceonplateau", "cosineannealinglr"]
+ALLOWED_OPTIMIZERS = ["adam", "adamw", "sgd", "rmsprop", "lbfgs", "cma-es", "lion"]
+ALLOWED_SCHEDULERS = [
+    "none",
+    "steplr",
+    "exponentiallr",
+    "reduceonplateau",
+    "cosineannealinglr",
+]
 
 
 @dataclass
