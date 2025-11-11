@@ -18,7 +18,6 @@ class Log:
         self.number_of_samples += num
         self._increment_mini_batches()
 
-
     def log(self, train_loss: float, save_interval: int, learning_rate: float = "none"):
         self.records.append(
             (
