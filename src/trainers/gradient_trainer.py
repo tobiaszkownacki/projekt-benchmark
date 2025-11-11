@@ -1,5 +1,5 @@
 from src.trainers.base_trainer import BaseTrainer
-from src.config import BenchmarkConfig, SchedulerConfig
+from src.config import BenchmarkConfig, OptimizerParams, SchedulerConfig
 from src.logging import Log
 import torch
 from torch.utils.data import DataLoader
@@ -21,15 +21,16 @@ class GradientTrainer(BaseTrainer):
             train_dataset, batch_size=config.batch_size, shuffle=True
         )
         criterion = CrossEntropyLoss()
-        optimizer = self._get_optimizer(config.optimizer_config.optimizer_name)(
-            model.parameters()
+        optimizer = self._get_optimizer()(
+            model.parameters(),
+            **self.params,
         )
         scheduler = self._get_scheduler(config.scheduler_config, optimizer)
 
         log = Log(
             output_file=f"{self.__class__.__name__}-"
             f"{config.dataset_name}-"
-            f"{config.optimizer_config.optimizer_name}-"
+            f"{self.name}-"
             f"{config.batch_size}-"
             f"{config.scheduler_config.name}.csv"
         )
@@ -116,10 +117,9 @@ class GradientTrainer(BaseTrainer):
         return avg_val_loss, val_accuracy
 
     def _get_optimizer(
-        self,
-        optimizer_name: str,
+        self
     ) -> callable:
-        match optimizer_name:
+        match self.name:
             case "adam":
                 return torch.optim.Adam
             case "adamw":
@@ -131,7 +131,48 @@ class GradientTrainer(BaseTrainer):
             case "rmsprop":
                 return torch.optim.RMSprop
             case _:
-                raise ValueError(f"Unsupported optimizer: {optimizer_name}")
+                raise ValueError(f"Unsupported optimizer: {self.optimizer_name}")
+
+    def _get_optimizer_params(self, optimizer_params: OptimizerParams) -> dict:
+        params = {
+            "lr": optimizer_params.lr,
+            "weight_decay": optimizer_params.weight_decay,
+        }
+        match self.name:
+            case "sgd":
+                params.update(
+                    {
+                        "momentum": optimizer_params.momentum,
+                        "dampening": optimizer_params.dampening,
+                        "maximize": optimizer_params.maximize,
+                    }
+                )
+            case "adam" | "adamw":
+                params.update(
+                    {
+                        "betas": optimizer_params.betas,
+                        "eps": optimizer_params.eps,
+                        "maximize": optimizer_params.maximize,
+                    }
+                )
+            case "rmsprop":
+                params.update(
+                    {
+                        "momentum": optimizer_params.momentum,
+                        "alpha": optimizer_params.alpha,
+                        "centered": optimizer_params.centered,
+                        "maximize": optimizer_params.maximize,
+                    }
+                )
+            case "lion":
+                params.update(
+                    {
+                        "betas": optimizer_params.betas,
+                        "weight_decay": optimizer_params.weight_decay,
+                    }
+                )
+        print(params)
+        return params
 
     def _get_scheduler(
         self, scheduler_config: SchedulerConfig, optimizer: torch.optim

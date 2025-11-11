@@ -116,7 +116,7 @@ class ModelAnalyzer:
         plt.tight_layout()
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        plot_filename = f"loss_plot_{config.dataset_name}_{config.optimizer_config.optimizer_name}_{timestamp}.png"
+        plot_filename = f"loss_plot_{config.dataset_name}_{config.optimizer_trainer.name}_{timestamp}.png"
         plt.savefig(self.output_dir / plot_filename, dpi=300, bbox_inches="tight")
         plt.close()
 
@@ -141,7 +141,7 @@ class ModelAnalyzer:
         axes[1].set_title("Boxplot Val Accuracy")
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        plot_filename = f"boxplot_plot_{config.dataset_name}_{config.optimizer_config.optimizer_name}_{timestamp}.png"
+        plot_filename = f"boxplot_plot_{config.dataset_name}_{config.optimizer_trainer.name}_{timestamp}.png"
         plt.savefig(self.output_dir / "figures" / plot_filename)
         plt.show()
 
@@ -167,7 +167,7 @@ class ModelAnalyzer:
         axes[1].set_title("Violin Plot Accuracy")
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        plot_filename = f"violin_plot_{config.dataset_name}_{config.optimizer_config.optimizer_name}_{timestamp}.png"
+        plot_filename = f"violin_plot_{config.dataset_name}_{config.optimizer_trainer.name}_{timestamp}.png"
         plt.savefig(self.output_dir / "figures" / plot_filename)
         plt.show()
 
@@ -191,7 +191,7 @@ class ModelAnalyzer:
         plt.legend()
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        plot_filename = f"n_seed_plot_{config.dataset_name}_{config.optimizer_config.optimizer_name}_{timestamp}.png"
+        plot_filename = f"n_seed_plot_{config.dataset_name}_{config.optimizer_trainer.name}_{timestamp}.png"
         plt.savefig(self.output_dir / "figures" / plot_filename)
         plt.show()
 

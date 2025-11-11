@@ -9,6 +9,7 @@ import random
 from typing import Optional
 from hydra.core.config_store import ConfigStore
 
+
 # from dotenv import load_dotenv
 
 # Load environment variables from .env file if it exists
@@ -40,26 +41,6 @@ ALLOWED_SCHEDULERS = [
 
 
 @dataclass
-class BaseOptimizerConfig:
-    optimizer_name: str
-
-
-@dataclass
-class GradientOptimizerConfig(BaseOptimizerConfig):
-    optimizer_name = "adam"
-
-
-@dataclass
-class CMAOptimizerConfig(BaseOptimizerConfig):
-    optimizer_name = "cma-es"
-
-
-@dataclass
-class LBFGSOptimizerConfig(BaseOptimizerConfig):
-    optimizer_name = "lbfgs"
-
-
-@dataclass
 class SchedulerConfig:
     name: str = "none"
     step_size: int = 10
@@ -68,11 +49,22 @@ class SchedulerConfig:
 
 
 @dataclass
+class OptimizerParams:
+    lr: float = 0.001
+    weight_decay: float = 0.0
+    momentum: float = 0
+    betas: tuple = (0.9, 0.999)
+    eps: float = 1e-08
+    dampening: float = 0
+    maximize: bool = False
+    alpha: float = 0.99
+    centered: bool = False
+
+
+@dataclass
 class BenchmarkConfig:
     dataset_name: str
-    optimizer_config: (
-        GradientOptimizerConfig | CMAOptimizerConfig | LBFGSOptimizerConfig
-    )
+    optimizer_trainer: object
     scheduler_config: SchedulerConfig
     batch_size: int
     reaching_count: int
@@ -89,6 +81,7 @@ class UserConfig:
     optimizer: str = MISSING
 
     scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
+    optimizer_params: OptimizerParams = field(default_factory=OptimizerParams)
     batch_size: int = 16
     reaching_count: int = 500
     max_epochs: int = 10
