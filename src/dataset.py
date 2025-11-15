@@ -15,6 +15,8 @@ from models.cifar10 import Cifar10
 from models.heart_disease import HeartDisease
 from models.wine_quality import WineQuality
 from models.digits import Digits
+from datasets import load_dataset
+from transformers import AutoTokenizer
 
 
 # def main(
@@ -140,6 +142,52 @@ class DataSetFactory:
         
         return full_dataset
 
+    @classmethod
+    def _get_wmt_german_to_english_data_set(cls) -> ConcatDataset:
+        dir = RAW_DATA_DIR / "wmt14"
+        dir.mkdir(parents=True, exist_ok=True)
+        ds = load_dataset(
+            "wmt/wmt14", 
+            "de-en",
+            cache_dir=str(dir),
+            trust_remote_code=True
+        )
+        train_size = 10000
+        train_ds = ds['train'].select(range(train_size))
+        example = ds['train'][0]
+        print(f"German: {example['translation']['de']}")
+        print(f"English: {example['translation']['en']}")
+        
+        tokenizer = AutoTokenizer.from_pretrained("bert-base-german-cased")
+        def tokenize_batch(examples):
+            de_texts = [ex['de'] for ex in examples['translation']]
+            en_texts = [ex['en'] for ex in examples['translation']]
+            
+            de_tokens = tokenizer(de_texts, padding='max_length', 
+                                truncation=True, max_length=128, 
+                                return_tensors='pt')
+            en_tokens = tokenizer(en_texts, padding='max_length',
+                                truncation=True, max_length=128,
+                                return_tensors='pt')
+            
+            return de_tokens['input_ids'], en_tokens['input_ids']
+    
+        print("Tokenizing train set...")
+        train_de_ids = []
+        train_en_ids = []
+        
+        for i in range(0, len(train_ds), 100):
+            batch = train_ds[i:min(i+100, len(train_ds))]
+            de_ids, en_ids = tokenize_batch(batch)
+            train_de_ids.append(de_ids)
+            train_en_ids.append(en_ids)
+        
+        train_de_tensor = torch.cat(train_de_ids, dim=0)
+        train_en_tensor = torch.cat(train_en_ids, dim=0)
+        print(train_de_tensor[:2])
+
+        train_dataset = TensorDataset(train_de_tensor, train_en_tensor)
+        return train_dataset
 
 DATA_SETS = {
     "cifar10": {
@@ -158,4 +206,8 @@ DATA_SETS = {
         "data_set": lambda: DataSetFactory.get_data_set("digits"),
         "model": Digits,
     },
+    # "wmt_german_to_english" : {
+    #     "data_set" : lambda: DataSetFactory.get_data_set("wmt_german_to_english"),
+    #     "model": WmtGermanToEnglish
+    # }
 }

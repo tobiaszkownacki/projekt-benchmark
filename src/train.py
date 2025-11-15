@@ -20,6 +20,7 @@ from src.trainers.cmaes_trainer import CmaesTrainer
 from src.trainers.lbfgs_trainer import LbfgsTrainer
 
 
+
 def select_training(config: BenchmarkConfig) -> BaseTrainer:
     match config.optimizer_config:
         case GradientOptimizerConfig():
@@ -99,6 +100,7 @@ def main(cfg: UserConfig):
         save_interval=cfg.save_interval,
         initialization_xavier=cfg.init_xavier,
     )
+    
     np.random.seed(config.random_seed)
     torch.manual_seed(config.random_seed)
 
