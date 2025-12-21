@@ -24,7 +24,7 @@ class GradientTrainer(BaseTrainer):
         train_loader = DataLoader(
             train_dataset, batch_size=config.batch_size, shuffle=True
         )
-        criterion = config.criterion
+        criterion = config.criterion()
         optimizer = self._get_optimizer(config.optimizer_config.optimizer_name)(
             model.parameters(),
             lr=config.gradient_optimizer_params.learning_rate,
@@ -94,7 +94,7 @@ class GradientTrainer(BaseTrainer):
                         scheduler.step()
 
                 current_lr = optimizer.param_groups[0]["lr"]
-                print(f"Train loss: {train_loss}, Train accuracy: {train_accuracy}")
+                print(f"Train loss: {train_loss}")
                 print(f"Learning rate: {current_lr:.8f}")
             else:
                 print("No samples processes in this epoch")

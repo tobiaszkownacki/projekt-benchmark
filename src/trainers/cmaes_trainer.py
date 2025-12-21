@@ -3,7 +3,6 @@ from src.config import BenchmarkConfig
 from src.logging import Log
 import torch
 from torch.utils.data import DataLoader
-from torch.nn import CrossEntropyLoss
 import cma
 import numpy as np
 
@@ -22,13 +21,11 @@ class CmaesTrainer(BaseTrainer):
         train_loader = DataLoader(
             train_dataset, batch_size=config.batch_size, shuffle=True
         )
-        criterion = config.criterion
+        criterion = config.criterion()
         opts = {"seed": config.random_seed}
         optimizer = self._get_optimizer(config.optimizer_config.optimizer_name)(
             all_params, sigma, opts
         )
-        starting_accuracy = self.predict(model, train_loader)
-        print(f"Starting accuracy: {starting_accuracy * 100:.2f}%")
 
         log = Log(
             output_file=f"{self.__class__.__name__}-"
@@ -72,11 +69,7 @@ class CmaesTrainer(BaseTrainer):
                     correct_total += (predicted == targets).sum().item()
                     total_samples += targets.size(0)
 
-                    print(f"Batch average loss (population): {batch_avg_loss:.4f}")
-                    batch_accuracy = (
-                        100 * (predicted == targets).sum().item() / targets.size(0)
-                    )
-                    print(f"Batch accuracy (best individual): {batch_accuracy:.2f}%\n")
+                    print(f"Batch average loss (population): {batch_avg_loss:.4f}\n")
 
                 epoch_count += 1
                 epoch_avg_loss = epoch_loss / len(train_loader)
@@ -86,7 +79,6 @@ class CmaesTrainer(BaseTrainer):
                 accuracies_per_epoch.append(best_accuracy)
                 print("\nEPOCH SUMMARY")
                 print(f"Avg loss in epoch: {epoch_avg_loss:.2f}")
-                print(f"CMA-ES model accuracy: {best_accuracy * 100:.2f}%")
                 print(f"The lowest loss: {optimizer.best.f:.2f}\n")
 
         return losses_per_epoch, accuracies_per_epoch
