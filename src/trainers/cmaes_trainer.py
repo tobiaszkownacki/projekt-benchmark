@@ -1,3 +1,4 @@
+from typing import override
 from src.trainers.base_trainer import BaseTrainer
 from src.config import BenchmarkConfig
 from src.logging import Log
@@ -6,34 +7,37 @@ from torch.utils.data import DataLoader
 from torch.nn import CrossEntropyLoss
 import cma
 import numpy as np
+from torch.nn.utils import parameters_to_vector
 
 
 class CmaesTrainer(BaseTrainer):
+    @override
     def train(
         self,
         model: torch.nn.Module,
         train_dataset: torch.utils.data.TensorDataset,
         config: BenchmarkConfig,
     ):
-        all_params = np.concatenate(
-            [p.detach().cpu().numpy().ravel() for p in model.parameters()]
-        )
-        sigma = 0.5
+        vec_params = parameters_to_vector(model.parameters())
+        all_params = vec_params.detach().cpu().numpy()
+
         train_loader = DataLoader(
             train_dataset, batch_size=config.batch_size, shuffle=True
         )
         criterion = CrossEntropyLoss()
-        opts = {"seed": config.random_seed}
-        optimizer = self._get_optimizer(config.optimizer_config.optimizer_name)(
-            all_params, sigma, opts
-        )
+        sigma = self.params["sigma"]
+        opts = {
+            "seed": config.random_seed,
+            **{k: v for k, v in self.params.items() if k != "sigma"},
+        }
+        optimizer = self._get_optimizer(self.name)(all_params, sigma, opts)
         starting_accuracy = self.predict(model, train_loader)
         print(f"Starting accuracy: {starting_accuracy * 100:.2f}%")
 
         log = Log(
             output_file=f"{self.__class__.__name__}-"
             f"{config.dataset_name}-"
-            f"{config.optimizer_config.optimizer_name}-"
+            f"{self.name}-"
             f"{config.batch_size}.csv"
         )
         epoch_count = 0
@@ -90,6 +94,7 @@ class CmaesTrainer(BaseTrainer):
 
         return losses_per_epoch, accuracies_per_epoch
 
+    @override
     def _get_optimizer(
         self,
         optimizer_name: str,
@@ -99,6 +104,20 @@ class CmaesTrainer(BaseTrainer):
                 return cma.CMAEvolutionStrategy
             case _:
                 raise ValueError(f"Unsupported optimizer: {optimizer_name}")
+
+    @override
+    def _get_optimizer_params(
+        self,
+        optimizer_params,
+    ) -> dict:
+        self.sigma = optimizer_params.sigma
+        dict_params = {
+            "sigma": optimizer_params.sigma,
+            "CMA_diagonal": optimizer_params.cma_diagonal,
+        }
+        if optimizer_params.population_size is not None:
+            dict_params["popsize"] = optimizer_params.population_size
+        return dict_params
 
     def predict(
         self,
@@ -127,6 +146,6 @@ class CmaesTrainer(BaseTrainer):
         for param in model.parameters():
             numel = param.numel()
             param.data.copy_(
-                torch.from_numpy(params[idx: idx + numel].reshape(param.shape))
+                torch.from_numpy(params[idx : idx + numel].reshape(param.shape))
             )
             idx += numel

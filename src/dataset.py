@@ -70,7 +70,7 @@ class DataSetFactory:
             download=True,
             transform=train_transforms,
         )
-        return train_set
+        return ConcatDataset([train_set, test_set])
 
     @classmethod
     def _get_heart_disease_data_set(cls) -> ConcatDataset:
@@ -89,7 +89,6 @@ class DataSetFactory:
         y = df["target"]
 
         scaler = StandardScaler()
-        
         X = scaler.fit_transform(X)
 
         X_train_tensor = torch.tensor(X, dtype=torch.float32)
@@ -136,8 +135,7 @@ class DataSetFactory:
 
         X_tensor = X_tensor / 16.0  # digits data is originally in range [0, 16]
 
-        full_dataset = TensorDataset(X_tensor, y_tensor)\
-        
+        full_dataset = TensorDataset(X_tensor, y_tensor)
         return full_dataset
 
 

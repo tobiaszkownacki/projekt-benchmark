@@ -1,3 +1,4 @@
+from typing import override
 from src.trainers.base_trainer import BaseTrainer
 from src.config import BenchmarkConfig
 from src.logging import Log
@@ -8,6 +9,7 @@ from torch.nn import CrossEntropyLoss
 
 
 class LbfgsTrainer(BaseTrainer):
+    @override
     def train(
         self,
         model: torch.nn.Module,
@@ -19,13 +21,11 @@ class LbfgsTrainer(BaseTrainer):
             train_dataset, batch_size=config.batch_size, shuffle=True
         )
         criterion = CrossEntropyLoss()
-        optimizer = self._get_optimizer(config.optimizer_config.optimizer_name)(
-            model.parameters()
-        )
+        optimizer = self._get_optimizer()(model.parameters(), **self.params)
         log = Log(
             output_file=f"{self.__class__.__name__}-"
             f"{config.dataset_name}-"
-            f"{config.optimizer_config.optimizer_name}-"
+            f"{self.name}-"
             f"{config.batch_size}.csv"
         )
         gradient_counter = 0
@@ -72,12 +72,22 @@ class LbfgsTrainer(BaseTrainer):
             print(f"Train loss: {train_loss}, Train accuracy: {train_accuracy}")
         return train_losses, train_accuracies
 
+    @override
     def _get_optimizer(
         self,
-        optimizer_name: str,
     ) -> callable:
-        match optimizer_name:
+        match self.name:
             case "lbfgs":
                 return torch.optim.LBFGS
             case _:
-                raise ValueError(f"Unsupported optimizer: {optimizer_name}")
+                raise ValueError(f"Unsupported optimizer: {self.name}")
+
+    @override
+    def _get_optimizer_params(
+        self,
+        optimizer_params,
+    ) -> dict:
+        params = {
+            "lr": optimizer_params.lr,
+        }
+        return params

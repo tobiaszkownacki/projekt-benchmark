@@ -1,4 +1,3 @@
-from dataclasses import MISSING
 import hydra
 from omegaconf import OmegaConf
 import torch
@@ -6,13 +5,15 @@ import numpy as np
 import os
 from src.config import (
     BenchmarkConfig,
-    CMAOptimizerConfig,
-    GradientOptimizerConfig,
-    LBFGSOptimizerConfig,
-    BaseOptimizerConfig,
+    OptimizerParams,
 )
 from datetime import datetime
-from src.config import ALLOWED_DATASETS, ALLOWED_OPTIMIZERS, ALLOWED_SCHEDULERS, UserConfig
+from src.config import (
+    ALLOWED_DATASETS,
+    ALLOWED_OPTIMIZERS,
+    ALLOWED_SCHEDULERS,
+    UserConfig,
+)
 from src.dataset import DATA_SETS
 from src.trainers.base_trainer import BaseTrainer
 from src.trainers.gradient_trainer import GradientTrainer
@@ -20,30 +21,18 @@ from src.trainers.cmaes_trainer import CmaesTrainer
 from src.trainers.lbfgs_trainer import LbfgsTrainer
 
 
-def select_training(config: BenchmarkConfig) -> BaseTrainer:
-    match config.optimizer_config:
-        case GradientOptimizerConfig():
-            return GradientTrainer()
-        case CMAOptimizerConfig():
-            return CmaesTrainer()
-        case LBFGSOptimizerConfig():
-            return LbfgsTrainer()
-        case _:
-            raise ValueError(
-                f"Unsupported optimizer configuration: {config.optimizer_config.optimizer_name}"
-            )
-
-
-def get_optimizer_config(optimizer_name: str) -> BaseOptimizerConfig:
+def select_training(
+    optimizer_name: str, optimizer_params: OptimizerParams
+) -> BaseTrainer:
     match optimizer_name:
-        case name if name in ["adam", "adamw", "sgd", "rmsprop","lion"]:
-            return GradientOptimizerConfig(optimizer_name=optimizer_name)
+        case name if name in ["adam", "adamw", "sgd", "rmsprop", "lion"]:
+            return GradientTrainer(optimizer_name, optimizer_params)
         case "cma-es":
-            return CMAOptimizerConfig(optimizer_name=optimizer_name)
+            return CmaesTrainer(optimizer_name, optimizer_params)
         case "lbfgs":
-            return LBFGSOptimizerConfig(optimizer_name=optimizer_name)
+            return LbfgsTrainer(optimizer_name, optimizer_params)
         case _:
-            raise ValueError(f"Unsupported optimizer: {optimizer_name}")
+            raise ValueError(f"Unsupported optimizer configuration: {optimizer_name}")
 
 
 def load_weights(model, path):
@@ -68,7 +57,7 @@ def load_weights(model, path):
 
 
 def validate_input(cfg: UserConfig):
-    if cfg.dataset is MISSING or cfg.optimizer is MISSING:
+    if OmegaConf.is_missing(cfg, "dataset") or OmegaConf.is_missing(cfg, "optimizer"):
         raise ValueError("Both dataset and optimizer must be specified.")
     if cfg.dataset not in ALLOWED_DATASETS:
         raise ValueError(f"Unsupported dataset: {cfg.dataset}")
@@ -89,12 +78,12 @@ def main(cfg: UserConfig):
     validate_input(cfg)
     config = BenchmarkConfig(
         dataset_name=cfg.dataset,
+        optimizer_trainer=select_training(cfg.optimizer, cfg.optimizer_params),
         scheduler_config=cfg.scheduler,
         batch_size=cfg.batch_size,
         reaching_count=cfg.reaching_count,
         gradient_counter_stop=cfg.gradient_counter_stop,
         random_seed=cfg.random_seed,
-        optimizer_config=get_optimizer_config(cfg.optimizer),
         max_epochs=cfg.max_epochs,
         save_interval=cfg.save_interval,
         initialization_xavier=cfg.init_xavier,
@@ -108,8 +97,7 @@ def main(cfg: UserConfig):
         model = load_weights(model, load_model)
     save_model = cfg.save_model
     data_set = DATA_SETS[config.dataset_name]["data_set"]()
-    trainer = select_training(config)
-    trainer.train(
+    config.optimizer_trainer.train(
         model=model,
         train_dataset=data_set,
         config=config,
