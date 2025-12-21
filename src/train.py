@@ -1,4 +1,3 @@
-from dataclasses import MISSING
 import hydra
 from omegaconf import OmegaConf
 import torch
@@ -9,7 +8,12 @@ from src.config import (
     OptimizerParams,
 )
 from datetime import datetime
-from src.config import ALLOWED_DATASETS, ALLOWED_OPTIMIZERS, ALLOWED_SCHEDULERS, UserConfig
+from src.config import (
+    ALLOWED_DATASETS,
+    ALLOWED_OPTIMIZERS,
+    ALLOWED_SCHEDULERS,
+    UserConfig,
+)
 from src.dataset import DATA_SETS
 from src.trainers.base_trainer import BaseTrainer
 from src.trainers.gradient_trainer import GradientTrainer
@@ -17,7 +21,9 @@ from src.trainers.cmaes_trainer import CmaesTrainer
 from src.trainers.lbfgs_trainer import LbfgsTrainer
 
 
-def select_training(optimizer_name: str, optimizer_params: OptimizerParams) -> BaseTrainer:
+def select_training(
+    optimizer_name: str, optimizer_params: OptimizerParams
+) -> BaseTrainer:
     match optimizer_name:
         case name if name in ["adam", "adamw", "sgd", "rmsprop", "lion"]:
             return GradientTrainer(optimizer_name, optimizer_params)
@@ -26,9 +32,7 @@ def select_training(optimizer_name: str, optimizer_params: OptimizerParams) -> B
         case "lbfgs":
             return LbfgsTrainer(optimizer_name, optimizer_params)
         case _:
-            raise ValueError(
-                f"Unsupported optimizer configuration: {optimizer_name}"
-            )
+            raise ValueError(f"Unsupported optimizer configuration: {optimizer_name}")
 
 
 def load_weights(model, path):
@@ -53,7 +57,7 @@ def load_weights(model, path):
 
 
 def validate_input(cfg: UserConfig):
-    if cfg.dataset is MISSING or cfg.optimizer is MISSING:
+    if OmegaConf.is_missing(cfg, "dataset") or OmegaConf.is_missing(cfg, "optimizer"):
         raise ValueError("Both dataset and optimizer must be specified.")
     if cfg.dataset not in ALLOWED_DATASETS:
         raise ValueError(f"Unsupported dataset: {cfg.dataset}")

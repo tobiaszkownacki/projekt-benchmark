@@ -1,3 +1,4 @@
+from typing import override
 from src.trainers.base_trainer import BaseTrainer
 from src.config import BenchmarkConfig, OptimizerParams, SchedulerConfig
 from src.logging import Log
@@ -9,6 +10,7 @@ from src.optimizers.lion_optimizers.lion_pytorch import Lion
 
 
 class GradientTrainer(BaseTrainer):
+    @override
     def train(
         self,
         model: torch.nn.Module,
@@ -116,9 +118,8 @@ class GradientTrainer(BaseTrainer):
 
         return avg_val_loss, val_accuracy
 
-    def _get_optimizer(
-        self
-    ) -> callable:
+    @override
+    def _get_optimizer(self) -> callable:
         match self.name:
             case "adam":
                 return torch.optim.Adam
@@ -133,6 +134,7 @@ class GradientTrainer(BaseTrainer):
             case _:
                 raise ValueError(f"Unsupported optimizer: {self.optimizer_name}")
 
+    @override
     def _get_optimizer_params(self, optimizer_params: OptimizerParams) -> dict:
         params = {
             "lr": optimizer_params.lr,

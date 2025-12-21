@@ -59,6 +59,10 @@ class OptimizerParams:
     maximize: bool = False
     alpha: float = 0.99
     centered: bool = False
+    # cma-es specific
+    sigma: float = 0.5
+    population_size: Optional[int] = None
+    cma_diagonal: bool = False
 
 
 @dataclass

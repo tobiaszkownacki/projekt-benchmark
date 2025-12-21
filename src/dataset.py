@@ -135,8 +135,7 @@ class DataSetFactory:
 
         X_tensor = X_tensor / 16.0  # digits data is originally in range [0, 16]
 
-        full_dataset = TensorDataset(X_tensor, y_tensor)\
-
+        full_dataset = TensorDataset(X_tensor, y_tensor)
         return full_dataset
 
 
