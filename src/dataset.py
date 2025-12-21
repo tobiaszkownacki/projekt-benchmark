@@ -5,7 +5,7 @@ Code to download or generate data
 # from pathlib import Path
 import pandas as pd
 import torch
-from src.config import RAW_DATA_DIR
+from src.config import RAW_DATA_DIR, typeOfTask
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import ConcatDataset, Dataset, TensorDataset
@@ -15,6 +15,7 @@ from models.cifar10 import Cifar10
 from models.heart_disease import HeartDisease
 from models.wine_quality import WineQuality
 from models.digits import Digits
+from models.abalone import Abalone
 
 
 # def main(
@@ -43,6 +44,8 @@ class DataSetFactory:
                 return cls._get_wine_quality_data_set()
             case "digits":
                 return cls._get_digits_data_set()
+            case "abalone":
+                return cls._get_abalone_data_set()
             case _:
                 raise ValueError(f"Unsupported data set: {data_set_name}")
 
@@ -138,22 +141,47 @@ class DataSetFactory:
         full_dataset = TensorDataset(X_tensor, y_tensor)
         return full_dataset
 
+    @classmethod
+    def _get_abalone_data_set(cls) -> ConcatDataset:
+        data_path = RAW_DATA_DIR / "abalone.data"
+        df = pd.read_csv(data_path, sep=",", header=None)
+        df[0] = df[0].map({"M": 0, "F": 1, "I": 2})
+
+        X = df.drop(columns=[8])
+        y = df[8]
+        scaler = StandardScaler()
+        X = scaler.fit_transform(X)
+
+        X_tensor = torch.tensor(X, dtype=torch.float32)
+        y_tensor = torch.tensor(y.values, dtype=torch.float32).unsqueeze(1)
+
+        return TensorDataset(X_tensor, y_tensor)
+
 
 DATA_SETS = {
     "cifar10": {
         "data_set": lambda: DataSetFactory.get_data_set("cifar10"),
         "model": Cifar10,
+        "type_of_task": typeOfTask.CLASSIFICATION,
     },
     "heart_disease": {
         "data_set": lambda: DataSetFactory.get_data_set("heart_disease"),
         "model": HeartDisease,
+        "type_of_task": typeOfTask.CLASSIFICATION,
     },
     "wine_quality": {
         "data_set": lambda: DataSetFactory.get_data_set("wine_quality"),
         "model": WineQuality,
+        "type_of_task": typeOfTask.CLASSIFICATION
     },
     "digits": {
         "data_set": lambda: DataSetFactory.get_data_set("digits"),
         "model": Digits,
+        "type_of_task": typeOfTask.CLASSIFICATION,
+    },
+    "abalone": {
+        "data_set": lambda: DataSetFactory.get_data_set("abalone"),
+        "model": Abalone,
+        "type_of_task": typeOfTask.REGRESSION,
     },
 }

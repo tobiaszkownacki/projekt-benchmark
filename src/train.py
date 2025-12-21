@@ -19,6 +19,8 @@ from src.trainers.base_trainer import BaseTrainer
 from src.trainers.gradient_trainer import GradientTrainer
 from src.trainers.cmaes_trainer import CmaesTrainer
 from src.trainers.lbfgs_trainer import LbfgsTrainer
+from src.criterion import CriterionFactory
+from src.config import ALLOWED_CRITERIONS
 
 
 def select_training(
@@ -66,6 +68,13 @@ def validate_input(cfg: UserConfig):
     if cfg.scheduler.name not in ALLOWED_SCHEDULERS:
         raise ValueError(f"Unsupported scheduler: {cfg.scheduler}")
 
+    typeOfTask = DATA_SETS[cfg.dataset]["type_of_task"]
+    if cfg.criterion not in ALLOWED_CRITERIONS[typeOfTask]:
+        raise ValueError(
+            f"Unsupported criterion: {cfg.criterion} for task type: {typeOfTask}. "
+            f"Allowed criterions are: {ALLOWED_CRITERIONS[typeOfTask]}"
+        )
+
     # print cfg to yaml
     print("Configuration:")
     print(OmegaConf.to_yaml(cfg))
@@ -80,6 +89,7 @@ def main(cfg: UserConfig):
         dataset_name=cfg.dataset,
         optimizer_trainer=select_training(cfg.optimizer, cfg.optimizer_params),
         scheduler_config=cfg.scheduler,
+        criterion=CriterionFactory.get_criterion(cfg.criterion),
         batch_size=cfg.batch_size,
         reaching_count=cfg.reaching_count,
         gradient_counter_stop=cfg.gradient_counter_stop,

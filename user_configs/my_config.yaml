@@ -4,8 +4,12 @@
 # python3 -m src.train --config-path ../user_configs --config-name my_config from the project root directory.
 # Not described parameters will take default values from the data classes in src/config.py
 
-dataset: cifar10
-optimizer: sgd
+dataset: wine_quality
+optimizer: adam
+optimizer_params:
+  lr: 0.001
+  weight_decay: 0.0001
+criterion: cross_entropy
 batch_size: 64
 scheduler:
   name: steplr

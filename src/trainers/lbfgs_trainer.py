@@ -5,7 +5,6 @@ from src.logging import Log
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from torch.nn import CrossEntropyLoss
 
 
 class LbfgsTrainer(BaseTrainer):
@@ -20,8 +19,8 @@ class LbfgsTrainer(BaseTrainer):
         train_loader = DataLoader(
             train_dataset, batch_size=config.batch_size, shuffle=True
         )
-        criterion = CrossEntropyLoss()
         optimizer = self._get_optimizer()(model.parameters(), **self.params)
+        criterion = config.criterion()
         log = Log(
             output_file=f"{self.__class__.__name__}-"
             f"{config.dataset_name}-"

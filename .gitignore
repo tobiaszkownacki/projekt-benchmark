@@ -181,6 +181,10 @@ cython_debug/
 # output files
 outputs/
 
-# user_configs
+# other files
 user_configs/*.yaml
 reports/
+multirun/
+reports/
+user_configs/*.yml
+.gitignore

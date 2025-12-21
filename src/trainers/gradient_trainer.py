@@ -5,7 +5,6 @@ from src.logging import Log
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from torch.nn import CrossEntropyLoss
 from src.optimizers.lion_optimizers.lion_pytorch import Lion
 
 
@@ -22,11 +21,11 @@ class GradientTrainer(BaseTrainer):
         train_loader = DataLoader(
             train_dataset, batch_size=config.batch_size, shuffle=True
         )
-        criterion = CrossEntropyLoss()
         optimizer = self._get_optimizer()(
             model.parameters(),
             **self.params,
         )
+        criterion = config.criterion()
         scheduler = self._get_scheduler(config.scheduler_config, optimizer)
 
         log = Log(
@@ -91,7 +90,7 @@ class GradientTrainer(BaseTrainer):
                         scheduler.step()
 
                 current_lr = optimizer.param_groups[0]["lr"]
-                print(f"Train loss: {train_loss}, Train accuracy: {train_accuracy}")
+                print(f"Train loss: {train_loss}")
                 print(f"Learning rate: {current_lr:.8f}")
             else:
                 print("No samples processes in this epoch")
