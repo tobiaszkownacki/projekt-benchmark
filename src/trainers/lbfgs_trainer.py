@@ -28,14 +28,11 @@ class LbfgsTrainer(BaseTrainer):
             f"{config.batch_size}.csv"
         )
         gradient_counter = 0
-        train_losses = []
-        train_accuracies = []
 
         while gradient_counter < config.gradient_counter_stop:
             model.train()
             model.to(device)
             running_loss = 0.0
-            correct = 0
             total = 0
 
             for inputs, targets in tqdm(train_loader, desc="Training"):
@@ -45,8 +42,9 @@ class LbfgsTrainer(BaseTrainer):
 
                 def closure():
                     optimizer.zero_grad()
-                    output = model(inputs)
-                    loss = criterion(output, targets)
+                    loss, output = self._calculate_step(
+                        model, inputs, targets, criterion, config.model_type
+                    )
                     loss.backward()
                     return loss
 
@@ -61,15 +59,10 @@ class LbfgsTrainer(BaseTrainer):
                     running_loss += loss.item()
                     _, predicted = torch.max(output, 1)
                     total += targets.size(0)
-                    correct += (predicted == targets).sum().item()
 
             print(f"Gradient counter: {gradient_counter}")
             train_loss = running_loss / total
-            train_losses.append(train_loss)
-            train_accuracy = 100 * correct / total
-            train_accuracies.append(train_accuracy)
-            print(f"Train loss: {train_loss}, Train accuracy: {train_accuracy}")
-        return train_losses, train_accuracies
+            print(f"Train loss: {train_loss}")
 
     @override
     def _get_optimizer(

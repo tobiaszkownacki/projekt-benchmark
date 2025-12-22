@@ -38,13 +38,9 @@ class CmaesTrainer(BaseTrainer):
             f"{config.batch_size}.csv"
         )
         epoch_count = 0
-        losses_per_epoch = []
-        accuracies_per_epoch = []
         while epoch_count <= config.max_epochs and not optimizer.stop():
             model.eval()
             epoch_loss = 0.0
-            correct_total = 0
-            total_samples = 0
 
             with torch.no_grad():
                 for inputs, targets in train_loader:
@@ -54,8 +50,9 @@ class CmaesTrainer(BaseTrainer):
                     for s in solutions:
                         self._set_params(model, np.array(s))
 
-                        outputs = model(inputs)
-                        loss = criterion(outputs, targets).item()
+                        loss, outputs = self._calculate_step(
+                            model, inputs, targets, criterion, config.model_type
+                        )
                         losses.append(loss)
 
                     optimizer.tell(solutions, losses)
@@ -66,25 +63,14 @@ class CmaesTrainer(BaseTrainer):
                     log.add_number_of_samples(targets.size(0))
                     log.log(round(batch_avg_loss, 4), config.save_interval)
 
-                    self._set_params(model, optimizer.best.x)  # Best individual
-                    outputs = model(inputs)
-                    _, predicted = torch.max(outputs, 1)
-                    correct_total += (predicted == targets).sum().item()
-                    total_samples += targets.size(0)
-
                     print(f"Batch average loss (population): {batch_avg_loss:.4f}\n")
 
                 epoch_count += 1
                 epoch_avg_loss = epoch_loss / len(train_loader)
-                losses_per_epoch.append(epoch_avg_loss)
 
-                best_accuracy = self.predict(model, train_loader)
-                accuracies_per_epoch.append(best_accuracy)
                 print("\nEPOCH SUMMARY")
                 print(f"Avg loss in epoch: {epoch_avg_loss:.2f}")
                 print(f"The lowest loss: {optimizer.best.f:.2f}\n")
-
-        return losses_per_epoch, accuracies_per_epoch
 
     @override
     def _get_optimizer(

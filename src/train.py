@@ -4,8 +4,11 @@ import torch
 import numpy as np
 import os
 from src.config import (
+    GENERIC_MODELS,
     BenchmarkConfig,
+    ModelType,
     OptimizerParams,
+    ProblemType,
 )
 from datetime import datetime
 from src.config import (
@@ -35,6 +38,23 @@ def select_training(
             return LbfgsTrainer(optimizer_name, optimizer_params)
         case _:
             raise ValueError(f"Unsupported optimizer configuration: {optimizer_name}")
+
+
+def select_model(model_type: ModelType, dataset_name: str):
+    dataset_info = DATA_SETS.get(dataset_name)
+    if not dataset_info:
+        raise ValueError(f"Unsupported dataset: {dataset_name}")
+
+    if model_type is ModelType.SUPERVISED:
+        return dataset_info["supervised_model"]()
+    dataset_type = dataset_info["dataset_type"]
+    model_class = GENERIC_MODELS.get((model_type, dataset_type))
+    if not model_class:
+        raise ValueError(
+            f"Unsupported model type: {model_type} for dataset type: {dataset_type}"
+        )
+
+    return model_class(dataset_info["input_shape"])
 
 
 def load_weights(model, path):
@@ -68,11 +88,15 @@ def validate_input(cfg: UserConfig):
     if cfg.scheduler.name not in ALLOWED_SCHEDULERS:
         raise ValueError(f"Unsupported scheduler: {cfg.scheduler}")
 
-    typeOfTask = DATA_SETS[cfg.dataset]["type_of_task"]
-    if cfg.criterion not in ALLOWED_CRITERIONS[typeOfTask]:
+    problem_type = None
+    if ModelType.SUPERVISED != cfg.model:
+        problem_type = ProblemType.REGRESSION
+    else:
+        problem_type = DATA_SETS[cfg.dataset]["problem_type"]
+    if cfg.criterion not in ALLOWED_CRITERIONS[problem_type]:
         raise ValueError(
-            f"Unsupported criterion: {cfg.criterion} for task type: {typeOfTask}. "
-            f"Allowed criterions are: {ALLOWED_CRITERIONS[typeOfTask]}"
+            f"Unsupported criterion: {cfg.criterion} for this problem type."
+            f"Allowed criterions are: {ALLOWED_CRITERIONS[problem_type]}"
         )
 
     # print cfg to yaml
@@ -89,6 +113,7 @@ def main(cfg: UserConfig):
         dataset_name=cfg.dataset,
         optimizer_trainer=select_training(cfg.optimizer, cfg.optimizer_params),
         scheduler_config=cfg.scheduler,
+        model_type=cfg.model,
         criterion=CriterionFactory.get_criterion(cfg.criterion),
         batch_size=cfg.batch_size,
         reaching_count=cfg.reaching_count,
@@ -101,7 +126,7 @@ def main(cfg: UserConfig):
     np.random.seed(config.random_seed)
     torch.manual_seed(config.random_seed)
 
-    model = DATA_SETS[config.dataset_name]["model"]()
+    model = select_model(cfg.model, cfg.dataset)
     load_model = cfg.load_model
     if load_model:
         model = load_weights(model, load_model)

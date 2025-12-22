@@ -10,6 +10,11 @@ from typing import Optional
 from hydra.core.config_store import ConfigStore
 from torch import nn
 from enum import Enum
+from models.autoencoders.conv_autoencoder import ConvAutoEncoder
+from models.autoencoders.dense_autoencoder_image import DenseAutoEncoderImage
+from models.autoencoders.dense_autoencoder_tabular import DenseAutoEncoderTabular
+from models.autoencoders.variational_autoencoder_image import VariationalAutoEncoderImage
+from models.autoencoders.variational_autoencoder_tabular import VariationalAutoEncoderTabular
 
 
 # from dotenv import load_dotenv
@@ -32,9 +37,30 @@ REPORTS_DIR = PROJ_ROOT / "reports"
 FIGURES_DIR = REPORTS_DIR / "figures"
 
 
-class typeOfTask(Enum):
+class ProblemType(Enum):
     CLASSIFICATION = "classification"
     REGRESSION = "regression"
+
+
+class DatasetType(Enum):
+    TABULAR = "tabular"
+    IMAGE = "image"
+
+
+class ModelType(Enum):
+    SUPERVISED = "supervised"  # e.g., classic classification or regression
+    DENSE_AE = "dense_ae"
+    CONV_AE = "conv_ae"
+    VARIATIONAL_AE = "variational_ae"
+
+
+GENERIC_MODELS = {
+    (ModelType.DENSE_AE, DatasetType.TABULAR): DenseAutoEncoderTabular,
+    (ModelType.DENSE_AE, DatasetType.IMAGE): DenseAutoEncoderImage,
+    (ModelType.CONV_AE, DatasetType.IMAGE): ConvAutoEncoder,
+    (ModelType.VARIATIONAL_AE, DatasetType.IMAGE): VariationalAutoEncoderImage,
+    (ModelType.VARIATIONAL_AE, DatasetType.TABULAR): VariationalAutoEncoderTabular,
+}
 
 
 ALLOWED_DATASETS = ["cifar10", "heart_disease", "wine_quality", "digits", "abalone"]
@@ -47,8 +73,11 @@ ALLOWED_SCHEDULERS = [
     "cosineannealinglr",
 ]
 ALLOWED_CRITERIONS = {
-    typeOfTask.CLASSIFICATION: ["cross_entropy"],
-    typeOfTask.REGRESSION: ["mse_loss", "mae_loss", ]
+    ProblemType.CLASSIFICATION: ["cross_entropy"],
+    ProblemType.REGRESSION: [
+        "mse_loss",
+        "mae_loss",
+    ],
 }
 
 
@@ -82,6 +111,7 @@ class BenchmarkConfig:
     dataset_name: str
     optimizer_trainer: object
     criterion: nn.Module
+    model_type: ModelType
     scheduler_config: SchedulerConfig
     batch_size: int
     reaching_count: int
@@ -97,6 +127,7 @@ class UserConfig:
     dataset: str = MISSING
     optimizer: str = MISSING
     criterion: str = MISSING
+    model: ModelType = MISSING
 
     scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
     optimizer_params: OptimizerParams = field(default_factory=OptimizerParams)

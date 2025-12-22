@@ -37,15 +37,11 @@ class GradientTrainer(BaseTrainer):
         )
 
         gradient_counter = 0
-        train_losses = []
-        train_accuracies = []
 
         while gradient_counter < config.gradient_counter_stop:
             model.train()
             model.to(device)
             running_loss = 0.0
-            correct = 0
-            total = 0
             batch_count = 0
 
             for inputs, targets in tqdm(train_loader, desc="Training"):
@@ -55,8 +51,9 @@ class GradientTrainer(BaseTrainer):
 
                 optimizer.zero_grad()
 
-                output = model(inputs)
-                loss = criterion(output, targets)
+                loss, output = self._calculate_step(
+                    model, inputs, targets, criterion, config.model_type
+                )
                 gradient_counter += 1
                 loss = loss.to(device)
                 loss.backward()
@@ -72,16 +69,9 @@ class GradientTrainer(BaseTrainer):
                 running_loss += loss.item()
                 batch_count += 1
 
-                _, predicted = torch.max(output, 1)
-                total += targets.size(0)
-                correct += (predicted == targets).sum().item()
-
             print(f"Gradient counter: {gradient_counter}")
             if batch_count > 0:
                 train_loss = running_loss / batch_count
-                train_losses.append(train_loss)
-                train_accuracy = 100 * correct / total
-                train_accuracies.append(train_accuracy)
 
                 if scheduler is not None:
                     if config.scheduler_config.name == "reduceonplateau":

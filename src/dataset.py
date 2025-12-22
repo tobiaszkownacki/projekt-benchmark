@@ -5,7 +5,7 @@ Code to download or generate data
 # from pathlib import Path
 import pandas as pd
 import torch
-from src.config import RAW_DATA_DIR, typeOfTask
+from src.config import RAW_DATA_DIR, ProblemType, DatasetType
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import ConcatDataset, Dataset, TensorDataset
@@ -54,10 +54,6 @@ class DataSetFactory:
         train_transforms = transforms.Compose(
             [
                 transforms.ToTensor(),
-                transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-                transforms.RandomHorizontalFlip(p=0.5),
-                transforms.RandomRotation(degrees=15),
-                transforms.RandomCrop(32, padding=4),
             ]
         )
 
@@ -106,8 +102,8 @@ class DataSetFactory:
         data_path_red = RAW_DATA_DIR / "winequality-red.csv"
         data_path_white = RAW_DATA_DIR / "winequality-white.csv"
 
-        df_white = pd.read_csv(data_path_red, sep=";")
-        df_red = pd.read_csv(data_path_white, sep=";")
+        df_white = pd.read_csv(data_path_white, sep=";")
+        df_red = pd.read_csv(data_path_red, sep=";")
 
         df_red["color"] = "red"
         df_white["color"] = "white"
@@ -161,27 +157,37 @@ class DataSetFactory:
 DATA_SETS = {
     "cifar10": {
         "data_set": lambda: DataSetFactory.get_data_set("cifar10"),
-        "model": Cifar10,
-        "type_of_task": typeOfTask.CLASSIFICATION,
+        "supervised_model": Cifar10,
+        "problem_type": ProblemType.CLASSIFICATION,
+        "dataset_type": DatasetType.IMAGE,
+        "input_shape": (3, 32, 32),
     },
     "heart_disease": {
         "data_set": lambda: DataSetFactory.get_data_set("heart_disease"),
-        "model": HeartDisease,
-        "type_of_task": typeOfTask.CLASSIFICATION,
+        "supervised_model": HeartDisease,
+        "problem_type": ProblemType.CLASSIFICATION,
+        "dataset_type": DatasetType.TABULAR,
+        "input_shape": (13,),
     },
     "wine_quality": {
         "data_set": lambda: DataSetFactory.get_data_set("wine_quality"),
-        "model": WineQuality,
-        "type_of_task": typeOfTask.CLASSIFICATION
+        "supervised_model": WineQuality,
+        "problem_type": ProblemType.CLASSIFICATION,
+        "dataset_type": DatasetType.TABULAR,
+        "input_shape": (12,),
     },
     "digits": {
         "data_set": lambda: DataSetFactory.get_data_set("digits"),
-        "model": Digits,
-        "type_of_task": typeOfTask.CLASSIFICATION,
+        "supervised_model": Digits,
+        "problem_type": ProblemType.CLASSIFICATION,
+        "dataset_type": DatasetType.IMAGE,
+        "input_shape": (1, 8, 8),
     },
     "abalone": {
         "data_set": lambda: DataSetFactory.get_data_set("abalone"),
-        "model": Abalone,
-        "type_of_task": typeOfTask.REGRESSION,
+        "supervised_model": Abalone,
+        "problem_type": ProblemType.REGRESSION,
+        "dataset_type": DatasetType.TABULAR,
+        "input_shape": (8,),
     },
 }
