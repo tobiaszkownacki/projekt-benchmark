@@ -25,7 +25,7 @@ def select_training(
     optimizer_name: str, optimizer_params: OptimizerParams
 ) -> BaseTrainer:
     match optimizer_name:
-        case name if name in ["adam", "adamw", "sgd", "rmsprop", "lion"]:
+        case name if name in ["adam", "adamw", "adopt", "sgd", "rmsprop", "lion"]:
             return GradientTrainer(optimizer_name, optimizer_params)
         case "cma-es":
             return CmaesTrainer(optimizer_name, optimizer_params)
