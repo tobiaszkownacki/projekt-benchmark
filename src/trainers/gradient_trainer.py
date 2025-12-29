@@ -1,4 +1,6 @@
 from typing import override
+
+import adopt
 from src.trainers.base_trainer import BaseTrainer
 from src.config import BenchmarkConfig, OptimizerParams, SchedulerConfig
 from src.logging import Log
@@ -131,6 +133,8 @@ class GradientTrainer(BaseTrainer):
                 return Lion
             case "rmsprop":
                 return torch.optim.RMSprop
+            case "adopt":
+                return adopt.ADOPT
             case _:
                 raise ValueError(f"Unsupported optimizer: {self.optimizer_name}")
 
@@ -149,7 +153,7 @@ class GradientTrainer(BaseTrainer):
                         "maximize": optimizer_params.maximize,
                     }
                 )
-            case "adam" | "adamw":
+            case "adam" | "adamw" | "adopt":
                 params.update(
                     {
                         "betas": optimizer_params.betas,
