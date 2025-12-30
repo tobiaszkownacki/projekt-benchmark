@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from torch.nn import CrossEntropyLoss
 from src.optimizers.lion_optimizers.lion_pytorch import Lion
-
+from src.optimizers.gravity_optimizers.gravity_pytorch import Gravity
 
 class GradientTrainer(BaseTrainer):
     @override
@@ -135,6 +135,8 @@ class GradientTrainer(BaseTrainer):
                 return torch.optim.RMSprop
             case "adopt":
                 return adopt.ADOPT
+            case "gravity":
+                return Gravity
             case _:
                 raise ValueError(f"Unsupported optimizer: {self.optimizer_name}")
 
