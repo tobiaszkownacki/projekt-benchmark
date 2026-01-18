@@ -71,12 +71,13 @@ class BenchmarkConfig:
     optimizer_trainer: object
     scheduler_config: SchedulerConfig
     batch_size: int
-    reaching_count: int
+    reaching_count: int  # deprecated, use database_reach_limit
     gradient_counter_stop: int
     random_seed: int
     max_epochs: int
     save_interval: int
     initialization_xavier: bool
+    database_reach_limit: Optional[int] = None  # None = use gradient_counter_stop logic
 
 
 @dataclass
@@ -87,9 +88,10 @@ class UserConfig:
     scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
     optimizer_params: OptimizerParams = field(default_factory=OptimizerParams)
     batch_size: int = 16
-    reaching_count: int = 500
+    reaching_count: int = 500  # deprecated
     max_epochs: int = 10
     gradient_counter_stop: int = 5000
+    database_reach_limit: Optional[int] = None
     random_seed: int = random.randrange(2**32)
     save_interval: int = 10
     save_model: bool = False
