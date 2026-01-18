@@ -30,8 +30,8 @@ class StopCondition:
 
 class MetricsTracker:
     """
-    Database reaches = number of times a sample from the dataset is accessed
-    Gradient calculations = number of gradient computations
+    Database reaches = number of times a sample from the dataset is accessed.
+    Gradient calculations = number of gradient computations.
     """
 
     def __init__(self, stop_condition: StopCondition):
@@ -60,7 +60,28 @@ class MetricsTracker:
 
     def record_gradients(self, count: int = 1) -> bool:
         self._gradient_count += count
-        
+        return self._check_gradient_limit()
+
+    def record_database_reaches(self, count: int) -> bool:
+        """Count database accesses (samples processed). Returns True if should stop."""
+        self._database_reach_count += count
+        return self._check_database_limit()
+
+    def record_epoch(self) -> bool:
+        """Count epoch completions. Returns True if should stop."""
+        self._epoch_count += 1
+        return self._check_epoch_limit()
+
+    def should_stop(self) -> bool:
+        """Check all stop conditions."""
+        return self._stop_reason != StopReason.NONE
+
+    def signal_optimizer_stop(self):
+        """Called when optimizer signals it wants to stop early."""
+        if self._stop_reason == StopReason.NONE:
+            self._stop_reason = StopReason.OPTIMIZER_SIGNAL
+
+    def _check_gradient_limit(self) -> bool:
         if (
             self.stop_condition.max_gradients is not None
             and self._gradient_count >= self.stop_condition.max_gradients
@@ -69,9 +90,7 @@ class MetricsTracker:
             return True
         return False
 
-    def record_database_reaches(self, count: int) -> bool:
-        self._database_reach_count += count
-
+    def _check_database_limit(self) -> bool:
         if (
             self.stop_condition.max_database_reaches is not None
             and self._database_reach_count >= self.stop_condition.max_database_reaches
@@ -80,9 +99,7 @@ class MetricsTracker:
             return True
         return False
 
-    def record_epoch(self) -> bool:
-        self._epoch_count += 1
-
+    def _check_epoch_limit(self) -> bool:
         if (
             self.stop_condition.max_epochs is not None
             and self._epoch_count >= self.stop_condition.max_epochs
@@ -91,17 +108,11 @@ class MetricsTracker:
             return True
         return False
 
-    def should_stop(self) -> bool:
-        return self._stop_reason != StopReason.NONE
-
-    def signal_optimizer_stop(self):
-        if self._stop_reason == StopReason.NONE:
-            self._stop_reason = StopReason.OPTIMIZER_SIGNAL
-
     def register_callback(self, callback: Callable[["MetricsTracker"], None]):
+        """Most likely I will use it for logging purposes :)"""
         self._callbacks.append(callback)
 
-    def notify_callbacks(self):
+    def _notify_callbacks(self):
         for cb in self._callbacks:
             cb(self)
 

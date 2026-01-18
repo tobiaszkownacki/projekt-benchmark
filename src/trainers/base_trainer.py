@@ -19,12 +19,12 @@ class TrainingResult:
 class BaseTrainer(ABC):
     """
     Abstract class
-    
+
     Further implemented optimizers can contain two possible stop metrics:
     - Gradient calculations - for gradient-based methods
     - Database reaches - for all methods (counts data samples accessed)
-    
-    Optimizers ingeriting from black-box should implement '_optimizer_step' and can 
+
+    Optimizers ingeriting from black-box should implement '_optimizer_step' and can
     optionally report gradient equivalents if they compute gradients internally.
     """
 
@@ -33,11 +33,11 @@ class BaseTrainer(ABC):
         self.name = optimizer_name
         self.params = self._get_optimizer_params(optimizer_params)
         self._metrics_tracker: Optional[MetricsTracker] = None
-    
+
     @property
     def metrics(self) -> Optional[MetricsTracker]:
         return self._metrics_tracker
-    
+
     def train(
         self,
         model: torch.nn.Module,
@@ -54,13 +54,13 @@ class BaseTrainer(ABC):
             max_epochs=config.max_epochs,
         )
         self._metrics_tracker = MetricsTracker(stop_condition)
-        
+
         # Delegate to implementation-specific training logic
         result = self._train_impl(model, train_dataset, config)
         result.metrics_summary = self._metrics_tracker.get_summary()
-        
+
         return result
-    
+
     @abstractmethod
     def _train_impl(
         self,
@@ -70,18 +70,17 @@ class BaseTrainer(ABC):
     ) -> TrainingResult:
         """Implementation-specific training logic"""
         pass
-    
+
     @abstractmethod
     def _get_optimizer(self) -> Any:
         """Return the optimizer class or factory"""
         pass
-    
+
     @abstractmethod
     def _get_optimizer_params(self, optimizer_params: OptimizerParams) -> dict:
         """Convert OptimizerParams to optimizer-specific dict"""
         pass
-    
+
     def supports_gradients(self) -> bool:
         """Override to indicate if this trainer computes gradients"""
         return True
-    
