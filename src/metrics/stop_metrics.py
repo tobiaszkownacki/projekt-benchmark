@@ -1,50 +1,114 @@
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from typing import Callable, Optional
+from enum import Enum, auto
+
+
+class StopReason(Enum):
+    GRADIENT_LIMIT = auto()
+    DATABASE_REACH_LIMIT = auto()
+    EPOCH_LIMIT = auto()
+    CONVERGENCE = auto()
+    OPTIMIZER_SIGNAL = auto()
+    NONE = auto()
+
+
+@dataclass
+class StopCondition:
+    max_gradients: Optional[int] = None  # None = unlimited
+    max_database_reaches: Optional[int] = None  # None = unlimited
+    max_epochs: Optional[int] = None
+    convergence_threshold: Optional[float] = None
+
+    def __post_init__(self):
+        if all(
+            v is None
+            for v in [self.max_gradients, self.max_database_reaches, self.max_epochs]
+        ):
+            raise ValueError("At least one stop condition must be specified")
+
+
 class MetricsTracker:
-    def __init__(self, max_gradients=None, max_database_reaches=None, max_epochs=None):
-        self.max_gradients = max_gradients
-        self.max_database_reaches = max_database_reaches
-        self.max_epochs = max_epochs
+    """
+    Database reaches = number of times a sample from the dataset is accessed
+    Gradient calculations = number of gradient computations
+    """
 
-        self.gradient_count = 0
-        self.database_reach_count = 0
-        self.epoch_count = 0
+    def __init__(self, stop_condition: StopCondition):
+        self.stop_condition = stop_condition
+        self._gradient_count: int = 0
+        self._database_reach_count: int = 0
+        self._epoch_count: int = 0
+        self._stop_reason: StopReason = StopReason.NONE
+        self._callbacks: list[Callable[["MetricsTracker"], None]] = []
 
-        self.stop_reason = "NONE"
+    @property
+    def gradient_count(self) -> int:
+        return self._gradient_count
 
-    def record_gradients(self, count=1):
-        self.gradient_count += count
+    @property
+    def database_reach_count(self) -> int:
+        return self._database_reach_count
+
+    @property
+    def epoch_count(self) -> int:
+        return self._epoch_count
+
+    @property
+    def stop_reason(self) -> StopReason:
+        return self._stop_reason
+
+    def record_gradients(self, count: int = 1) -> bool:
+        self._gradient_count += count
         
-        if self.max_gradients is not None and self.gradient_count >= self.max_gradients:
-            self.stop_reason = "GRADIENT_LIMIT"
+        if (
+            self.stop_condition.max_gradients is not None
+            and self._gradient_count >= self.stop_condition.max_gradients
+        ):
+            self._stop_reason = StopReason.GRADIENT_LIMIT
             return True
         return False
 
-    def record_database_reaches(self, count):
-        self.database_reach_count += count
-        
-        if self.max_database_reaches is not None and self.database_reach_count >= self.max_database_reaches:
-            self.stop_reason = "DATABASE_REACH_LIMIT"
+    def record_database_reaches(self, count: int) -> bool:
+        self._database_reach_count += count
+
+        if (
+            self.stop_condition.max_database_reaches is not None
+            and self._database_reach_count >= self.stop_condition.max_database_reaches
+        ):
+            self._stop_reason = StopReason.DATABASE_REACH_LIMIT
             return True
         return False
 
-    def record_epoch(self):
-        self.epoch_count += 1
-        
-        if self.max_epochs is not None and self.epoch_count >= self.max_epochs:
-            self.stop_reason = "EPOCH_LIMIT"
+    def record_epoch(self) -> bool:
+        self._epoch_count += 1
+
+        if (
+            self.stop_condition.max_epochs is not None
+            and self._epoch_count >= self.stop_condition.max_epochs
+        ):
+            self._stop_reason = StopReason.EPOCH_LIMIT
             return True
         return False
+
+    def should_stop(self) -> bool:
+        return self._stop_reason != StopReason.NONE
 
     def signal_optimizer_stop(self):
-        if self.stop_reason == "NONE":
-            self.stop_reason = "OPTIMIZER_SIGNAL"
+        if self._stop_reason == StopReason.NONE:
+            self._stop_reason = StopReason.OPTIMIZER_SIGNAL
 
-    def should_stop(self):
-        return self.stop_reason != "NONE"
+    def register_callback(self, callback: Callable[["MetricsTracker"], None]):
+        self._callbacks.append(callback)
 
-    def get_summary(self):
+    def notify_callbacks(self):
+        for cb in self._callbacks:
+            cb(self)
+
+    def get_summary(self) -> dict:
         return {
-            "gradient_count": self.gradient_count,
-            "database_reach_count": self.database_reach_count,
-            "epoch_count": self.epoch_count,
-            "stop_reason": self.stop_reason,
+            "gradient_count": self._gradient_count,
+            "database_reach_count": self._database_reach_count,
+            "epoch_count": self._epoch_count,
+            "stop_reason": self._stop_reason.name,
         }
