@@ -2,15 +2,25 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any, Type, Callable
 from enum import Enum, auto
 
+class StopReason(Enum):
+    GRADIENT_LIMIT = auto()
+    DATABASE_LIMIT = auto()
+    EPOCH_LIMIT = auto()
+    OPTIMIZER_CONVERGED = auto()
+    MAX_STEPS = auto()
+
 
 @dataclass
 class BenchmarkResult:
+    """Results from a benchmark run."""
     optimizer_name: str
     dataset_name: str
     
     # Stop info
+    stop_reason: StopReason
     total_steps: int
     total_epochs: int
+    wall_time_seconds: float
     
     # Metrics
     final_loss: float
@@ -26,8 +36,10 @@ class BenchmarkResult:
         return {
             "optimizer": self.optimizer_name,
             "dataset": self.dataset_name,
+            "stop_reason": self.stop_reason.name,
             "steps": self.total_steps,
             "epochs": self.total_epochs,
+            "wall_time": self.wall_time_seconds,
             "final_loss": self.final_loss,
             "final_accuracy": self.final_accuracy,
             "gradient_count": self.gradient_count,
