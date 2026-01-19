@@ -2,6 +2,7 @@ import numpy as np
 from src.benchmark.optimizer_protocol import BenchmarkOptimizer
 from src.benchmark.evaluator import ModelEvaluator
 
+
 class SimpleSGD(BenchmarkOptimizer):
     def __init__(self, initial_params: np.ndarray, lr: float = 0.01):
         # Initialize base class (stores self.params)
