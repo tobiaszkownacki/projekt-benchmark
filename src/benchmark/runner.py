@@ -89,6 +89,13 @@ class StopCondition:
 class BenchmarkRunner:
     """
     Runs optimizers against datasets and collects metrics
+    
+    Usage:
+        runner = BenchmarkRunner(
+            dataset_name="digits",
+            stop_condition=StopCondition(max_gradient_count=5000)
+        )
+        result = runner.run(MyOptimizer, lr=0.01)
     """
     
     def __init__(
@@ -131,6 +138,14 @@ class BenchmarkRunner:
     ) -> BenchmarkResult:
         """
         Run benchmark for a single optimizer
+        
+        Args:
+            optimizer_class: The optimizer class to benchmark
+            optimizer_name: Name for logging (defaults to class name)
+            **optimizer_config: Arguments passed to optimizer.__init__
+        
+        Returns:
+            BenchmarkResult with all metrics
         """
         name = optimizer_name or optimizer_class.__name__
         
@@ -263,3 +278,34 @@ class BenchmarkRunner:
             accuracy_history=accuracy_history,
         )
     
+    def compare(
+        self,
+        optimizers: Dict[str, tuple],  # name -> (class, config_dict)
+    ) -> Dict[str, BenchmarkResult]:
+        """
+        Run benchmark for multiple optimizers and compare.
+        
+        Args:
+            optimizers: Dict mapping name to (optimizer_class, config_dict)
+        
+        Returns:
+            Dict mapping name to BenchmarkResult
+        """
+        results = {}
+        for name, (cls, config) in optimizers.items():
+            print(f"\n{'='*50}")
+            print(f"Running: {name}")
+            print('='*50)
+            results[name] = self.run(cls, optimizer_name=name, **config)
+        
+        # Print comparison
+        print(f"\n{'='*60}")
+        print("COMPARISON RESULTS")
+        print('='*60)
+        print(f"{'Optimizer':<20} {'Loss':>10} {'Acc':>8} {'Grads':>10} {'DB Reach':>12}")
+        print('-'*60)
+        for name, r in results.items():
+            print(f"{name:<20} {r.final_loss:>10.4f} {r.final_accuracy:>7.2f}% "
+                  f"{r.gradient_count:>10} {r.database_reaches:>12}")
+        
+        return results
