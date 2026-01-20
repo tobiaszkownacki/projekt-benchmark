@@ -40,6 +40,7 @@ class PyTorchOptimizerAdapter(BenchmarkOptimizer):
 
 class TorchAdamAdapter(BenchmarkOptimizer):
     """Pure NumPy implementation for benchmark"""
+
     # TODO: Check if this is done right
     # almost certianly it is not the same as PyTorch Adam
     def __init__(
@@ -85,6 +86,7 @@ class TorchAdamAdapter(BenchmarkOptimizer):
 
 class TorchSGDAdapter(BenchmarkOptimizer):
     """Simple SGD with optional momentum."""
+
     def __init__(
         self,
         initial_params: np.ndarray,
@@ -117,6 +119,7 @@ class TorchSGDAdapter(BenchmarkOptimizer):
 
 class CMAESAdapter(BenchmarkOptimizer):
     """CMA-ES adapter for gradient-free comparison."""
+
     def __init__(
         self,
         initial_params: np.ndarray,
