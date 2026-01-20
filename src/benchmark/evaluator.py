@@ -1,3 +1,13 @@
+"""
+This wraps the model, data batch, and loss function
+providing a simple interface allowing optimizers to:
+1. Evaluate the current parameters (forward pass)
+2. Get gradients (backward pass)  
+3. Read/write model parameters
+
+Metrics are tracked AUTOMATICALLY, the optimizer doesn't need to do anything.
+"""
+
 from typing import Tuple, Optional, Callable
 import numpy as np
 import torch
