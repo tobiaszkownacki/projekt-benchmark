@@ -38,7 +38,7 @@ class PyTorchOptimizerAdapter(BenchmarkOptimizer):
         return False
 
 
-class TorchAdamAdapter(BenchmarkOptimizer):
+class AdamAdapter(BenchmarkOptimizer):
     """Pure NumPy implementation for benchmark"""
 
     # TODO: Check if this is done right
@@ -84,7 +84,7 @@ class TorchAdamAdapter(BenchmarkOptimizer):
         return False
 
 
-class TorchAdamWAdapter(BenchmarkOptimizer):
+class AdamWAdapter(BenchmarkOptimizer):
     """Pure NumPy implementation of AdamW (Decoupled Weight Decay)."""
 
     def __init__(
@@ -130,9 +130,100 @@ class TorchAdamWAdapter(BenchmarkOptimizer):
         evaluator.set_params(self.params)
 
         return False
+    
+
+class LionAdapter(BenchmarkOptimizer):
+    """Pure NumPy implementation of Lion Optimizer (Chen et al., 2023)."""
+
+    def __init__(
+        self,
+        initial_params: np.ndarray,
+        lr: float = 1e-4,
+        betas: tuple = (0.9, 0.99),
+        weight_decay: float = 0.0,
+        **config
+    ):
+        super().__init__(initial_params, **config)
+        self.lr = lr
+        self.beta1, self.beta2 = betas
+        self.weight_decay = weight_decay
+
+        # State: Lion only needs to track momentum (exp_avg)
+        self.m = np.zeros_like(initial_params)
+
+    def step(self, evaluator: ModelEvaluator) -> bool:
+        loss, grad = evaluator.evaluate_with_grad()
+
+        # 1. Parameter update (interp momentum & gradient)
+        # c_t = beta1 * m_{t-1} + (1 - beta1) * g_t
+        c_t = self.beta1 * self.m + (1 - self.beta1) * grad
+
+        # update = sign(c_t) + weight_decay * params
+        update = np.sign(c_t)
+        if self.weight_decay > 0:
+            update = update + self.weight_decay * self.params
+
+        # params = params - lr * update
+        self.params = self.params - self.lr * update
+
+        # 2. Momentum update
+        # m_t = beta2 * m_{t-1} + (1 - beta2) * g_t
+        self.m = self.beta2 * self.m + (1 - self.beta2) * grad
+
+        evaluator.set_params(self.params)
+        return False
 
 
-class TorchSGDAdapter(BenchmarkOptimizer):
+class RMSPropAdapter(BenchmarkOptimizer):
+    """Pure NumPy implementation of RMSProp optimizer."""
+
+    def __init__(
+        self,
+        initial_params: np.ndarray,
+        lr: float = 0.01,
+        alpha: float = 0.99,
+        eps: float = 1e-8,
+        weight_decay: float = 0,
+        momentum: float = 0,
+        **config
+    ):
+        super().__init__(initial_params, **config)
+        self.lr = lr
+        self.alpha = alpha
+        self.eps = eps
+        self.weight_decay = weight_decay
+        self.momentum = momentum
+
+        # State
+        self.v = np.zeros_like(initial_params)  # Square avg
+        self.b = np.zeros_like(initial_params)  # Momentum buffer
+
+    def step(self, evaluator: ModelEvaluator) -> bool:
+        loss, grad = evaluator.evaluate_with_grad()
+
+        if self.weight_decay > 0:
+            grad = grad + self.weight_decay * self.params
+
+        # v_t = alpha * v_{t-1} + (1 - alpha) * g^2
+        self.v = self.alpha * self.v + (1 - self.alpha) * (grad**2)
+
+        # Standard RMSProp update: g / (sqrt(v) + eps)
+        avg = np.sqrt(self.v) + self.eps
+        
+        if self.momentum > 0:
+            # b_t = momentum * b_{t-1} + g / avg
+            self.b = self.momentum * self.b + grad / avg
+            step_val = self.b
+        else:
+            step_val = grad / avg
+
+        self.params = self.params - self.lr * step_val
+        evaluator.set_params(self.params)
+
+        return False
+
+
+class SGDAdapter(BenchmarkOptimizer):
     """Simple SGD with optional momentum."""
 
     def __init__(
@@ -209,9 +300,11 @@ class CMAESAdapter(BenchmarkOptimizer):
 
 
 BUILTIN_OPTIMIZERS = {
-    "adam": (TorchAdamAdapter, {"lr": 0.001}),
-    "adamw": (TorchAdamWAdapter, {"lr": 0.001, "weight_decay": 0.01}),
-    "sgd": (TorchSGDAdapter, {"lr": 0.01}),
-    "sgd_momentum": (TorchSGDAdapter, {"lr": 0.01, "momentum": 0.9}),
+    "adam": (AdamAdapter, {"lr": 0.001}),
+    "adamw": (AdamWAdapter, {"lr": 0.001, "weight_decay": 0.01}),
+    "lion": (LionAdapter, {"lr": 1e-4, "weight_decay": 0.01}),
+    "rmsprop": (RMSPropAdapter, {"lr": 0.01, "alpha": 0.99}),
+    "sgd": (SGDAdapter, {"lr": 0.01}),
+    "sgd_momentum": (SGDAdapter, {"lr": 0.01, "momentum": 0.9}),
     "cma-es": (CMAESAdapter, {"sigma": 0.5}),
     }
