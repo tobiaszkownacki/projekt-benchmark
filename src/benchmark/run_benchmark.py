@@ -5,6 +5,8 @@ Usage:
     python -m src.benchmark.run_benchmark --dataset digits --optimizer my_optimizer
 or with comparison:
     python -m src.benchmark.run_benchmark --dataset digits --compare adam sgd cma-es
+or plotting:
+    python -m src.benchmark.run_benchmark --dataset digits --optimizer sgd --max-epochs 10 --max-gradients 100000 --plot
 """
 
 import argparse
@@ -12,8 +14,9 @@ import importlib
 import sys
 from pathlib import Path
 
+from src.plotting.benchmark_analyzer import BenchmarkAnalyzer
 from src.benchmark import BenchmarkRunner, StopCondition
-from src.benchmark.adapters import BUILTIN_OPTIMIZERS
+from src.benchmark.optimizers import BUILTIN_OPTIMIZERS
 
 
 def load_custom_optimizer(path: str):
@@ -50,6 +53,16 @@ def main():
     parser.add_argument("--max-epochs", type=int, default=None)
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--plot",
+        action="store_true",
+        help="Generate benchmark plots after run",
+    )
+    parser.add_argument(
+        "--plot-dir",
+        default="reports/model_analysis",
+        help="Directory where plots are written",
+    )
 
     args = parser.parse_args()
 
@@ -78,7 +91,12 @@ def main():
                 print(f"Available: {list(BUILTIN_OPTIMIZERS.keys())}")
                 sys.exit(1)
 
-        runner.compare(optimizers)
+        results = runner.compare(optimizers)
+
+        if args.plot:
+            analyzer = BenchmarkAnalyzer(output_dir=args.plot_dir)
+            plot_path = analyzer.plot_comparison(results, dataset_name=args.dataset)
+            print(f"\nComparison plot: {plot_path}")
 
     elif args.optimizer:
         # Run single optimizer
@@ -95,6 +113,11 @@ def main():
         print("\nResult:")
         for k, v in result.to_dict().items():
             print(f"  {k}: {v}")
+
+        if args.plot:
+            analyzer = BenchmarkAnalyzer(output_dir=args.plot_dir)
+            plot_path = analyzer.plot_single_result(result)
+            print(f"\nRun plot: {plot_path}")
 
     else:
         parser.print_help()
