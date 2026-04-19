@@ -14,9 +14,10 @@ import importlib
 import sys
 from pathlib import Path
 
-from src.plotting.benchmark_analyzer import BenchmarkAnalyzer
 from src.benchmark import BenchmarkRunner, StopCondition
 from src.benchmark.optimizers import BUILTIN_OPTIMIZERS
+from src.config import ALLOWED_DATASETS
+from src.plotting.benchmark_analyzer import BenchmarkAnalyzer
 
 
 def load_custom_optimizer(path: str):
@@ -42,7 +43,7 @@ def main():
     parser.add_argument(
         "--dataset",
         required=True,
-        choices=["digits", "cifar10", "heart_disease", "wine_quality"],
+        choices=ALLOWED_DATASETS,
     )
     parser.add_argument(
         "--optimizer", help="Path to custom optimizer file or builtin name"
