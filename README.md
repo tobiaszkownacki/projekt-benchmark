@@ -1,107 +1,122 @@
-# KNSI GOLEM Template Repository
-[![Flake8 Linting](https://github.com/Dnafivuq/golem_template/actions/workflows/lint.yml/badge.svg)](https://github.com/Dnafivuq/golem_template/actions/workflows/lint.yml)
-[![Pytest](https://github.com/Dnafivuq/golem_template/actions/workflows/test.yml/badge.svg)](https://github.com/Dnafivuq/golem_template/actions/workflows/test.yml)
-<a target="_blank" href="https://cookiecutter-data-science.drivendata.org/">
-    <img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" />
-</a>
+# Optimizer Benchmark Suite [![Flake8 Linting](https://github.com/Dnafivuq/golem_template/actions/workflows/lint.yml/badge.svg)](https://github.com/Dnafivuq/golem_template/actions/workflows/lint.yml) [![Pytest](https://github.com/Dnafivuq/golem_template/actions/workflows/test.yml/badge.svg)](https://github.com/Dnafivuq/golem_template/actions/workflows/test.yml) <a target="_blank" href="https://cookiecutter-data-science.drivendata.org/"><img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" /></a>
 
+## 1. Overview
 
-Template repository for KNSI GOLEM python projects made from the [cookiecutter data science template](https://github.com/drivendataorg/cookiecutter-data-science).
+This repository contains a benchmark suite for testing, comparing, and analyzing various optimization algorithms (e.g., Adam, SGD, CMA-ES, Differential Evolution) on different datasets and neural network models using PyTorch. The framework tracks metrics like gradient evaluations, database reaches, and standard loss/accuracy over time, providing a comprehensive toolkit to evaluate the efficiency and convergence of both gradient-based and gradient-free optimizers. It is designed to be modular and independent dependency-wise, which yields simple addition of more problem (dataset-model) definitions and custom optimization algorithms.
 
-This repository's goal is to provide out-of-the-box boilerplate code with a clean project file structure.
-Additionally, the template includes a GitHub CI pipeline with pytest and flake8 checks implemented.
+## 2. Installation & Setup
 
+To get started with this project, follow these steps:  
 
-You are free to delete any unnecessary folders and files. However, it is recommended to maintain the overall file structure to ensure clean code and compatibility with other KNSI GOLEM repositories.
-## What is here?
-### Code and Files Structure
-To ensure a transparent and easily understandable file structure for external users each module, from making plots to training models, is given its respective file in the `src` folder. A full description of the file structure is provided in the [Project Organization](#project-organization) section.
+1. **Clone the repository**  
 
+   ```sh
+   git clone <repository-url>
+   cd projekt-benchmark
+   ```
 
-**How to run code in repository?**
-```bash
-python3 -m src.dataset
-```
-### Readme
-Another goal of this repository is to provide a [template README](/TEMPLATE_README.md) that can be easily edited and adapted. The README serves as a foundation to help users create their own well-structured documentation, ensuring consistency across all projects within our repository.
+2. **Set up a virtual environment**
 
-## Additional tips and info
-To further help with development, it is recommended to use useful tools for managing dependencies and environment configurations.
-### venv
-Python's `venv` allows you to easily manage isolated environments for your projects, enabling you to work with specific module/library versions or even different Python versions without conflicting with the globally installed Python interpreter.
+   ```sh
+   python -m venv .venv
+   source .venv/bin/activate
+   ```
 
+3. **Install dependencies**  
 
-How to use:
-```bash
-python3 -m venv .venv  # Create venv  
-source .venv/bin/activate  # Activate venv  
-pip install -r requirements.txt  # Install requirements to venv  
-```
-Basic Python libraries like pytest are already included in the requirements.
+   ```sh
+   pip install -r requirements.txt
+   ```
 
----
+## 3. Running the Benchmark
 
-### dotenv
-The dotenv library allows you to define environment constants or secrets, such as API keys, in a single place. It simplifies the management of environment variables by letting you configure them in a `.env` file.
+You can run benchmarks using the `src.benchmark.run_benchmark` module.
 
+### Running a single optimizer
 
-The `python-dotenv` library has already been added to the requirements.
-
-**.env file example:**
-```bash
-API_KEY = "KNSI_GOLEM_API_KEY"
+```sh
+python -m src.benchmark.run_benchmark --dataset digits --optimizer adam
 ```
 
-**python code example:**
-```python
-from dotenv import load_dotenv
-import os
+### Comparing multiple optimizers
 
-load_dotenv()
-
-api_key = os.getenv("API_KEY")
+```sh
+python -m src.benchmark.run_benchmark --dataset digits --compare adam sgd cma-es
 ```
 
-## Project Organization
+### Generating plots for your run
 
+Add the `--plot` flag to generate comparison and performance plots. By default, they are saved to `reports/model_analysis`.
+
+```sh
+python -m src.benchmark.run_benchmark --dataset digits --optimizer sgd --max-epochs 10 --max-gradients 100000 --plot
 ```
-├── README.md          <- The top-level README for developers using this project.
-├── data
-│   ├── external       <- Data from third party sources.
-│   ├── interim        <- Intermediate data that has been transformed.
-│   ├── processed      <- The final, canonical data sets for modeling.
-│   └── raw            <- The original, immutable data dump.
-│
-├── docs               <- Project's docs
-│
-├── models             <- Trained and serialized models, model predictions, or model summaries
-│
-├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-│                         the creator's initials, and a short `-` delimited description, e.g.
-│                         `1.0-jqp-initial-data-exploration`.
-│
-├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-│   └── figures        <- Generated graphics and figures to be used in reporting
-│
-├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-│                         generated with `pip freeze > requirements.txt`
-│
-├── setup.cfg          <- Configuration file for flake8 and pytest
-│
-└── src   <- Source code for use in this project.
-    │
-    ├── __init__.py             <- Makes src a Python module
-    │
-    ├── config.py               <- Store useful variables and configuration
-    │
-    ├── dataset.py              <- Scripts to download or generate data
-    │
-    ├── features.py             <- Code to create features for modeling
-    │
-    ├── modeling                
-    │   ├── __init__.py 
-    │   ├── predict.py          <- Code to run model inference with trained models          
-    │   └── train.py            <- Code to train models
-    │
-    └── plots.py                <- Code to create visualizations
+
+### Available Arguments/Parameters
+
+- `--dataset`: Choose from `cifar10`, `heart_disease`, `wine_quality`, `digits` (required).
+- `--optimizer`: Name of a built-in optimizer (e.g., `adam`, `sgd`, `cma-es`) or a file path to a custom optimizer python script.
+- `--compare`: Provide a list of built-in optimizer names to compare them side-by-side.
+- `--max-gradients`: Stop condition for maximum number of gradient evaluations (default: 5000).
+- `--max-db-reaches`: Stop condition for maximum database reaches (optional).
+- `--max-epochs`: Stop condition for maximum number of epochs (optional).
+- `--batch-size`: Batch size for data loading (default: 32).
+- `--seed`: Random seed for reproducibility (default: 42).
+- `--plot`: Flag to generate benchmark plots after the run.
+- `--plot-dir`: Directory where plots will be saved (default: `reports/model_analysis`).
+
+## 4. Code Structure
+
+```text
+├── README.md              <- The top-level README for developers using this project.
+├── data/                  <- Raw and processed datasets.
+├── models/                <- PyTorch model definitions for each dataset.
+├── outputs/               <- Benchmark run output logs and CSVs.
+├── reports/               <- Generated plots and analysis artifacts.
+├── src/                   <- Source code for use in this project.
+│   ├── benchmark/         <- Core logic: evaluator, runner, stop conditions.
+│   │   └── optimizers/    <- Optimizer adapters (Adam, SGD, CMA-ES, etc.) and registry.
+│   ├── datasets/          <- Dataset loading and preprocessing scripts.
+│   ├── metrics/           <- Stop metrics and evaluation tracking.
+│   ├── plotting/          <- Plot generation and analyzer modules.
+│   ├── trainers/          <- Internal model training loops and protocols.
+│   ├── config.py          <- Global configuration and variables.
+│   └── dataset.py         <- Factory mapping datasets to their PyTorch models.
+├── requirements.txt       <- The requirements file for environment reproduction.
+└── setup.cfg              <- Configuration file for flake8 and pytest.
 ```
+
+## 5. Adding a New Optimizer
+
+1. Create a new python script inside `src/benchmark/optimizers/` (e.g., `my_optimizer_adapter.py`).
+2. Create your optimizer class inheriting from `src.benchmark.optimizer_protocol.BenchmarkOptimizer`.
+3. Implement the `step(self, evaluator: ModelEvaluator) -> bool` method.
+    - Inside `step()`, you can call `evaluator.evaluate_with_grad()` or `evaluator.evaluate()` depending on whether your optimizer needs gradients.
+    - Update `self.params` and finally call `evaluator.set_params(self.params)`.
+    - Return `True` if the optimizer has converged, `False` otherwise.
+4. Add your new optimizer to the `BUILTIN_OPTIMIZERS` registry located in `src/benchmark/optimizers/registry.py`.
+    - *Alternatively, you can test it directly without registering by passing the path to the file using `--optimizer path/to/my_optimizer_adapter.py`*.
+
+## 6. Adding a New Dataset
+
+1. Create a new python file in `src/datasets/` (e.g., `my_dataset.py`).
+2. Implement a dataset class that inherits from `src.datasets.dataset.Dataset`.
+3. Implement the `get(self) -> ConcatDataset` abstract method to download/load and preprocess your data, returning it as a PyTorch dataset.
+4. Add your dataset name to the `ALLOWED_DATASETS` list in `src/config.py`.
+
+## 7. Configuring a Model with a Dataset
+
+To hook up your new dataset with a model to be evaluated:
+
+1. Create a PyTorch model inheriting from `torch.nn.Module` in the `models/` directory (e.g., `models/my_model.py`).
+2. Open `src/dataset.py` and import your new dataset class and your new model class.
+3. Update `DataSetFactory.get_data_set` to support returning your new dataset.
+4. Add a new entry to the `DATA_SETS` dictionary in `src/dataset.py`. Map the identifier name to the initialized dataset and the model class:
+
+   ```python
+   "my_dataset_name": {
+       "data_set": lambda: DataSetFactory.get_data_set("my_dataset_name"),
+       "model": MyModelClass,
+   }
+   ```
+
