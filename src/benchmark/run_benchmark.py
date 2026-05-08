@@ -46,9 +46,8 @@ def main():
         choices=ALLOWED_DATASETS,
     )
     parser.add_argument(
-        "--optimizer", help="Path to custom optimizer file or builtin name"
+        "--optimizer", nargs="+",help="Path to custom optimizer file or builtin name"
     )
-    parser.add_argument("--compare", nargs="+", help="Compare multiple builtins")
     parser.add_argument("--max-gradients", type=int, default=5000)
     parser.add_argument("--max-db-reaches", type=int, default=None)
     parser.add_argument("--max-epochs", type=int, default=None)
@@ -81,47 +80,28 @@ def main():
         random_seed=args.seed,
     )
 
-    if args.compare:
-        # Compare multiple builtins
-        optimizers = {}
-        for name in args.compare:
-            if name in BUILTIN_OPTIMIZERS:
-                optimizers[name] = BUILTIN_OPTIMIZERS[name]
-            else:
-                print(f"Unknown builtin optimizer: {name}")
-                print(f"Available: {list(BUILTIN_OPTIMIZERS.keys())}")
-                sys.exit(1)
+    if not args.optimizer:
+        parser.print_help()
+        return
 
-        results = runner.compare(optimizers)
-
-        if args.plot:
-            analyzer = BenchmarkAnalyzer(output_dir=args.plot_dir)
-            plot_path = analyzer.plot_comparison(results, dataset_name=args.dataset)
-            print(f"\nComparison plot: {plot_path}")
-
-    elif args.optimizer:
-        # Run single optimizer
-        if args.optimizer in BUILTIN_OPTIMIZERS:
-            cls, config = BUILTIN_OPTIMIZERS[args.optimizer]
-            result = runner.run(cls, **config)
-        elif Path(args.optimizer).exists():
-            cls = load_custom_optimizer(args.optimizer)
-            result = runner.run(cls)
+    optimizers = {}
+    for name in args.optimizer:
+        if name in BUILTIN_OPTIMIZERS:
+            optimizers[name] = BUILTIN_OPTIMIZERS[name]
+        elif Path(name).exists():
+            cls = load_custom_optimizer(name)
+            optimizers[name] = (cls, {})
         else:
-            print(f"Optimizer not found: {args.optimizer}")
+            print(f"Optimizer not found: {name}")
+            print(f"Available: {list(BUILTIN_OPTIMIZERS.keys())}")
             sys.exit(1)
 
-        print("\nResult:")
-        for k, v in result.to_dict().items():
-            print(f"  {k}: {v}")
+    results = runner.compare(optimizers)
 
-        if args.plot:
-            analyzer = BenchmarkAnalyzer(output_dir=args.plot_dir)
-            plot_path = analyzer.plot_single_result(result)
-            print(f"\nRun plot: {plot_path}")
+    if args.plot:
+        analyzer = BenchmarkAnalyzer(output_dir=args.plot_dir)
+        analyzer.plot_results(results)
 
-    else:
-        parser.print_help()
 
 
 if __name__ == "__main__":

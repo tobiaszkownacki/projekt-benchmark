@@ -50,9 +50,11 @@ class BenchmarkResult:
     gradient_count: int
     database_reaches: int
 
-    # History
     loss_history: List[float] = field(default_factory=list)
     accuracy_history: List[float] = field(default_factory=list)
+    gradient_history: List[int] = field(default_factory=list)
+    database_reaches_history: List[int] = field(default_factory=list)
+    time_history: List[float] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -183,6 +185,9 @@ class BenchmarkRunner:
 
         loss_history = []
         accuracy_history = []
+        gradient_history = []
+        database_reaches_history = []
+        time_history = []
         step_count = 0
         epoch_count = 0
         stop_reason = None
@@ -257,6 +262,9 @@ class BenchmarkRunner:
                 accuracy = 100 * epoch_correct / epoch_total
                 loss_history.append(avg_loss)
                 accuracy_history.append(accuracy)
+                gradient_history.append(gradient_count)
+                database_reaches_history.append(database_reaches)
+                time_history.append(time.time() - start_time)
 
                 print(
                     f"Epoch {epoch_count}: loss={avg_loss:.4f}, "
@@ -290,30 +298,45 @@ class BenchmarkRunner:
             database_reaches=database_reaches,
             loss_history=loss_history,
             accuracy_history=accuracy_history,
+            gradient_history=gradient_history,
+            database_reaches_history=database_reaches_history,
+            time_history=time_history,
         )
 
     def compare(
         self,
-        optimizers: Dict[str, tuple],  # name -> (class, config_dict)
+        optimizers: Dict[str, tuple],
     ) -> Dict[str, BenchmarkResult]:
-        """
-        Run benchmark for multiple optimizers and compare.
+        sc = self.stop_condition
+        stop_parts = []
+        if sc.max_gradient_count:
+            stop_parts.append(f"gradients={sc.max_gradient_count}")
+        if sc.max_database_reaches:
+            stop_parts.append(f"db_reaches={sc.max_database_reaches}")
+        if sc.max_epochs:
+            stop_parts.append(f"epochs={sc.max_epochs}")
+        if sc.max_steps:
+            stop_parts.append(f"steps={sc.max_steps}")
 
-        Args:
-            optimizers: Dict mapping name to (optimizer_class, config_dict)
+        print(f"\n{'='*60}")
+        if len(optimizers) > 1:
+            print(f"Comparing:  {', '.join(optimizers.keys())}")
+        else:
+            print(f"Running:    {', '.join(optimizers.keys())}")
+        print(f"Dataset:    {self.dataset_name}")
+        print(f"Batch size: {self.batch_size}")
+        print(f"Seed:       {self.random_seed}")
+        print(f"Stop:       {', '.join(stop_parts)}")
+        print(f"{'='*60}")
 
-        Returns:
-            Dict mapping name to BenchmarkResult
-        """
         results = {}
         for name, (cls, config) in optimizers.items():
-            print(f"\n{'='*50}")
+            print(f"\n{'=' * 50}")
             print(f"Running: {name}")
             print("=" * 50)
             results[name] = self.run(cls, optimizer_name=name, **config)
 
-        # Print comparison
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print("COMPARISON RESULTS")
         print("=" * 60)
         print(
@@ -327,3 +350,40 @@ class BenchmarkRunner:
             )
 
         return results
+
+
+    # def compare(
+    #     self,
+    #     optimizers: Dict[str, tuple],  # name -> (class, config_dict)
+    # ) -> Dict[str, BenchmarkResult]:
+    #     """
+    #     Run benchmark for multiple optimizers and compare.
+    #
+    #     Args:
+    #         optimizers: Dict mapping name to (optimizer_class, config_dict)
+    #
+    #     Returns:
+    #         Dict mapping name to BenchmarkResult
+    #     """
+    #     results = {}
+    #     for name, (cls, config) in optimizers.items():
+    #         print(f"\n{'='*50}")
+    #         print(f"Running: {name}")
+    #         print("=" * 50)
+    #         results[name] = self.run(cls, optimizer_name=name, **config)
+    #
+    #     # Print comparison
+    #     print(f"\n{'='*60}")
+    #     print("COMPARISON RESULTS")
+    #     print("=" * 60)
+    #     print(
+    #         f"{'Optimizer':<20} {'Loss':>10} {'Acc':>8} {'Grads':>10} {'DB Reach':>12}"
+    #     )
+    #     print("-" * 60)
+    #     for name, r in results.items():
+    #         print(
+    #             f"{name:<20} {r.final_loss:>10.4f} {r.final_accuracy:>7.2f}% "
+    #             f"{r.gradient_count:>10} {r.database_reaches:>12}"
+    #         )
+    #
+    #     return results
