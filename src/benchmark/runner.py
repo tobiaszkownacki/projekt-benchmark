@@ -50,9 +50,11 @@ class BenchmarkResult:
     gradient_count: int
     database_reaches: int
 
-    # History
     loss_history: List[float] = field(default_factory=list)
     accuracy_history: List[float] = field(default_factory=list)
+    gradient_history: List[int] = field(default_factory=list)
+    database_reaches_history: List[int] = field(default_factory=list)
+    time_history: List[float] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -183,6 +185,9 @@ class BenchmarkRunner:
 
         loss_history = []
         accuracy_history = []
+        gradient_history = []
+        database_reaches_history = []
+        time_history = []
         step_count = 0
         epoch_count = 0
         stop_reason = None
@@ -257,6 +262,9 @@ class BenchmarkRunner:
                 accuracy = 100 * epoch_correct / epoch_total
                 loss_history.append(avg_loss)
                 accuracy_history.append(accuracy)
+                gradient_history.append(gradient_count)
+                database_reaches_history.append(database_reaches)
+                time_history.append(time.time() - start_time)
 
                 print(
                     f"Epoch {epoch_count}: loss={avg_loss:.4f}, "
@@ -290,6 +298,9 @@ class BenchmarkRunner:
             database_reaches=database_reaches,
             loss_history=loss_history,
             accuracy_history=accuracy_history,
+            gradient_history=gradient_history,
+            database_reaches_history=database_reaches_history,
+            time_history=time_history,
         )
 
     def compare(

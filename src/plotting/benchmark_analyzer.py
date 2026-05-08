@@ -28,40 +28,64 @@ class BenchmarkAnalyzer:
         cmap = plt.colormaps["plasma"]
         colors = [cmap(i / max(n - 1, 1)) for i in range(n)]
 
-        plots = [
-            ("loss_curves.png", "Loss per Epoch", "Epoch", "Loss",
-             [(name, result.loss_history) for name, result in results.items()], False),
-            ("accuracy_curves.png", "Accuracy per Epoch", "Epoch", "Accuracy (%)",
-             [(name, result.accuracy_history) for name, result in results.items()], False),
-            ("gradient_counts.png", "Total Gradient Evaluations", "", "Gradients",
-             [(name, result.gradient_count) for name, result in results.items()], True),
-            ("database_reaches.png", "Total Database Reaches", "", "Samples Processed",
-             [(name, result.database_reaches) for name, result in results.items()], True),
+        series_plots = [
+            ("loss_vs_epoch.png",      "Loss vs Epoch",       "Loss",         "Epoch",
+             lambda r: list(range(1, len(r.loss_history) + 1)), lambda r: r.loss_history),
+
+            ("loss_vs_db_reaches.png", "Loss vs DB Reaches",  "Loss",         "DB Reaches",
+             lambda r: r.database_reaches_history,              lambda r: r.loss_history),
+
+            ("loss_vs_grads.png",      "Loss vs Gradients",   "Loss",         "Gradients",
+             lambda r: r.gradient_history,                      lambda r: r.loss_history),
+
+
+            ("acc_vs_db_reaches.png",  "Accuracy vs DB Reaches", "Accuracy (%)", "DB Reaches",
+             lambda r: r.database_reaches_history,              lambda r: r.accuracy_history),
+
+            ("acc_vs_grads.png",       "Accuracy vs Gradients",  "Accuracy (%)", "Gradients",
+             lambda r: r.gradient_history,                      lambda r: r.accuracy_history),
+
+            ("acc_vs_epoch.png",       "Accuracy vs Epoch",     "Accuracy (%)", "Epoch",
+             lambda r: list(range(1, len(r.accuracy_history) + 1)), lambda r: r.accuracy_history),
+        ]
+
+        # (filename, title, ylabel, value_getter)
+        bar_plots = [
+            ("total_gradients.png",  "Total Gradient Evaluations", "Gradients",       lambda r: r.gradient_count),
+            ("total_db_reaches.png", "Total Database Reaches",     "Samples Processed", lambda r: r.database_reaches),
         ]
 
         with plt.style.context("dark_background"):
-            for filename, title, xlabel, ylabel, data, is_bar in plots:
+            for filename, title, ylabel, xlabel, x_getter, y_getter in series_plots:
                 fig, ax = plt.subplots(figsize=(10, 5))
                 ax.set_title(title)
-                ax.set_xlabel(xlabel)
                 ax.set_ylabel(ylabel)
-
-                if is_bar:
-                    bar_names, values = zip(*data)
-                    ax.bar(bar_names, values, color=colors)
-                    ax.grid(alpha=0.2, axis="y")
-                else:
-                    for (name, history), color in zip(data, colors):
-                        if history:
-                            ax.plot(range(1, len(history) + 1), history, marker="o", label=name, color=color)
-                    ax.legend()
-                    ax.grid(alpha=0.2)
-
+                ax.set_xlabel(xlabel)
+                for (name, result), color in zip(results.items(), colors):
+                    x = x_getter(result)
+                    y = y_getter(result)
+                    if x and y:
+                        ax.plot(x, y, marker="o", markersize=4, label=name, color=color)
+                ax.legend()
+                ax.grid(alpha=0.2)
                 plt.tight_layout()
                 plt.savefig(run_dir / filename, dpi=200, bbox_inches="tight", facecolor=fig.get_facecolor())
                 plt.close(fig)
 
+            for filename, title, ylabel, value_getter in bar_plots:
+                fig, ax = plt.subplots(figsize=(10, 5))
+                ax.set_title(title)
+                ax.set_ylabel(ylabel)
+                names = list(results.keys())
+                values = [value_getter(r) for r in results.values()]
+                ax.bar(names, values, color=colors)
+                ax.grid(alpha=0.2, axis="y")
+                plt.tight_layout()
+                plt.savefig(run_dir / filename, dpi=200, bbox_inches="tight", facecolor=fig.get_facecolor())
+                plt.close(fig)
 
+        print(f"Plots saved to: {run_dir}")
+        return run_dir
 
 
 
