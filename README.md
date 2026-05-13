@@ -6,26 +6,31 @@ This repository contains a benchmark suite for testing, comparing, and analyzing
 
 ## 2. Installation & Setup
 
-To get started with this project, follow these steps:  
+To get started with this project, follow these steps:
 
-1. **Clone the repository**  
+1. **Clone the repository**
 
    ```sh
    git clone <repository-url>
    cd projekt-benchmark
    ```
 
-2. **Set up a virtual environment**
+2. **Install dependencies**
 
+   Using **uv** (recommended):
    ```sh
-   python -m venv .venv
-   source .venv/bin/activate
+   uv sync               # core dependencies
+   uv sync --extra ci    # + flake8, pytest
    ```
 
-3. **Install dependencies**  
-
+   Using **pip**:
    ```sh
-   pip install -r requirements.txt
+   python -m venv .venv
+   source .venv/bin/activate   # Linux/macOS
+   .venv\Scripts\activate      # Windows
+
+   pip install -e .            # core dependencies
+   pip install -e .[ci]        # + flake8, pytest
    ```
 
 ## 3. Running the Benchmark
@@ -82,8 +87,7 @@ python -m src.benchmark.run_benchmark --dataset digits --optimizer sgd --max-epo
 │   ├── trainers/          <- Internal model training loops and protocols.
 │   ├── config.py          <- Global configuration and variables.
 │   └── dataset.py         <- Factory mapping datasets to their PyTorch models.
-├── requirements.txt       <- The requirements file for environment reproduction.
-└── setup.cfg              <- Configuration file for flake8 and pytest.
+└── pyproject.toml         <- Project metadata, dependencies, and tool configuration.
 ```
 
 ## 5. Adding a New Optimizer
