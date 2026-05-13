@@ -40,13 +40,13 @@ You can run benchmarks using the `src.benchmark.run_benchmark` module.
 ### Running a single optimizer
 
 ```sh
-python -m src.benchmark.run_benchmark --dataset digits --optimizer adam
+    uv run -m src.benchmark.run_benchmark --dataset digits --optimizer my_optimizer
 ```
 
 ### Comparing multiple optimizers
 
 ```sh
-python -m src.benchmark.run_benchmark --dataset digits --compare adam sgd cma-es
+    uv run -m src.benchmark.run_benchmark --dataset heart_disease --optimizer adam sgd cma-es
 ```
 
 ### Generating plots for your run
@@ -54,14 +54,13 @@ python -m src.benchmark.run_benchmark --dataset digits --compare adam sgd cma-es
 Add the `--plot` flag to generate comparison and performance plots. By default, they are saved to `reports/model_analysis`.
 
 ```sh
-python -m src.benchmark.run_benchmark --dataset digits --optimizer sgd --max-epochs 10 --max-gradients 100000 --plot
+    uv run -m src.benchmark.run_benchmark --dataset wine_quality --optimizer adam sgd cma-es --max-epochs 10 --max-gradients 100000 --plot
 ```
 
 ### Available Arguments/Parameters
 
 - `--dataset`: Choose from `cifar10`, `heart_disease`, `wine_quality`, `digits` (required).
-- `--optimizer`: Name of a built-in optimizer (e.g., `adam`, `sgd`, `cma-es`) or a file path to a custom optimizer python script.
-- `--compare`: Provide a list of built-in optimizer names to compare them side-by-side.
+- `--optimizer`: Name of a built-in optimizer (e.g., `adam`, `sgd`, `cma-es`) or a file path to a custom optimizer python script. More than one optimizer can be passed for comparison (required).
 - `--max-gradients`: Stop condition for maximum number of gradient evaluations (default: 5000).
 - `--max-db-reaches`: Stop condition for maximum database reaches (optional).
 - `--max-epochs`: Stop condition for maximum number of epochs (optional).

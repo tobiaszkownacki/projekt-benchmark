@@ -3,10 +3,11 @@ Simple runner script with very basic argparse
 
 Usage:
     python -m src.benchmark.run_benchmark --dataset digits --optimizer my_optimizer
-or with comparison:
-    python -m src.benchmark.run_benchmark --dataset digits --compare adam sgd cma-es
-or plotting:
-    python -m src.benchmark.run_benchmark --dataset digits --optimizer sgd --max-epochs 10 --max-gradients 100000 --plot
+    or: uv run -m src.benchmark.run_benchmark --dataset digits --optimizer my_optimizer
+    
+or with comparison and plotting:
+    python -m src.benchmark.run_benchmark --dataset wine_quality --optimizer adam sgd cma-es --max-epochs 10 --max-gradients 100000 --plot
+    or: uv run -m src.benchmark.run_benchmark --dataset wine_quality --optimizer adam sgd cma-es --max-epochs 10 --max-gradients 100000 --plot
 """
 
 import argparse
