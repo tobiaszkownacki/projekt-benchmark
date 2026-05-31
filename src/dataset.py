@@ -8,6 +8,8 @@ from models.cifar10 import Cifar10
 from models.digits import Digits
 from models.heart_disease import HeartDisease
 from models.wine_quality import WineQuality
+from models.digits_mlp import DigitsMLP
+
 from src.datasets.cifar10 import Cifar10Dataset
 from src.datasets.digits import DigitsDataset
 from src.datasets.heart_disease import HeartDiseaseDataset
@@ -33,18 +35,32 @@ class DataSetFactory:
 DATA_SETS = {
     "cifar10": {
         "data_set": lambda: DataSetFactory.get_data_set("cifar10"),
-        "model": Cifar10,
     },
     "heart_disease": {
         "data_set": lambda: DataSetFactory.get_data_set("heart_disease"),
-        "model": HeartDisease,
     },
     "wine_quality": {
         "data_set": lambda: DataSetFactory.get_data_set("wine_quality"),
-        "model": WineQuality,
     },
     "digits": {
         "data_set": lambda: DataSetFactory.get_data_set("digits"),
-        "model": Digits,
+    },
+}
+
+
+MODELS = {
+    "cifar10": {
+        "default": Cifar10,
+        # "resnet": Cifar10ResNet,
+    },
+    "heart_disease": {
+        "default": HeartDisease,
+    },
+    "wine_quality": {
+        "default": WineQuality,
+    },
+    "digits": {
+        "default": Digits,
+        "mlp": DigitsMLP,
     },
 }

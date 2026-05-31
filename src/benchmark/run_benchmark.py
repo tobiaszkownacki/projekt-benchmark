@@ -4,7 +4,7 @@ Simple runner script with very basic argparse
 Usage:
     python -m src.benchmark.run_benchmark --dataset digits --optimizer my_optimizer
     or: uv run -m src.benchmark.run_benchmark --dataset digits --optimizer my_optimizer
-    
+
 or with comparison and plotting:
     python -m src.benchmark.run_benchmark --dataset wine_quality --optimizer adam sgd cma-es --max-epochs 10 --max-gradients 100000 --plot
     or: uv run -m src.benchmark.run_benchmark --dataset wine_quality --optimizer adam sgd cma-es --max-epochs 10 --max-gradients 100000 --plot
@@ -47,7 +47,13 @@ def main():
         choices=ALLOWED_DATASETS,
     )
     parser.add_argument(
-        "--optimizer", nargs="+",help="Path to custom optimizer file or builtin name"
+        "--model",
+        nargs="+",
+        default=["default"],
+        help="Model architecture(s) to use (default: ['default'])",
+    )
+    parser.add_argument(
+        "--optimizer", nargs="+", help="Path to custom optimizer file or builtin name"
     )
     parser.add_argument("--max-gradients", type=int, default=5000)
     parser.add_argument("--max-db-reaches", type=int, default=None)
@@ -67,20 +73,6 @@ def main():
 
     args = parser.parse_args()
 
-    # Build stop condition
-    stop_condition = StopCondition(
-        max_gradient_count=args.max_gradients,
-        max_database_reaches=args.max_db_reaches,
-        max_epochs=args.max_epochs,
-    )
-
-    runner = BenchmarkRunner(
-        dataset_name=args.dataset,
-        stop_condition=stop_condition,
-        batch_size=args.batch_size,
-        random_seed=args.seed,
-    )
-
     if not args.optimizer:
         parser.print_help()
         return
@@ -97,12 +89,34 @@ def main():
             print(f"Available: {list(BUILTIN_OPTIMIZERS.keys())}")
             sys.exit(1)
 
-    results = runner.compare(optimizers)
+    # Build stop condition
+    stop_condition = StopCondition(
+        max_gradient_count=args.max_gradients,
+        max_database_reaches=args.max_db_reaches,
+        max_epochs=args.max_epochs,
+    )
+
+    all_results = {}
+
+    for current_model in args.model:
+        runner = BenchmarkRunner(
+            dataset_name=args.dataset,
+            model_name=current_model,
+            stop_condition=stop_condition,
+            batch_size=args.batch_size,
+            random_seed=args.seed,
+        )
+
+        model_results = runner.compare(optimizers)
+
+        for opt_name, result in model_results.items():
+            run_identifier = f"{current_model}_{opt_name}"
+            result.optimizer_name = run_identifier
+            all_results[run_identifier] = result
 
     if args.plot:
         analyzer = BenchmarkAnalyzer(output_dir=args.plot_dir)
-        analyzer.plot_results(results)
-
+        analyzer.plot_results(all_results)
 
 
 if __name__ == "__main__":
