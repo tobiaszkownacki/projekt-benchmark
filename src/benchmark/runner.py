@@ -345,7 +345,7 @@ class BenchmarkRunner:
             results[name] = self.run(cls, optimizer_name=name, **config)
 
         print(f"\n{'=' * 60}")
-        print(f"Comparison results for model: {self.model_name.upper()}")
+        print(f"Comparison results for model: {self.model_name}")
         print("=" * 60)
         print(
             f"{'Optimizer':<20} {'Loss':>10} {'Acc':>8} {'Grads':>10} {'DB Reach':>12}"
