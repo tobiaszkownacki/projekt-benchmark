@@ -9,7 +9,6 @@ import random
 from typing import Optional
 from hydra.core.config_store import ConfigStore
 
-
 # from dotenv import load_dotenv
 
 # Load environment variables from .env file if it exists
@@ -30,7 +29,18 @@ REPORTS_DIR = PROJ_ROOT / "reports"
 FIGURES_DIR = REPORTS_DIR / "figures"
 
 ALLOWED_DATASETS = ["cifar10", "heart_disease", "wine_quality", "digits"]
-ALLOWED_OPTIMIZERS = ["adam", "adamw", "adopt", "sgd", "rmsprop", "lbfgs", "cma-es", "lion", "gravity"]
+ALLOWED_OPTIMIZERS = [
+    "adam",
+    "adamw",
+    "adopt",
+    "sgd",
+    "rmsprop",
+    "lbfgs",
+    "cma-es",
+    "lion",
+    "gravity",
+]
+ALLOWED_MODELS = ["default", "mlp"]
 ALLOWED_SCHEDULERS = [
     "none",
     "steplr",
@@ -78,13 +88,14 @@ class BenchmarkConfig:
     save_interval: int
     initialization_xavier: bool
     database_reach_limit: Optional[int] = None  # None = use gradient_counter_stop logic
+    model_name: str = "default"
 
 
 @dataclass
 class UserConfig:
     dataset: str = MISSING
     optimizer: str = MISSING
-
+    model: str = "default"
     scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
     optimizer_params: OptimizerParams = field(default_factory=OptimizerParams)
     batch_size: int = 16

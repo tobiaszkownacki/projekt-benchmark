@@ -109,6 +109,7 @@ class BenchmarkRunner:
         self,
         dataset_name: str,
         stop_condition: StopCondition,
+        model_name: str = "default",
         batch_size: int = 32,
         random_seed: int = 2137,
         log_interval: int = 10,
@@ -116,12 +117,14 @@ class BenchmarkRunner:
     ):
         from src.dataset import (
             DATA_SETS,
+            MODELS,
         )  # Import is here due to circular dependency error
 
         if dataset_name not in DATA_SETS:
             raise ValueError(f"Unknown dataset: {dataset_name}")
 
         self.dataset_name = dataset_name
+        self.model_name = model_name
         self.stop_condition = stop_condition
         self.batch_size = batch_size
         self.random_seed = random_seed
@@ -134,7 +137,7 @@ class BenchmarkRunner:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.dataset = DATA_SETS[dataset_name]["data_set"]()
-        self.model_factory = DATA_SETS[dataset_name]["model"]
+        self.model_factory = MODELS[dataset_name][model_name]
 
         np.random.seed(random_seed)
         torch.manual_seed(random_seed)
@@ -324,6 +327,7 @@ class BenchmarkRunner:
         else:
             print(f"Running:    {', '.join(optimizers.keys())}")
         print(f"Dataset:    {self.dataset_name}")
+        print(f"Model:      {self.model_name}")
         print(f"Batch size: {self.batch_size}")
         print(f"Seed:       {self.random_seed}")
         print(f"Stop:       {', '.join(stop_parts)}")
@@ -350,7 +354,6 @@ class BenchmarkRunner:
             )
 
         return results
-
 
     # def compare(
     #     self,
