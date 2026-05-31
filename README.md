@@ -49,7 +49,11 @@ You can run benchmarks using the `src.benchmark.run_benchmark` module.
     uv run -m src.benchmark.run_benchmark --dataset heart_disease --optimizer adam sgd cma-es
 ```
 
-### Generating plots for your run
+### Using a specific model architecture
+
+```sh
+    uv run -m src.benchmark.run_benchmark --dataset digits --model mlp --optimizer adam
+```
 
 Add the `--plot` flag to generate comparison and performance plots. By default, they are saved to `reports/model_analysis`.
 
@@ -60,6 +64,7 @@ Add the `--plot` flag to generate comparison and performance plots. By default, 
 ### Available Arguments/Parameters
 
 - `--dataset`: Choose from `cifar10`, `heart_disease`, `wine_quality`, `digits` (required).
+- `--model`: Name of the model architecture to use (e.g., `default`, `mlp`).
 - `--optimizer`: Name of a built-in optimizer (e.g., `adam`, `sgd`, `cma-es`) or a file path to a custom optimizer python script. More than one optimizer can be passed for comparison (required).
 - `--max-gradients`: Stop condition for maximum number of gradient evaluations (default: 5000).
 - `--max-db-reaches`: Stop condition for maximum database reaches (optional).
@@ -107,19 +112,22 @@ Add the `--plot` flag to generate comparison and performance plots. By default, 
 3. Implement the `get(self) -> ConcatDataset` abstract method to download/load and preprocess your data, returning it as a PyTorch dataset.
 4. Add your dataset name to the `ALLOWED_DATASETS` list in `src/config.py`.
 
-## 7. Configuring a Model with a Dataset
+## 7. Configuring Model Architectures for a Dataset
 
-To hook up your new dataset with a model to be evaluated:
+To add a new model architecture to an existing dataset or hook up a completely new dataset:
 
-1. Create a PyTorch model inheriting from `torch.nn.Module` in the `models/` directory (e.g., `models/my_model.py`).
-2. Open `src/dataset.py` and import your new dataset class and your new model class.
-3. Update `DataSetFactory.get_data_set` to support returning your new dataset.
-4. Add a new entry to the `DATA_SETS` dictionary in `src/dataset.py`. Map the identifier name to the initialized dataset and the model class:
+1. Create a PyTorch model inheriting from `torch.nn.Module` in the `models/` directory (e.g., `models/my_model.py` or `models/digits_mlp.py`).
+2. Open `src/dataset.py` and import your new model class.
+3. Update the `MODELS` dictionary in `src/dataset.py` by adding your new architecture under the respective dataset key. You can define a `"default"` model and any other variants:
 
    ```python
-   "my_dataset_name": {
-       "data_set": lambda: DataSetFactory.get_data_set("my_dataset_name"),
-       "model": MyModelClass,
+   MODELS = {
+       "my_dataset_name": {
+           "default": MyStandardModelClass,
+           "experimental": MyNewModelClass,
+       },
+       # ... other datasets ...
    }
-   ```
+4. If it's a completely new dataset, ensure the data loading logic is also registered in the DATA_SETS dictionary within src/dataset.py and the dataset name is added to ALLOWED_DATASETS in src/config.py.
+5. You can now benchmark this architecture by running: --dataset my_dataset_name --model experimental
 
