@@ -60,7 +60,7 @@ MODELS = {
         "default": WineQuality,
     },
     "digits": {
-        "default": Digits,  # Twój oryginalny CNN z models/digits.py
-        "mlp": DigitsMLP,  # Nowa, prosta architektura
+        "default": Digits,
+        "mlp": DigitsMLP,
     },
 }
