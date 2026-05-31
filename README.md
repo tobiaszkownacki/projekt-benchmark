@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-This repository contains a benchmark suite for testing, comparing, and analyzing various optimization algorithms (e.g., Adam, SGD, CMA-ES, Differential Evolution) on different datasets and neural network models using PyTorch. The framework tracks metrics like gradient evaluations, database reaches, and standard loss/accuracy over time, providing a comprehensive toolkit to evaluate the efficiency and convergence of both gradient-based and gradient-free optimizers. It is designed to be modular and independent dependency-wise, which yields simple addition of more problem (dataset-model) definitions and custom optimization algorithms.
+This repository contains a benchmark suite for testing, comparing, and analyzing various optimization algorithms (e.g., Adam, SGD, CMA-ES, Differential Evolution) on different datasets and neural network models using PyTorch. The framework tracks metrics like gradient evaluations, database reaches, and standard loss/accuracy over time, providing a comprehensive toolkit to evaluate the efficiency and convergence of both gradient-based and gradient-free optimizers. It is designed to be modular and independent dependency-wise, which yields simple addition of custom optimization algorithms, new datasets, and seamless swapping of neural network architectures for cross-comparison.
 
 ## 2. Installation & Setup
 
@@ -61,10 +61,16 @@ Add the `--plot` flag to generate comparison and performance plots. By default, 
     uv run -m src.benchmark.run_benchmark --dataset wine_quality --optimizer adam sgd cma-es --max-epochs 10 --max-gradients 100000 --plot
 ```
 
+### Comparing multiple models and optimizers simultaneously
+
+```sh
+	uv run -m src.benchmark.run_benchmark --dataset digits --model default mlp --optimizer adam sgd cma-es
+```
+
 ### Available Arguments/Parameters
 
 - `--dataset`: Choose from `cifar10`, `heart_disease`, `wine_quality`, `digits` (required).
-- `--model`: Name of the model architecture to use (e.g., `default`, `mlp`).
+- `--model`: Name of the model architecture to use (e.g., `default`, `mlp`). More than one model can be passed to test all combinations with the given optimizers (default: `['default']`).
 - `--optimizer`: Name of a built-in optimizer (e.g., `adam`, `sgd`, `cma-es`) or a file path to a custom optimizer python script. More than one optimizer can be passed for comparison (required).
 - `--max-gradients`: Stop condition for maximum number of gradient evaluations (default: 5000).
 - `--max-db-reaches`: Stop condition for maximum database reaches (optional).

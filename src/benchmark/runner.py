@@ -56,10 +56,13 @@ class BenchmarkResult:
     database_reaches_history: List[int] = field(default_factory=list)
     time_history: List[float] = field(default_factory=list)
 
+    model_name: str = "default"
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "optimizer": self.optimizer_name,
             "dataset": self.dataset_name,
+            "model": self.model_name,
             "stop_reason": self.stop_reason.name,
             "steps": self.total_steps,
             "epochs": self.total_epochs,
@@ -291,6 +294,7 @@ class BenchmarkRunner:
         return BenchmarkResult(
             optimizer_name=name,
             dataset_name=self.dataset_name,
+            model_name=self.model_name,
             stop_reason=stop_reason or StopReason.EPOCH_LIMIT,
             total_steps=step_count,
             total_epochs=epoch_count,
@@ -336,12 +340,12 @@ class BenchmarkRunner:
         results = {}
         for name, (cls, config) in optimizers.items():
             print(f"\n{'=' * 50}")
-            print(f"Running: {name}")
+            print(f"Running: Optimizer '{name}' on Model '{self.model_name}'")
             print("=" * 50)
             results[name] = self.run(cls, optimizer_name=name, **config)
 
         print(f"\n{'=' * 60}")
-        print("COMPARISON RESULTS")
+        print(f"Comparison results for model: {self.model_name.upper()}")
         print("=" * 60)
         print(
             f"{'Optimizer':<20} {'Loss':>10} {'Acc':>8} {'Grads':>10} {'DB Reach':>12}"
