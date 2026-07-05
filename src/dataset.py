@@ -7,6 +7,9 @@ from torch.utils.data import Dataset
 from models.cifar10 import Cifar10
 from models.digits import Digits
 from models.heart_disease import HeartDisease
+from models.light.students_performance_light import StudentsPerformanceLight
+from models.medium.students_performance_medium import StudentsPerformanceMedium
+from models.heavy.students_performance_heavy import StudentsPerformanceHeavy
 from models.wine_quality import WineQuality
 from models.digits_mlp import DigitsMLP
 
@@ -14,6 +17,7 @@ from src.datasets.cifar10 import Cifar10Dataset
 from src.datasets.digits import DigitsDataset
 from src.datasets.heart_disease import HeartDiseaseDataset
 from src.datasets.wine_quality import WineQualityDataset
+from src.datasets.students_performance import StudentsPerformanceDataset
 
 
 class DataSetFactory:
@@ -28,6 +32,8 @@ class DataSetFactory:
                 return WineQualityDataset().get()
             case "digits":
                 return DigitsDataset().get()
+            case "students_performance":
+                return StudentsPerformanceDataset().get()
             case _:
                 raise ValueError(f"Unsupported data set: {data_set_name}")
 
@@ -45,6 +51,9 @@ DATA_SETS = {
     "digits": {
         "data_set": lambda: DataSetFactory.get_data_set("digits"),
     },
+    "students_performance": {
+        "data_set": lambda: DataSetFactory.get_data_set("students_performance")
+    }
 }
 
 
@@ -63,4 +72,10 @@ MODELS = {
         "default": Digits,
         "mlp": DigitsMLP,
     },
+
+    "students_performance": {
+        "light": StudentsPerformanceLight,
+        "medium": StudentsPerformanceMedium,
+        "heavy": StudentsPerformanceHeavy,
+    }
 }
