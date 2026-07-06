@@ -169,9 +169,14 @@ def main():
         else:
             print_status("Parameter shape consistency (Shapes)", True)
 
-        if current_model_params.dtype != initial_params_copy.dtype:
+        opt_internal_dtype = getattr(opt_instance, 'params', initial_params_copy).dtype
+        if current_model_params.dtype != initial_params_copy.dtype or opt_internal_dtype != initial_params_copy.dtype:
             all_passed = False
-            print_status("Parameter data type consistency (Dtype)", False, f"Dtype changed from {initial_params_copy.dtype} to {current_model_params.dtype}!")
+            print_status(
+                "Parameter data type consistency (Dtype)",
+                False,
+                f"Dtype changed! Model has {current_model_params.dtype}, but optimizer internally stores {opt_internal_dtype}!"
+            )
         else:
             print_status("Parameter data type consistency (Dtype)", True, f"Type preserved: {current_model_params.dtype}")
 
