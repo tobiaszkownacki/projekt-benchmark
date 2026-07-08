@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=70"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "projekt-benchmark-frontend"
+version = "0.1.0"
+description = "Streamlit frontend for the benchmark project"
+requires-python = ">=3.11"
+dependencies = [
+    "authlib>=1.7.2",
+    "bcrypt>=4.1",
+    "email-validator>=2.1",
+    "httpx>=0.27",
+    "psycopg-pool>=3.2",
+    "psycopg[binary]>=3.1",
+    "streamlit[auth]>=1.59",
+]
+
+[tool.flake8]
+max-line-length = 120
+exclude = [".venv", ".git", "__pycache__", ".streamlit", "db"]
