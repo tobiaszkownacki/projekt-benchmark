@@ -17,6 +17,9 @@ dependencies = [
     "streamlit[auth]>=1.59",
 ]
 
+[tool.setuptools]
+packages = ["db", "auth", "pages", "components"]
+
 [tool.flake8]
 max-line-length = 120
 exclude = [".venv", ".git", "__pycache__", ".streamlit", "db"]

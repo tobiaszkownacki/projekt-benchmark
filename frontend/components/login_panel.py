@@ -5,6 +5,7 @@ from auth import repository
 from auth.passwords import validate_password_strength
 from auth.recaptcha import verify_recaptcha
 from auth.session import login_with_email
+from components.join_info_form import render_join_info_inputs, validate_join_info
 from components.recaptcha_widget import render_recaptcha, render_recaptcha_disclaimer
 
 _REGISTER_SUCCESS_KEY = "register_success"
@@ -66,14 +67,17 @@ def _render_login_form() -> None:
             st.error(message)
 
 
+def on_go_to_sign_in() -> None:
+    st.session_state.pop(_REGISTER_SUCCESS_KEY, None)
+    st.session_state["email_auth_mode"] = "Sign in"
+
+
 def _render_register_form() -> None:
     if st.session_state.get(_REGISTER_SUCCESS_KEY):
         st.success(
             "Account created! You can sign in once an administrator has approved your account."
         )
-        if st.button("Go to Sign in", use_container_width=True, key="register_success_continue"):
-            st.session_state.pop(_REGISTER_SUCCESS_KEY, None)
-            st.rerun()
+        st.button("Go to Sign in", use_container_width=True, key="register_success_continue", on_click = on_go_to_sign_in)
         return
 
     render_recaptcha_disclaimer()
@@ -83,10 +87,17 @@ def _render_register_form() -> None:
     password = st.text_input("Password", type="password", key="register_password")
     password2 = st.text_input("Confirm password", type="password", key="register_password2")
 
+    join_info, join_mode = render_join_info_inputs("register")
+
     if st.button("Register", use_container_width=True, key="register_submit"):
         validation_error = _validate_register_inputs(email, password, password2)
         if validation_error:
             st.error(validation_error)
+            return
+
+        join_error = validate_join_info(join_info, join_mode)
+        if join_error:
+            st.error(join_error)
             return
 
         if not captcha_token:
@@ -107,7 +118,13 @@ def _render_register_form() -> None:
                     st.error("An account with this email already exists.")
                 return
 
-            repository.create_email_user(email, password)
+            repository.create_email_user(
+                email,
+                password,
+                associated_organisation=join_info.associated_organisation,
+                associated_org_email=join_info.associated_org_email,
+                join_reason=join_info.join_reason,
+            )
 
         st.session_state[_REGISTER_SUCCESS_KEY] = True
         st.rerun()

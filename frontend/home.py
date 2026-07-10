@@ -2,9 +2,11 @@ import streamlit as st
 
 st.set_page_config(page_title="Benchmark", layout="wide")
 
+from auth import repository
 from auth.constants import ACCOUNT_DISABLED_MESSAGE
 from auth.session import get_current_user, is_logged_in, logout
 from components.admin_panel import render_admin_panel
+from components.join_info_onboarding import render_join_info_onboarding
 from components.login_panel import render_login_panel
 from components.pending_approval import render_pending_approval
 
@@ -20,6 +22,11 @@ if user is None:
 if not user.is_active:
     st.error(ACCOUNT_DISABLED_MESSAGE)
     st.button("Log out", on_click=logout)
+    st.stop()
+
+# Auth user is logged in and active, but has not completed the join info form yet
+if not repository.has_join_info(user):
+    render_join_info_onboarding(user)
     st.stop()
 
 if user.role == "unverified":

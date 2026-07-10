@@ -19,6 +19,9 @@ class User:
     is_active: bool
     created_at: datetime
     last_login_at: Optional[datetime]
+    associated_organisation: Optional[str] = None
+    associated_org_email: Optional[str] = None
+    join_reason: Optional[str] = None
     password_hash: Optional[str] = None
 
 
@@ -32,8 +35,15 @@ def _row_to_user(row: dict) -> User:
         is_active=row["is_active"],
         created_at=row["created_at"],
         last_login_at=row["last_login_at"],
+        associated_organisation=row.get("associated_organisation"),
+        associated_org_email=row.get("associated_org_email"),
+        join_reason=row.get("join_reason"),
         password_hash=row.get("password_hash"),
     )
+
+
+def has_join_info(user: User) -> bool:
+    return bool(user.join_reason or user.associated_organisation)
 
 
 def get_by_id(user_id: UUID) -> Optional[User]:
@@ -52,22 +62,62 @@ def get_by_email(email: str) -> Optional[User]:
             return _row_to_user(row) if row else None
 
 
-def create_email_user(email: str, password: str, display_name: Optional[str] = None) -> User:
+def create_email_user(
+    email: str,
+    password: str,
+    display_name: Optional[str] = None,
+    associated_organisation: Optional[str] = None,
+    associated_org_email: Optional[str] = None,
+    join_reason: Optional[str] = None,
+) -> User:
     email_lower = email.lower()
     password_hash = hash_password(password)
     with get_connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
                 """
-                INSERT INTO users (email, password_hash, role, auth_provider, display_name)
-                VALUES (%s, %s, 'unverified', 'email', %s)
+                INSERT INTO users (
+                    email, password_hash, role, auth_provider, display_name,
+                    associated_organisation, associated_org_email, join_reason
+                )
+                VALUES (%s, %s, 'unverified', 'email', %s, %s, %s, %s)
                 RETURNING *
                 """,
-                (email_lower, password_hash, display_name),
+                (
+                    email_lower,
+                    password_hash,
+                    display_name,
+                    associated_organisation,
+                    associated_org_email,
+                    join_reason,
+                ),
             )
             row = cur.fetchone()
             assert row is not None
             return _row_to_user(row)
+
+
+def set_join_info(
+    user_id: UUID,
+    associated_organisation: Optional[str] = None,
+    associated_org_email: Optional[str] = None,
+    join_reason: Optional[str] = None,
+) -> Optional[User]:
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                UPDATE users
+                SET associated_organisation = %s,
+                    associated_org_email = %s,
+                    join_reason = %s
+                WHERE id = %s
+                RETURNING *
+                """,
+                (associated_organisation, associated_org_email, join_reason, user_id),
+            )
+            row = cur.fetchone()
+            return _row_to_user(row) if row else None
 
 
 def upsert_oauth_user(

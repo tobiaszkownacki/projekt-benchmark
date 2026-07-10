@@ -25,3 +25,15 @@ def render_admin_panel() -> None:
                 repository.approve_user(user.id)
                 st.success(f"Approved: {user.email}")
                 st.rerun()
+
+        with st.expander("Registration details"):
+            if user.join_reason:
+                st.markdown("**Reason to join:**")
+                st.write(user.join_reason)
+            elif user.associated_organisation:
+                st.markdown("**Associated organisation:**")
+                st.write(user.associated_organisation)
+                st.markdown("**Associated e-mail:**")
+                st.write(user.associated_org_email or "-")
+            else:
+                st.write("No additional information provided.")
