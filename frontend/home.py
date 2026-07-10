@@ -10,36 +10,57 @@ from components.join_info_onboarding import render_join_info_onboarding
 from components.login_panel import render_login_panel
 from components.pending_approval import render_pending_approval
 
-if not is_logged_in():
-    render_login_panel()
-    st.stop()
+def _render_welcome_message(user: repository.User) -> None:
+    st.title("Benchmark")
+    st.write(f"Welcome, **{user.display_name or user.email}**!")
+    st.divider()
 
-user = get_current_user()
-if user is None:
-    render_login_panel()
-    st.stop()
-
-if not user.is_active:
+def _render_disabled_account() -> None:
     st.error(ACCOUNT_DISABLED_MESSAGE)
     st.button("Log out", on_click=logout)
-    st.stop()
 
-# Auth user is logged in and active, but has not completed the join info form yet
-if not repository.has_join_info(user):
-    render_join_info_onboarding(user)
-    st.stop()
 
-if user.role == "unverified":
-    render_pending_approval()
-    st.stop()
+def _render_main_app(user: repository.User) -> None:
+    _render_welcome_message(user)
+    st.markdown("Main application content goes here.")
 
-st.title("Benchmark")
-st.write(f"Welcome, **{user.display_name or user.email}**!")
+    st.button("Log out", on_click=logout)
 
-if user.role == "admin":
-    render_admin_panel()
 
-st.divider()
-st.markdown("Main application content goes here.")
+def _route_authenticated_user(user: repository.User) -> None:
+    if not user.is_active:
+        _render_disabled_account()
+        return
 
-st.button("Log out", on_click=logout)
+    # First oauth login users will not have join info, so we need to show the onboarding page
+    if not repository.has_join_info(user):
+        render_join_info_onboarding(user)
+        return
+
+    if user.role == "unverified":
+        render_pending_approval()
+        return
+
+    if user.role == "admin":
+        _render_welcome_message(user)
+        render_admin_panel()
+        st.button("Log out", on_click=logout)
+        return
+
+    _render_main_app(user)
+
+
+def main() -> None:
+    if not is_logged_in():
+        render_login_panel()
+        return
+
+    user = get_current_user()
+    if user is None:
+        render_login_panel()
+        return
+
+    _route_authenticated_user(user)
+
+
+main()
