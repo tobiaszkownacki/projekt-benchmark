@@ -33,7 +33,7 @@ if user.role == "unverified":
     render_pending_approval()
     st.stop()
 
-st.title("Optimizer Benchmark")
+st.title("Benchmark")
 st.write(f"Welcome, **{user.display_name or user.email}**!")
 
 if user.role == "admin":

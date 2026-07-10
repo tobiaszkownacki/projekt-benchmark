@@ -6,9 +6,28 @@ from auth.passwords import validate_password_strength
 from auth.recaptcha import verify_recaptcha
 from auth.session import login_with_email
 from components.join_info_form import render_join_info_inputs, validate_join_info
-from components.recaptcha_widget import render_recaptcha, render_recaptcha_disclaimer
+from components.recaptcha_widget import (
+    invalidate_recaptcha,
+    render_recaptcha,
+    render_recaptcha_disclaimer,
+)
 
 _REGISTER_SUCCESS_KEY = "register_success"
+_AUTH_ERROR_KEY = "auth_error"
+
+
+def _set_auth_error(message: str) -> None:
+    st.session_state[_AUTH_ERROR_KEY] = message
+
+
+def _clear_auth_error() -> None:
+    st.session_state.pop(_AUTH_ERROR_KEY, None)
+
+
+def _render_auth_error() -> None:
+    message = st.session_state.get(_AUTH_ERROR_KEY)
+    if message:
+        st.error(message)
 
 
 def _validate_email_format(email: str) -> str | None:
@@ -51,20 +70,40 @@ def _render_oauth_tab() -> None:
 
 
 def _render_login_form() -> None:
-    with st.form("email_login_form"):
-        email = st.text_input("Email")
-        password = st.text_input("Password", type="password")
-        submitted = st.form_submit_button("Sign in", use_container_width=True)
+    _render_auth_error()
+    render_recaptcha_disclaimer()
+    
+    captcha_token = render_recaptcha(action="login", key="login_recaptcha")
 
-    if submitted:
+    email = st.text_input("Email", key="login_email")
+    password = st.text_input("Password", type="password", key="login_password")
+
+    if st.button("Sign in", use_container_width=True, key="login_submit"):
+        _clear_auth_error()
+
         if not email or not password:
             st.error("Please enter your email and password.")
             return
-        ok, message = login_with_email(email, password)
+
+        if not captcha_token:
+            st.warning("Security check is still loading. Wait a moment and try again.")
+            return
+
+        with st.spinner("Signing in..."):
+            captcha_ok = verify_recaptcha(captcha_token, action="login")
+            invalidate_recaptcha("login_recaptcha", captcha_token)
+
+            if not captcha_ok:
+                _set_auth_error("reCAPTCHA verification failed. Please try again.")
+                st.rerun()
+
+            ok, message = login_with_email(email, password)
+
         if ok:
             st.rerun()
         else:
-            st.error(message)
+            _set_auth_error(message)
+            st.rerun()
 
 
 def on_go_to_sign_in() -> None:
@@ -80,6 +119,8 @@ def _render_register_form() -> None:
         st.button("Go to Sign in", use_container_width=True, key="register_success_continue", on_click = on_go_to_sign_in)
         return
 
+    _render_auth_error()
+
     render_recaptcha_disclaimer()
     captcha_token = render_recaptcha(action="register", key="register_recaptcha")
 
@@ -90,6 +131,8 @@ def _render_register_form() -> None:
     join_info, join_mode = render_join_info_inputs("register")
 
     if st.button("Register", use_container_width=True, key="register_submit"):
+        _clear_auth_error()
+
         validation_error = _validate_register_inputs(email, password, password2)
         if validation_error:
             st.error(validation_error)
@@ -105,18 +148,21 @@ def _render_register_form() -> None:
             return
 
         with st.spinner("Creating your account..."):
-            if not verify_recaptcha(captcha_token, action="register"):
-                st.error("reCAPTCHA verification failed. Please try again.")
-                return
+            captcha_ok = verify_recaptcha(captcha_token, action="register")
+            invalidate_recaptcha("register_recaptcha", captcha_token)
+
+            if not captcha_ok:
+                _set_auth_error("reCAPTCHA verification failed. Please try again.")
+                st.rerun()
 
             existing = repository.get_by_email(email)
             if existing:
                 if existing.auth_provider != "email":
                     provider = existing.auth_provider.capitalize()
-                    st.error(f"This email is already linked to {provider} login.")
+                    _set_auth_error(f"This email is already linked to {provider} login.")
                 else:
-                    st.error("An account with this email already exists.")
-                return
+                    _set_auth_error("An account with this email already exists.")
+                st.rerun()
 
             repository.create_email_user(
                 email,
@@ -145,6 +191,7 @@ def render_login_panel() -> None:
             horizontal=True,
             label_visibility="collapsed",
             key="email_auth_mode",
+            on_change=_clear_auth_error,
         )
         if auth_mode == "Sign in":
             _render_login_form()

@@ -35,10 +35,6 @@ export default function(component) {
     }
 
     whenReady();
-
-    return () => {
-        document.querySelectorAll(".grecaptcha-badge").forEach((el) => el.remove());
-    };
 }
 """
 
@@ -62,14 +58,27 @@ def render_recaptcha(*, action: str = "submit", key: str = "recaptcha") -> str |
         st.warning("reCAPTCHA is not configured.")
         return None
 
+    nonce = st.session_state.get(f"{key}_nonce", 0)
     result = _recaptcha_component(
-        data={"site_key": site_key, "action": action},
+        data={"site_key": site_key, "action": action, "nonce": nonce},
         key=key,
         default={"token": None},
         on_token_change=lambda: None,
         height=0,
     )
-    return getattr(result, "token", None)
+    token = getattr(result, "token", None)
+
+    # reCAPTCHA v3 tokens are single-use. Once a token has been submitted for
+    # verification we must not reuse it; return None until a fresh token arrives.
+    if token is not None and token == st.session_state.get(f"{key}_used"):
+        return None
+    return token
+
+
+def invalidate_recaptcha(key: str, token: str | None) -> None:
+    """Mark the current token as consumed and force the widget to fetch a new one."""
+    st.session_state[f"{key}_used"] = token
+    st.session_state[f"{key}_nonce"] = st.session_state.get(f"{key}_nonce", 0) + 1
 
 
 def render_recaptcha_disclaimer() -> None:
