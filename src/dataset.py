@@ -10,6 +10,9 @@ from models.heart_disease import HeartDisease
 from models.light.students_performance_light import StudentsPerformanceLight
 from models.medium.students_performance_medium import StudentsPerformanceMedium
 from models.heavy.students_performance_heavy import StudentsPerformanceHeavy
+from models.light.fashion_mnist_light import FashionMNISTLight
+from models.medium.fashion_mnist_medium import FashionMNISTMedium
+from models.heavy.fashion_mnist_heavy import FashionMNISTHeavy
 from models.wine_quality import WineQuality
 from models.digits_mlp import DigitsMLP
 
@@ -18,6 +21,7 @@ from src.datasets.digits import DigitsDataset
 from src.datasets.heart_disease import HeartDiseaseDataset
 from src.datasets.wine_quality import WineQualityDataset
 from src.datasets.students_performance import StudentsPerformanceDataset
+from src.datasets.fashion_mnist import FashionMNISTDataset
 
 
 class DataSetFactory:
@@ -34,6 +38,8 @@ class DataSetFactory:
                 return DigitsDataset().get()
             case "students_performance":
                 return StudentsPerformanceDataset().get()
+            case "fashion_mnist":
+                return FashionMNISTDataset().get()
             case _:
                 raise ValueError(f"Unsupported data set: {data_set_name}")
 
@@ -53,6 +59,9 @@ DATA_SETS = {
     },
     "students_performance": {
         "data_set": lambda: DataSetFactory.get_data_set("students_performance")
+    },
+    "fashion_mnist": {
+        "data_set": lambda: DataSetFactory.get_data_set("fashion_mnist")
     }
 }
 
@@ -77,5 +86,11 @@ MODELS = {
         "light": StudentsPerformanceLight,
         "medium": StudentsPerformanceMedium,
         "heavy": StudentsPerformanceHeavy,
-    }
+    },
+
+    "fashion_mnist": {
+        "light": FashionMNISTLight,
+        "medium": FashionMNISTMedium,
+        "heavy": FashionMNISTHeavy,
+    },
 }

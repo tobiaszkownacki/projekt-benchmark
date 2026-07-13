@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 venv
 data/raw/cifar10
+data/raw/f-mnist
 data/raw/*.csv
 
 # C extensions
