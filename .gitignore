@@ -5,6 +5,7 @@ __pycache__/
 venv
 data/raw/cifar10
 data/raw/f-mnist
+data/raw/stl10
 data/raw/*.csv
 
 # C extensions
