@@ -1,7 +1,7 @@
 import torch.nn as nn
 
 class StudentsPerformanceHeavy(nn.Module):
-    def __init__(self, input_size=14, output_size=5, hidden_layers=(20, 20, 20)):
+    def __init__(self, input_size=14, output_size=5):
         super(StudentsPerformanceHeavy, self).__init__()
         self.fc = nn.Sequential(
             nn.Linear(input_size, 20),

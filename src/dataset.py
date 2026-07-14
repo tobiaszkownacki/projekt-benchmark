@@ -16,6 +16,9 @@ from models.heavy.fashion_mnist_heavy import FashionMNISTHeavy
 from models.light.stl10_light import STL10Light
 from models.medium.stl10_medium import STL10Medium
 from models.heavy.stl10_heavy import STL10Heavy
+from models.light.mobile_price_light import MobilePriceLight
+from models.medium.mobile_price_medium import MobilePriceMedium
+from models.heavy.mobile_price_heavy import MobilePriceHeavy
 from models.wine_quality import WineQuality
 from models.digits_mlp import DigitsMLP
 
@@ -26,6 +29,7 @@ from src.datasets.wine_quality import WineQualityDataset
 from src.datasets.students_performance import StudentsPerformanceDataset
 from src.datasets.fashion_mnist import FashionMNISTDataset
 from src.datasets.stl10 import STL10Dataset
+from src.datasets.mobile_price import MobilePriceDataset
 
 
 class DataSetFactory:
@@ -46,6 +50,8 @@ class DataSetFactory:
                 return FashionMNISTDataset().get()
             case "stl10":
                 return STL10Dataset().get()
+            case "mobile_price":
+                return MobilePriceDataset().get()
             case _:
                 raise ValueError(f"Unsupported data set: {data_set_name}")
 
@@ -71,6 +77,9 @@ DATA_SETS = {
     },
     "stl10": {
         "data_set": lambda: DataSetFactory.get_data_set("stl10")
+    },
+    "mobile_price": {
+        "data_set": lambda: DataSetFactory.get_data_set("mobile_price")
     }
 }
 
@@ -108,4 +117,10 @@ MODELS = {
         "medium": STL10Medium,
         "heavy": STL10Heavy,
     },
+
+    "mobile_price": {
+        "light": MobilePriceLight,
+        "medium": MobilePriceMedium,
+        "heavy": MobilePriceHeavy,
+    }
 }
