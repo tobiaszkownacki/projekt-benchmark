@@ -175,25 +175,27 @@ def _render_register_form() -> None:
         st.session_state[_REGISTER_SUCCESS_KEY] = True
         st.rerun()
 
-
 def render_login_panel() -> None:
-    st.title("Sign in")
+    with st.container(horizontal_alignment="center"):
+        with st.container(width=600, horizontal_alignment="center"):
+            with st.container(horizontal_alignment="center"):
+                st.title("Sign in")
 
-    oauth_tab, email_tab = st.tabs(["OAuth", "Email & password"])
+            oauth_tab, email_tab = st.tabs(["OAuth", "Email & password"])
 
-    with oauth_tab:
-        _render_oauth_tab()
+            with oauth_tab:
+                _render_oauth_tab()
 
-    with email_tab:
-        auth_mode = st.radio(
-            "Account action",
-            ["Sign in", "Register"],
-            horizontal=True,
-            label_visibility="collapsed",
-            key="email_auth_mode",
-            on_change=_clear_auth_error,
-        )
-        if auth_mode == "Sign in":
-            _render_login_form()
-        else:
-            _render_register_form()
+            with email_tab:
+                auth_mode = st.radio(
+                    "Account action",
+                    ["Sign in", "Register"],
+                    horizontal=True,
+                    label_visibility="collapsed",
+                    key="email_auth_mode",
+                    on_change=_clear_auth_error,
+                )
+                if auth_mode == "Sign in":
+                    _render_login_form()
+                else:
+                    _render_register_form()
