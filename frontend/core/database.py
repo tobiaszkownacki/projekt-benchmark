@@ -5,7 +5,7 @@ import psycopg
 import streamlit as st
 from psycopg_pool import ConnectionPool
 
-from auth.config import get_database_url
+from core.config import get_database_url
 
 
 @st.cache_resource(on_release=lambda pool: pool.close())

@@ -3,9 +3,16 @@ import streamlit as st
 from auth import repository
 
 
+_APPROVED_MSG_KEY = "admin_approved_email"
+
+
 def render_admin_panel() -> None:
     st.subheader("Admin panel")
     st.caption("Users awaiting approval")
+
+    approved_email = st.session_state.pop(_APPROVED_MSG_KEY, None)
+    if approved_email:
+        st.success(f"Approved: {approved_email}")
 
     pending = repository.list_unverified()
     if not pending:
@@ -23,7 +30,7 @@ def render_admin_panel() -> None:
         with col4:
             if st.button("Approve", key=f"approve_{user.id}"):
                 repository.approve_user(user.id)
-                st.success(f"Approved: {user.email}")
+                st.session_state[_APPROVED_MSG_KEY] = user.email
                 st.rerun()
 
         with st.expander("Registration details"):

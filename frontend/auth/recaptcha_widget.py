@@ -1,6 +1,6 @@
 import streamlit as st
 
-from auth.config import get_recaptcha_site_key
+from core.config import get_recaptcha_site_key
 import streamlit.components.v2 as components
 
 _RECAPTCHA_JS = """
@@ -40,7 +40,7 @@ export default function(component) {
 
 _recaptcha_component = components.component(
     "recaptcha_v3",
-    css=".grecaptcha-badge { visibility: hidden; }",
+    css=".grecaptcha-badge { visibility: hidden !important; display: none !important; }",
     js=_RECAPTCHA_JS,
     isolate_styles=False,
 )
@@ -50,6 +50,20 @@ _RECAPTCHA_DISCLAIMER = (
     "[Privacy Policy](https://policies.google.com/privacy) and "
     "[Terms of Service](https://policies.google.com/terms) apply."
 )
+
+
+def hide_recaptcha_badge() -> None:
+    st.markdown(
+        """
+        <style>
+        .grecaptcha-badge {
+            visibility: hidden !important;
+            display: none !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def render_recaptcha(*, action: str = "submit", key: str = "recaptcha") -> str | None:

@@ -1,7 +1,6 @@
 import streamlit as st
 
 from auth import repository
-from auth.constants import ACCOUNT_DISABLED_MESSAGE
 
 
 def _detect_provider() -> str:
@@ -29,10 +28,5 @@ def sync_oauth_user() -> repository.User | None:
         auth_provider=_detect_provider(),
         display_name=getattr(st.user, "name", None),
     )
-
-    if not user.is_active:
-        st.error(ACCOUNT_DISABLED_MESSAGE)
-        st.logout()
-        return None
 
     return user

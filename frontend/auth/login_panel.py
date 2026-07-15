@@ -5,8 +5,8 @@ from auth import repository
 from auth.passwords import validate_password_strength
 from auth.recaptcha import verify_recaptcha
 from auth.session import login_with_email
-from components.join_info_form import render_join_info_inputs, validate_join_info
-from components.recaptcha_widget import (
+from auth.join_info_form import render_join_info_inputs, validate_join_info
+from auth.recaptcha_widget import (
     invalidate_recaptcha,
     render_recaptcha,
     render_recaptcha_disclaimer,
@@ -59,13 +59,13 @@ def _render_oauth_tab() -> None:
         "Sign in with Google",
         on_click=st.login,
         kwargs={"provider": "google"},
-        use_container_width=True,
+        width="stretch",
     )
     st.button(
         "Sign in with Microsoft",
         on_click=st.login,
         kwargs={"provider": "microsoft"},
-        use_container_width=True,
+        width="stretch",
     )
 
 
@@ -78,7 +78,7 @@ def _render_login_form() -> None:
     email = st.text_input("Email", key="login_email")
     password = st.text_input("Password", type="password", key="login_password")
 
-    if st.button("Sign in", use_container_width=True, key="login_submit"):
+    if st.button("Sign in", width="stretch", key="login_submit"):
         _clear_auth_error()
 
         if not email or not password:
@@ -116,7 +116,7 @@ def _render_register_form() -> None:
         st.success(
             "Account created! You can sign in once an administrator has approved your account."
         )
-        st.button("Go to Sign in", use_container_width=True, key="register_success_continue", on_click = on_go_to_sign_in)
+        st.button("Go to Sign in", width="stretch", key="register_success_continue", on_click = on_go_to_sign_in)
         return
 
     _render_auth_error()
@@ -130,7 +130,7 @@ def _render_register_form() -> None:
 
     join_info, join_mode = render_join_info_inputs("register")
 
-    if st.button("Register", use_container_width=True, key="register_submit"):
+    if st.button("Register", width="stretch", key="register_submit"):
         _clear_auth_error()
 
         validation_error = _validate_register_inputs(email, password, password2)

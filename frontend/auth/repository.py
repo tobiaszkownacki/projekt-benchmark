@@ -5,7 +5,7 @@ from uuid import UUID
 
 from psycopg.rows import dict_row
 
-from auth.database import get_connection
+from core.database import get_connection
 from auth.passwords import hash_password
 
 
@@ -93,7 +93,8 @@ def create_email_user(
                 ),
             )
             row = cur.fetchone()
-            assert row is not None
+            if row is None:
+                raise RuntimeError("Failed to create user: no row returned.")
             return _row_to_user(row)
 
 
@@ -147,7 +148,8 @@ def upsert_oauth_user(
                     (display_name, oauth_sub, existing["id"]),
                 )
                 row = cur.fetchone()
-                assert row is not None
+                if row is None:
+                    raise RuntimeError("Failed to update OAuth user: no row returned.")
                 return _row_to_user(row)
 
             cur.execute(
@@ -159,7 +161,8 @@ def upsert_oauth_user(
                 (email_lower, auth_provider, oauth_sub, display_name),
             )
             row = cur.fetchone()
-            assert row is not None
+            if row is None:
+                raise RuntimeError("Failed to create OAuth user: no row returned.")
             return _row_to_user(row)
 
 
@@ -184,7 +187,7 @@ def list_unverified() -> List[User]:
             return [_row_to_user(row) for row in cur.fetchall()]
 
 
-def approve_user(user_id: UUID) -> Optional[User]:
+def approve_user(user_id: UUID) -> User:
     with get_connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
@@ -196,5 +199,6 @@ def approve_user(user_id: UUID) -> Optional[User]:
                 (user_id,),
             )
             row = cur.fetchone()
-            assert row is not None
-            return _row_to_user(row) if row else None
+            if row is None:
+                raise ValueError(f"User with id {user_id} not found or not unverified.")
+            return _row_to_user(row)

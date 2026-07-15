@@ -22,7 +22,7 @@ def validate_join_info(info: JoinInfo, mode: str) -> Optional[str]:
         if not (info.associated_org_email or "").strip():
             return "Please enter the associated e-mail."
         try:
-            validate_email(info.associated_org_email, check_deliverability=False)
+            validate_email(info.associated_org_email or "", check_deliverability=False)
         except EmailNotValidError as exc:
             return str(exc)
     else:

@@ -4,7 +4,6 @@ from uuid import UUID
 import streamlit as st
 
 from auth import repository
-from auth.constants import ACCOUNT_DISABLED_MESSAGE
 from auth.oauth_sync import sync_oauth_user
 from auth.passwords import verify_password
 
@@ -30,8 +29,6 @@ def login_with_email(email: str, password: str) -> tuple[bool, str]:
     if user.auth_provider != "email":
         provider = user.auth_provider.capitalize()
         return False, f"This account uses {provider} login. Use the corresponding OAuth button."
-    if not user.is_active:
-        return False, ACCOUNT_DISABLED_MESSAGE
     if not user.password_hash or not verify_password(password, user.password_hash):
         return False, "Invalid email or password."
 
