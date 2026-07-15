@@ -28,7 +28,7 @@ MODELS_DIR = PROJ_ROOT / "models"
 REPORTS_DIR = PROJ_ROOT / "reports"
 FIGURES_DIR = REPORTS_DIR / "figures"
 
-ALLOWED_DATASETS = ["cifar10", "heart_disease", "wine_quality", "digits", "students_performance", "fashion_mnist", "stl10", "mobile_price"]
+ALLOWED_DATASETS = ["cifar10", "heart_disease", "wine_quality", "digits", "students_performance", "fashion_mnist", "stl10", "mobile_price", "healthcare"]
 ALLOWED_OPTIMIZERS = [
     "adam",
     "adamw",
