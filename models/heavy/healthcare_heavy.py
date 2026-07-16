@@ -1,7 +1,7 @@
 import torch 
 import torch.nn as nn
 
-class HealthcareHeavyv(nn.Module):
+class HealthcareHeavy(nn.Module):
     def __init__(self, input_size=31, output_size=3):
         super().__init__()
     
