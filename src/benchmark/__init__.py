@@ -1,9 +1,4 @@
-from src.benchmark.evaluator import ModelEvaluator
-from src.benchmark.optimizer_protocol import (
-    BenchmarkableOptimizer,
-    BenchmarkOptimizer,
-)
-from src.benchmark.runner import (
+from benchmark.runner import (
     BenchmarkRunner,
     BenchmarkResult,
     StopCondition,
@@ -11,11 +6,9 @@ from src.benchmark.runner import (
 )
 
 __all__ = [
-    "ModelEvaluator",
-    "BenchmarkableOptimizer", 
-    "BenchmarkOptimizer",
     "BenchmarkRunner",
     "BenchmarkResult",
     "StopCondition",
     "StopReason",
 ]
+

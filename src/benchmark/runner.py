@@ -15,11 +15,13 @@ from enum import Enum, auto
 import time
 import numpy as np
 import torch
+from torch.nn.utils import parameters_to_vector
 from torch.utils.data import DataLoader
 from torch.nn import CrossEntropyLoss
 
-from src.benchmark.evaluator import ModelEvaluator
-from src.benchmark.optimizer_protocol import BenchmarkableOptimizer
+from benchmark.evaluator import ModelEvaluator
+from benchmark.evaluator_dtos import PyTorchTensorEvaluatorDto
+from benchmark.optimizer_protocols import BenchmarkableOptimizer
 from src.logging import Log
 
 
@@ -167,8 +169,10 @@ class BenchmarkRunner:
         model = self.model_factory()
         model.to(self.device)
 
-        initial_params = np.concatenate(
-            [p.data.cpu().numpy().flatten() for p in model.parameters()]
+        initial_params = (
+            PyTorchTensorEvaluatorDto(parameters_to_vector(model.parameters()))
+            .to(optimizer_class.get_output_type())
+            .data()
         )
 
         optimizer = optimizer_class(initial_params, **optimizer_config)
@@ -236,6 +240,8 @@ class BenchmarkRunner:
                     device=self.device,
                     metrics_callback=metrics_callback,
                 )
+
+                evaluator.set_output_type(optimizer.__class__.get_output_type())
 
                 converged = optimizer.step(evaluator)
                 step_count += 1
@@ -325,7 +331,7 @@ class BenchmarkRunner:
         if sc.max_steps:
             stop_parts.append(f"steps={sc.max_steps}")
 
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         if len(optimizers) > 1:
             print(f"Comparing:  {', '.join(optimizers.keys())}")
         else:
@@ -335,7 +341,7 @@ class BenchmarkRunner:
         print(f"Batch size: {self.batch_size}")
         print(f"Seed:       {self.random_seed}")
         print(f"Stop:       {', '.join(stop_parts)}")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
 
         results = {}
         for name, (cls, config) in optimizers.items():

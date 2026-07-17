@@ -1,10 +1,10 @@
-import numpy as np
+import cupy as np
 
-from src.benchmark.evaluator import ModelEvaluator
-from src.benchmark.optimizer_protocol import BenchmarkOptimizer
+from benchmark.evaluator import ModelEvaluator
+from benchmark.optimizer_protocols import CupyBenchmarkOptimizer
 
 
-class AdamWAdapter(BenchmarkOptimizer):
+class AdamWAdapter(CupyBenchmarkOptimizer):
     """Pure NumPy implementation of AdamW (Decoupled Weight Decay)."""
 
     def __init__(
@@ -14,7 +14,7 @@ class AdamWAdapter(BenchmarkOptimizer):
         betas: tuple = (0.9, 0.999),
         eps: float = 1e-8,
         weight_decay: float = 0.01,
-        **config
+        **config,
     ):
         super().__init__(initial_params, **config)
         self.lr = lr
@@ -31,7 +31,7 @@ class AdamWAdapter(BenchmarkOptimizer):
         loss, grad = evaluator.evaluate_with_grad()
         self.t += 1
 
-        # Adam update 
+        # Adam update
         # Grads are NOT modified by weight decay here
         self.m = self.beta1 * self.m + (1 - self.beta1) * grad
         self.v = self.beta2 * self.v + (1 - self.beta2) * (grad**2)
@@ -43,7 +43,9 @@ class AdamWAdapter(BenchmarkOptimizer):
 
         # Decoupled weight decay: params = params - lr * (step + weight_decay * params)
         if self.weight_decay > 0:
-            self.params = self.params - self.lr * (step_val + self.weight_decay * self.params)
+            self.params = self.params - self.lr * (
+                step_val + self.weight_decay * self.params
+            )
         else:
             self.params = self.params - self.lr * step_val
 
