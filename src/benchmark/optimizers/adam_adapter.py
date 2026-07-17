@@ -1,11 +1,11 @@
-import numpy as np
+import cupy as np
 
-from src.benchmark.evaluator import ModelEvaluator
-from src.benchmark.optimizer_protocol import BenchmarkOptimizer
+from benchmark.evaluator import ModelEvaluator
+from benchmark.optimizer_protocols import CupyBenchmarkOptimizer
 
 
-class AdamAdapter(BenchmarkOptimizer):
-    """Pure NumPy implementation for benchmark"""
+class AdamAdapter(CupyBenchmarkOptimizer):
+    """Pure NumPy implemenation for benchmark"""
 
     # TODO: Check if this is done right
     # almost certianly it is not the same as PyTorch Adam
@@ -16,9 +16,10 @@ class AdamAdapter(BenchmarkOptimizer):
         betas: tuple = (0.9, 0.999),
         eps: float = 1e-8,
         weight_decay: float = 0,
-        **config
+        **config,
     ):
         super().__init__(initial_params, **config)
+
         self.lr = lr
         self.beta1, self.beta2 = betas
         self.eps = eps

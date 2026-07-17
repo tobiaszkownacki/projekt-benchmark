@@ -92,7 +92,7 @@ Add the `--plot` flag to generate comparison and performance plots. By default, 
 ## 5. Adding a New Optimizer
 
 1. Create a new python script inside `src/benchmark/optimizers/` (e.g., `my_optimizer_adapter.py`).
-2. Create your optimizer class inheriting from `src.benchmark.optimizer_protocol.BenchmarkOptimizer`.
+2. Create your optimizer class inheriting from `src.benchmark.optimizer_protocols.BenchmarkOptimizer`.
 3. Implement the `step(self, evaluator: ModelEvaluator) -> bool` method.
     - Inside `step()`, you can call `evaluator.evaluate_with_grad()` or `evaluator.evaluate()` depending on whether your optimizer needs gradients.
     - Update `self.params` and finally call `evaluator.set_params(self.params)`.
