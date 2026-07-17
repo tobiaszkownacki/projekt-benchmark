@@ -15,3 +15,6 @@ __all__ = [
     "NumpyNdarrayTensorEvaluatorDto",
     "PyTorchTensorEvaluatorDto",
 ]
+
+# Import converters to trigger registration
+from . import converters

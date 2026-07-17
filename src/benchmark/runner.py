@@ -19,9 +19,9 @@ from torch.nn.utils import parameters_to_vector
 from torch.utils.data import DataLoader
 from torch.nn import CrossEntropyLoss
 
-from src.benchmark.evaluator import ModelEvaluator
-from src.benchmark.evaluator_dtos.evaluator_dto import PyTorchTensorEvaluatorDto
-from src.benchmark.optimizer_protocols import BenchmarkableOptimizer
+from benchmark.evaluator import ModelEvaluator
+from benchmark.evaluator_dtos import PyTorchTensorEvaluatorDto
+from benchmark.optimizer_protocols import BenchmarkableOptimizer
 from src.logging import Log
 
 

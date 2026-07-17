@@ -31,5 +31,5 @@ class BenchmarkOptimizer:
         """
         raise NotImplementedError("Implement step() in your optimizer")
 
-    def get_output_type(self) -> Type[EvaluatorDto]:
+    def get_output_type() -> Type[EvaluatorDto]:
         raise NotImplementedError("Implement get_output_type() in your optimizer")

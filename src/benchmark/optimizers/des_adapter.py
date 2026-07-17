@@ -2,7 +2,7 @@ import cupy as np
 import scipy.special
 
 from benchmark.evaluator import ModelEvaluator
-from benchmark.optimizer_protocol import CupyBenchmarkOptimizer
+from benchmark.optimizer_protocols import CupyBenchmarkOptimizer
 
 
 class DESAdapter(CupyBenchmarkOptimizer):

@@ -10,7 +10,19 @@ class EvaluatorDto:
         pass
 
     def to(self, target_type: Type[T], **params) -> T:
-        raise NotImplementedError(f"Conversion to {target_type.__name__} not available")
+        from . import registry  # Local import to prevent circular dependencies
+
+        # Direct conversion if types are the same
+        if isinstance(self, target_type):
+            return self
+
+        converter_func = registry.CONVERSION_REGISTRY.get((type(self), target_type))
+        if converter_func:
+            return converter_func(self, **params)
+
+        raise NotImplementedError(
+            f"Conversion from {type(self).__name__} to {target_type.__name__} is not registered."
+        )
 
     def data(self) -> object:
         raise NotImplementedError("data() not implemented")
