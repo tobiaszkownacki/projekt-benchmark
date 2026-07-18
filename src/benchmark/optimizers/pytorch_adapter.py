@@ -1,13 +1,13 @@
 from typing import Type
 
-import numpy as np
+import cupy as np
 import torch
 
-from src.benchmark.evaluator import ModelEvaluator
-from src.benchmark.optimizer_protocol import BenchmarkOptimizer
+from benchmark.evaluator import ModelEvaluator
+from benchmark.optimizer_protocols import CupyBenchmarkOptimizer
 
 
-class PyTorchOptimizerAdapter(BenchmarkOptimizer):
+class PyTorchOptimizerAdapter(CupyBenchmarkOptimizer):
     def __init__(
         self,
         initial_params: np.ndarray,

@@ -2,17 +2,21 @@
 This wraps the model, data batch, and loss function
 providing a simple interface allowing optimizers to:
 1. Evaluate the current parameters (forward pass)
-2. Get gradients (backward pass)  
+2. Get gradients (backward pass)
 3. Read/write model parameters
 
 Metrics are tracked AUTOMATICALLY, the optimizer doesn't need to do anything.
 """
 
-from typing import Tuple, Optional, Callable
-import numpy as np
+from typing import Callable, Tuple, Type
+
 import torch
 from torch import Tensor
 from torch.nn import Module
+from torch.nn.utils import parameters_to_vector, vector_to_parameters
+
+from benchmark.evaluator_dtos import PyTorchTensorEvaluatorDto
+from benchmark.evaluator_dtos.evaluator_dto import T
 
 
 class ModelEvaluator:
@@ -34,7 +38,8 @@ class ModelEvaluator:
         targets: Tensor,
         criterion: Callable,
         device: torch.device,
-        metrics_callback: Callable[[int, int], None],  # (db_reaches, gradients)
+        # (db_reaches, gradients)
+        metrics_callback: Callable[[int, int], None],
     ):
         self._model = model
         self._inputs = inputs.to(device)
@@ -46,6 +51,9 @@ class ModelEvaluator:
         self._param_shapes = [p.shape for p in model.parameters()]
         self._param_count = sum(p.numel() for p in model.parameters())
 
+    def set_output_type(self, output_type: Type[T]):
+        self.type = output_type
+
     @property
     def batch_size(self) -> int:
         """Number of samples in current batch"""
@@ -56,23 +64,20 @@ class ModelEvaluator:
         """Total number of model parameters"""
         return self._param_count
 
-    def get_params(self) -> np.ndarray:
+    def get_params(self) -> object:
         """Get current model parameters as flat numpy array"""
-        return np.concatenate(
-            [p.data.cpu().numpy().flatten() for p in self._model.parameters()]
+        return (
+            PyTorchTensorEvaluatorDto(parameters_to_vector(self._model.parameters()))
+            .to(self.type)
+            .data()
         )
 
-    def set_params(self, params: np.ndarray) -> None:
+    def set_params(self, params: object) -> None:
         """Set model parameters from flat numpy array"""
-        idx = 0
-        for p, shape in zip(self._model.parameters(), self._param_shapes):
-            numel = np.prod(shape)
-            p.data.copy_(
-                torch.from_numpy(params[idx : idx + numel].reshape(shape)).to(
-                    self._device
-                )
-            )
-            idx += numel
+        params_torch_flat = self.type(params).to(
+            PyTorchTensorEvaluatorDto, device=self._device
+        )
+        vector_to_parameters(params_torch_flat.data(), self._model.parameters())
 
     def evaluate(self) -> float:
         """
@@ -93,7 +98,7 @@ class ModelEvaluator:
         self._metrics_callback(self._batch_size, 0)
         return loss.item()
 
-    def evaluate_with_grad(self) -> Tuple[float, np.ndarray]:
+    def evaluate_with_grad(self) -> Tuple[float, object]:
         """
         Evaluate and compute gradients (forward + backward pass)
 
@@ -111,18 +116,29 @@ class ModelEvaluator:
         loss = self._criterion(outputs, self._targets)
         loss.backward()
 
-        grad = np.concatenate(
-            [p.grad.cpu().numpy().flatten() for p in self._model.parameters()]
-        )
+        grad = PyTorchTensorEvaluatorDto(self._get_gradients_as_vector(self._model))
 
         # Track: forward+backward = database reach + gradient
         self._metrics_callback(self._batch_size, 1)
-        return loss.item(), grad
+        return loss.item(), grad.to(self.type).data()
 
-    def get_predictions(self) -> Tuple[np.ndarray, np.ndarray]:
+    def get_predictions(self) -> Tuple[object, object]:
         """Get current predictions and targets for accuracy calculation"""
         self._model.eval()
         with torch.no_grad():
             outputs = self._model(self._inputs)
             _, predicted = torch.max(outputs, 1)
-        return predicted.cpu().numpy(), self._targets.cpu().numpy()
+        return PyTorchTensorEvaluatorDto(predicted).to(
+            self.type
+        ).data(), PyTorchTensorEvaluatorDto(self._targets).to(self.type).data()
+
+    def _get_gradients_as_vector(self, model: torch.nn.Module) -> torch.Tensor:
+        grads = []
+        for param in model.parameters():
+            if param.requires_grad:
+                if param.grad is not None:
+                    grads.append(param.grad.view(-1))
+                else:
+                    grads.append(torch.zeros_like(param).view(-1))
+
+        return torch.cat(grads)
