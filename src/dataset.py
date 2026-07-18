@@ -25,6 +25,9 @@ from models.heavy.healthcare_heavy import HealthcareHeavy
 from models.light.apple_quality_light import AppleQualityLight
 from models.medium.apple_quality_medium import AppleQualityMedium
 from models.heavy.apple_quality_heavy import AppleQualityHeavy
+from models.light.ai_student_impact_light import AiStudentImpactLight
+from models.medium.ai_student_impact_medium import AiStudentImpactMedium
+from models.heavy.ai_student_impact_heavy import AiStudentImpactHeavy
 from models.wine_quality import WineQuality
 from models.digits_mlp import DigitsMLP
 
@@ -38,6 +41,7 @@ from src.datasets.stl10 import STL10Dataset
 from src.datasets.mobile_price import MobilePriceDataset
 from src.datasets.healthcare import HealthcareDataset
 from src.datasets.apple_quality import AppleQualityDataset
+from src.datasets.ai_student_impact import AiStudentImpactDataset
 
 
 class DataSetFactory:
@@ -64,6 +68,8 @@ class DataSetFactory:
                 return HealthcareDataset().get()
             case "apple_quality":
                 return AppleQualityDataset().get()
+            case "ai_student_impact":
+                return AiStudentImpactDataset().get()
             case _:
                 raise ValueError(f"Unsupported data set: {data_set_name}")
 
@@ -98,6 +104,9 @@ DATA_SETS = {
     },
     "apple_quality": {
         "data_set": lambda: DataSetFactory.get_data_set("apple_quality")
+    },
+    "ai_student_impact": {
+        "data_set": lambda: DataSetFactory.get_data_set("ai_student_impact")
     }
 }
 
@@ -152,5 +161,11 @@ MODELS = {
         "light": AppleQualityLight,
         "medium": AppleQualityMedium,
         "heavy": AppleQualityHeavy,
+    },
+
+    "ai_student_impact": {
+        "light": AiStudentImpactLight,
+        "medium": AiStudentImpactMedium,
+        "heavy": AiStudentImpactHeavy,
     }
 }
