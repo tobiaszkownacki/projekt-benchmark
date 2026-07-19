@@ -29,7 +29,7 @@ class Cifar10Dataset(Dataset):
         )
         test_set = torchvision.datasets.CIFAR10(
             root=RAW_DATA_DIR / "cifar10",
-            train=True,
+            train=False,
             download=True,
             transform=train_transforms,
         )
