@@ -51,9 +51,6 @@ class ModelEvaluator:
         self._param_shapes = [p.shape for p in model.parameters()]
         self._param_count = sum(p.numel() for p in model.parameters())
 
-    def set_output_type(self, output_type: Type[T]):
-        self.type = output_type
-
     @property
     def batch_size(self) -> int:
         """Number of samples in current batch"""
@@ -63,6 +60,10 @@ class ModelEvaluator:
     def param_count(self) -> int:
         """Total number of model parameters"""
         return self._param_count
+
+    def set_output_type(self, output_type: Type[T]):
+        """Set the desired output type"""
+        self.type = output_type
 
     def get_params(self) -> object:
         """Get current model parameters as flat numpy array"""
@@ -103,7 +104,7 @@ class ModelEvaluator:
         Evaluate and compute gradients (forward + backward pass)
 
         Returns:
-            Tuple of (loss_value, gradient_as_flat_numpy_array)
+            Tuple of (loss_value, gradient)
 
         Effect:
             Increments database_reaches by batch_size
@@ -121,6 +122,30 @@ class ModelEvaluator:
         # Track: forward+backward = database reach + gradient
         self._metrics_callback(self._batch_size, 1)
         return loss.item(), grad.to(self.type).data()
+
+    def grad(self) -> object:
+        """
+        Compute gradients (backward pass)
+
+        Returns:
+           gradient
+
+        Effect:
+            Increments database_reaches by batch_size
+            Increments gradient_count by 1
+        """
+        self._model.train()
+        self._model.zero_grad()
+
+        outputs = self._model(self._inputs)
+        loss = self._criterion(outputs, self._targets)
+        loss.backward()
+
+        grad = PyTorchTensorEvaluatorDto(self._get_gradients_as_vector(self._model))
+
+        # Track: forward+backward = database reach + gradient
+        self._metrics_callback(self._batch_size, 1)
+        return grad.to(self.type).data()
 
     def get_predictions(self) -> Tuple[object, object]:
         """Get current predictions and targets for accuracy calculation"""
