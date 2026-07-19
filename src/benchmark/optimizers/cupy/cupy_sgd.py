@@ -4,7 +4,7 @@ from benchmark.evaluator import ModelEvaluator
 from benchmark.optimizer_protocols import CupyBenchmarkOptimizer
 
 
-class SGDAdapter(CupyBenchmarkOptimizer):
+class CupySGD(CupyBenchmarkOptimizer):
     """Simple SGD with optional momentum."""
 
     def __init__(

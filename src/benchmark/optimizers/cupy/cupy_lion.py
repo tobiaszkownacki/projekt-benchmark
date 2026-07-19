@@ -4,7 +4,7 @@ from benchmark.evaluator import ModelEvaluator
 from benchmark.optimizer_protocols import CupyBenchmarkOptimizer
 
 
-class LionAdapter(CupyBenchmarkOptimizer):
+class CupyLion(CupyBenchmarkOptimizer):
     """Pure NumPy implementation of Lion Optimizer (Chen et al., 2023)."""
 
     def __init__(
