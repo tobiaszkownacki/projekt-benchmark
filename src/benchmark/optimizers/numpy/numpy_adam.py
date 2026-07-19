@@ -1,10 +1,10 @@
-import cupy as np
+import numpy as np
 
 from benchmark.evaluator import ModelEvaluator
-from benchmark.optimizer_protocols import CupyBenchmarkOptimizer
+from benchmark.optimizer_protocols.numpy_benchmark_optimizer import NumpyBenchmarkOptimizer
 
 
-class AdamAdapter(CupyBenchmarkOptimizer):
+class NumpyAdam(NumpyBenchmarkOptimizer):
     """Pure NumPy implemenation for benchmark"""
 
     # TODO: Check if this is done right

@@ -4,7 +4,7 @@ from benchmark.evaluator import ModelEvaluator
 from benchmark.optimizer_protocols import CupyBenchmarkOptimizer
 
 
-class RMSPropAdapter(CupyBenchmarkOptimizer):
+class CupyRMSProp(CupyBenchmarkOptimizer):
     """Pure NumPy implementation of RMSProp optimizer."""
 
     def __init__(

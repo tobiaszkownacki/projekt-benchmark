@@ -1,13 +1,13 @@
 from typing import Optional
 
 import cma
-import cupy as np
+import numpy as np
 
 from benchmark.evaluator import ModelEvaluator
 from benchmark.optimizer_protocols import NumpyBenchmarkOptimizer
 
 
-class CMAESAdapter(NumpyBenchmarkOptimizer):
+class NumpyCMAES(NumpyBenchmarkOptimizer):
     """CMA-ES adapter for gradient-free comparison."""
 
     def __init__(

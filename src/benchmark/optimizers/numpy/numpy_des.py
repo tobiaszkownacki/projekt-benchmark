@@ -1,11 +1,11 @@
-import cupy as np
+import numpy as np
 import scipy.special
 
 from benchmark.evaluator import ModelEvaluator
-from benchmark.optimizer_protocols import CupyBenchmarkOptimizer
+from benchmark.optimizer_protocols.numpy_benchmark_optimizer import NumpyBenchmarkOptimizer
 
 
-class DESAdapter(CupyBenchmarkOptimizer):
+class NumpyDES(NumpyBenchmarkOptimizer):
     """
     Pure NumPy implementation of Differential Evolution Strategy (DES)
     with Historical Memory and Lamarckian/Darwinian boundary handling.

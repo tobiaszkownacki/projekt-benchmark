@@ -1,10 +1,10 @@
-import cupy as np
+import numpy as np
 
 from benchmark.evaluator import ModelEvaluator
-from benchmark.optimizer_protocols import CupyBenchmarkOptimizer
+from benchmark.optimizer_protocols.numpy_benchmark_optimizer import NumpyBenchmarkOptimizer
 
 
-class DifferentialEvolutionAdapter(CupyBenchmarkOptimizer):
+class NumpyDifferentialEvolution(NumpyBenchmarkOptimizer):
     """
     Pure NumPy implementation of Differential Evolution (Storn & Price, 1997).
     Strategy: DE/rand/1/bin

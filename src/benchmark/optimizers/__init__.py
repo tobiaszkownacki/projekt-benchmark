@@ -1,26 +1,44 @@
-from benchmark.optimizers.adam_adapter import AdamAdapter
-from benchmark.optimizers.adamw_adapter import AdamWAdapter
-from benchmark.optimizers.cmaes_adapter import CMAESAdapter
-from benchmark.optimizers.des_adapter import DESAdapter
-from benchmark.optimizers.differential_evolution_adapter import (
-    DifferentialEvolutionAdapter,
-)
-from benchmark.optimizers.lion_adapter import LionAdapter
-from benchmark.optimizers.pytorch_adapter import PyTorchOptimizerAdapter
 from benchmark.optimizers.registry import BUILTIN_OPTIMIZERS
-from benchmark.optimizers.rmsprop_adapter import RMSPropAdapter
-from benchmark.optimizers.sgd_adapter import SGDAdapter
+from benchmark.optimizers.cupy.cupy_adam import CupyAdam
+from benchmark.optimizers.cupy.cupy_adamw import CupyAdamW
+from benchmark.optimizers.cupy.cupy_cmaes import CupyCMAES
+from benchmark.optimizers.cupy.cupy_des import CupyDES
+from benchmark.optimizers.cupy.cupy_differential_evolution import (
+    CupyDifferentialEvolution,
+)
+from benchmark.optimizers.cupy.cupy_lion import CupyLion
+from benchmark.optimizers.cupy.cupy_rmsprop import CupyRMSProp
+from benchmark.optimizers.cupy.cupy_sgd import CupySGD
+
+from benchmark.optimizers.numpy.numpy_adam import NumpyAdam
+from benchmark.optimizers.numpy.numpy_adamw import NumpyAdamW
+from benchmark.optimizers.numpy.numpy_cmaes import NumpyCMAES
+from benchmark.optimizers.numpy.numpy_des import NumpyDES
+from benchmark.optimizers.numpy.numpy_differential_evolution import (
+    NumpyDifferentialEvolution,
+)
+from benchmark.optimizers.numpy.numpy_lion import NumpyLion
+from benchmark.optimizers.numpy.numpy_rmsprop import NumpyRMSProp
+from benchmark.optimizers.numpy.numpy_sgd import NumpySGD
 
 __all__ = [
     "PyTorchOptimizerAdapter",
-    "AdamAdapter",
-    "AdamWAdapter",
-    "LionAdapter",
-    "RMSPropAdapter",
-    "SGDAdapter",
-    "CMAESAdapter",
-    "DifferentialEvolutionAdapter",
-    "DESAdapter",
+    "CupyAdam",
+    "CupyAdamW",
+    "CupyLion",
+    "CupyRMSProp",
+    "CupySGD",
+    "CupyCMAES",
+    "CupyDifferentialEvolution",
+    "CupyDES",
+    "NumpyAdam",
+    "NumpyAdamW",
+    "NumpyLion",
+    "NumpyRMSProp",
+    "NumpySGD",
+    "NumpyCMAES",
+    "NumpyDifferentialEvolution",
+    "NumpyDES",
     "BUILTIN_OPTIMIZERS",
 ]
 
