@@ -14,7 +14,7 @@ class StudentsPerformanceDataset(Dataset):
         filepath = RAW_DATA_DIR / "Student_performance_data _.csv"
         df = pd.read_csv(filepath, sep=',')
 
-        X = df.drop(columns=['GradeClass'])
+        X = df.drop(columns=['GradeClass', 'StudentID'])
         y = df['GradeClass']
 
         X_train_tensor = torch.tensor(X.values, dtype=torch.float32)
