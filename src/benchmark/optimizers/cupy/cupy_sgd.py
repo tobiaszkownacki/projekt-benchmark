@@ -1,10 +1,10 @@
-import numpy as np
+import cupy as np
 
-from src.benchmark.evaluator import ModelEvaluator
-from src.benchmark.optimizer_protocol import BenchmarkOptimizer
+from benchmark.evaluator import ModelEvaluator
+from benchmark.optimizer_protocols import CupyBenchmarkOptimizer
 
 
-class SGDAdapter(BenchmarkOptimizer):
+class CupySGD(CupyBenchmarkOptimizer):
     """Simple SGD with optional momentum."""
 
     def __init__(

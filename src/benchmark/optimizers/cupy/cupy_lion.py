@@ -1,10 +1,10 @@
-import numpy as np
+import cupy as np
 
-from src.benchmark.evaluator import ModelEvaluator
-from src.benchmark.optimizer_protocol import BenchmarkOptimizer
+from benchmark.evaluator import ModelEvaluator
+from benchmark.optimizer_protocols import CupyBenchmarkOptimizer
 
 
-class LionAdapter(BenchmarkOptimizer):
+class CupyLion(CupyBenchmarkOptimizer):
     """Pure NumPy implementation of Lion Optimizer (Chen et al., 2023)."""
 
     def __init__(

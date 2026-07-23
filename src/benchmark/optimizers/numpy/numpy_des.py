@@ -1,13 +1,11 @@
-from typing import List, Optional
-
 import numpy as np
 import scipy.special
 
-from src.benchmark.evaluator import ModelEvaluator
-from src.benchmark.optimizer_protocol import BenchmarkOptimizer
+from benchmark.evaluator import ModelEvaluator
+from benchmark.optimizer_protocols.numpy_benchmark_optimizer import NumpyBenchmarkOptimizer
 
 
-class DESAdapter(BenchmarkOptimizer):
+class NumpyDES(NumpyBenchmarkOptimizer):
     """
     Pure NumPy implementation of Differential Evolution Strategy (DES)
     with Historical Memory and Lamarckian/Darwinian boundary handling.
@@ -53,8 +51,10 @@ class DESAdapter(BenchmarkOptimizer):
         )
 
         # Constants
-        self.chiN = np.sqrt(2) * scipy.special.gamma((self.dim + 1) / 2) / scipy.special.gamma(
-            self.dim / 2
+        self.chiN = (
+            np.sqrt(2)
+            * scipy.special.gamma((self.dim + 1) / 2)
+            / scipy.special.gamma(self.dim / 2)
         )
         self.tol = (
             1e-6  # IMPORTANT - another diff, in R it is 1e-12, but in paper it is 1e-6
@@ -72,7 +72,9 @@ class DESAdapter(BenchmarkOptimizer):
         self.newMean = initial_params.copy()
 
         # (potential) TODO original code used 0.8 of original boundries
-        self.population = np.random.uniform(self.lower, self.upper, (self.lambda_, self.dim)).T
+        self.population = np.random.uniform(
+            self.lower, self.upper, (self.lambda_, self.dim)
+        ).T
         # Insert initial guess
         self.population[:, 0] = initial_params
 
@@ -149,7 +151,9 @@ class DESAdapter(BenchmarkOptimizer):
             if self.Lamarckism:
                 self.population = pop_repaired
 
-            self.fitness = self._evaluate_population(evaluator, self.population, pop_repaired)
+            self.fitness = self._evaluate_population(
+                evaluator, self.population, pop_repaired
+            )
             self.worst_fit = np.max(self.fitness)
 
             best_idx = np.argmin(self.fitness)
@@ -180,12 +184,14 @@ class DESAdapter(BenchmarkOptimizer):
 
         # 3. Update Internal Parameters
         if self.iter == 1:
-            self.pc[:, self.histHead] = np.sqrt(self.mu * self.cp * (2 - self.cp)) * step
+            self.pc[:, self.histHead] = (
+                np.sqrt(self.mu * self.cp * (2 - self.cp)) * step
+            )
         else:
             prevHead = (self.histHead - 1) % self.histSize
-            self.pc[:, self.histHead] = (1 - self.cp) * self.pc[
-                :, prevHead
-            ] + np.sqrt(self.mu * self.cp * (2 - self.cp)) * step
+            self.pc[:, self.histHead] = (1 - self.cp) * self.pc[:, prevHead] + np.sqrt(
+                self.mu * self.cp * (2 - self.cp)
+            ) * step
 
         # 4. Mutation
         limit = min(self.iter, self.histSize)
@@ -233,7 +239,9 @@ class DESAdapter(BenchmarkOptimizer):
         if self.Lamarckism:
             self.population = pop_repaired
 
-        self.fitness = self._evaluate_population(evaluator, self.population, pop_repaired)
+        self.fitness = self._evaluate_population(
+            evaluator, self.population, pop_repaired
+        )
 
         # 6. Updates
         current_worst = np.max(self.fitness)

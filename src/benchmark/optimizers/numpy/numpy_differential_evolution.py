@@ -1,10 +1,10 @@
 import numpy as np
 
-from src.benchmark.evaluator import ModelEvaluator
-from src.benchmark.optimizer_protocol import BenchmarkOptimizer
+from benchmark.evaluator import ModelEvaluator
+from benchmark.optimizer_protocols.numpy_benchmark_optimizer import NumpyBenchmarkOptimizer
 
 
-class DifferentialEvolutionAdapter(BenchmarkOptimizer):
+class NumpyDifferentialEvolution(NumpyBenchmarkOptimizer):
     """
     Pure NumPy implementation of Differential Evolution (Storn & Price, 1997).
     Strategy: DE/rand/1/bin
@@ -48,11 +48,12 @@ class DifferentialEvolutionAdapter(BenchmarkOptimizer):
             low=self.min_b,
             high=self.max_b,
             size=(self.pop_size, self.dim),
+            dtype=self.min_b.dtype,
         )
         self.population[0] = initial_params
 
         # Track fitness of population (initially infinite)
-        self.fitness = np.full(self.pop_size, np.inf)
+        self.fitness = np.full(self.pop_size, np.inf, dtype=self.min_b.dtype)
         self._initialized = False
 
     def _ensure_bounds(self, trials):

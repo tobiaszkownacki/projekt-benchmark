@@ -1,10 +1,10 @@
-import numpy as np
+import cupy as np
 
-from src.benchmark.evaluator import ModelEvaluator
-from src.benchmark.optimizer_protocol import BenchmarkOptimizer
+from benchmark.evaluator import ModelEvaluator
+from benchmark.optimizer_protocols import CupyBenchmarkOptimizer
 
 
-class RMSPropAdapter(BenchmarkOptimizer):
+class CupyRMSProp(CupyBenchmarkOptimizer):
     """Pure NumPy implementation of RMSProp optimizer."""
 
     def __init__(
@@ -15,7 +15,7 @@ class RMSPropAdapter(BenchmarkOptimizer):
         eps: float = 1e-8,
         weight_decay: float = 0,
         momentum: float = 0,
-        **config
+        **config,
     ):
         super().__init__(initial_params, **config)
         self.lr = lr
@@ -39,7 +39,7 @@ class RMSPropAdapter(BenchmarkOptimizer):
 
         # Standard RMSProp update: g / (sqrt(v) + eps)
         avg = np.sqrt(self.v) + self.eps
-        
+
         if self.momentum > 0:
             # b_t = momentum * b_{t-1} + g / avg
             self.b = self.momentum * self.b + grad / avg
