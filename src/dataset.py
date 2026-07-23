@@ -40,6 +40,10 @@ from models.light.airplane_satisfaction_light import AirplaneSatisfactionfLight
 from models.medium.airplane_satisfaction_medium import AirplaneSatisfactionMedium
 from models.heavy.airplane_satisfaction_heavy import AirplaneSatisfactionfHeavy
 
+from models.light.credit_score_light import CreditScoreLight
+from models.medium.credit_score_medium import CreditScoreMedium
+from models.heavy.credit_score_heavy import CreditScoreHeavy
+
 from models.wine_quality import WineQuality
 from models.digits_mlp import DigitsMLP
 
@@ -55,6 +59,7 @@ from src.datasets.healthcare import HealthcareDataset
 from src.datasets.apple_quality import AppleQualityDataset
 from src.datasets.ai_student_impact import AiStudentImpactDataset
 from src.datasets.airplane_satisfaction import AirplaneSatisfactionDataset
+from src.datasets.credit_score import CreditScoreDataset
 
 
 class DataSetFactory:
@@ -85,6 +90,8 @@ class DataSetFactory:
                 return AiStudentImpactDataset().get()
             case "airplane_satisfaction":
                 return AirplaneSatisfactionDataset().get()
+            case "credit_score":
+                return CreditScoreDataset().get()
             case _:
                 raise ValueError(f"Unsupported data set: {data_set_name}")
 
@@ -125,6 +132,9 @@ DATA_SETS = {
     },
     "airplane_satisfaction": {
         "data_set": lambda: DataSetFactory.get_data_set("airplane_satisfaction")
+    },
+    "credit_score": {
+        "data_set": lambda: DataSetFactory.get_data_set("credit_score")
     }
 }
 
@@ -191,5 +201,11 @@ MODELS = {
         "light": AirplaneSatisfactionfLight,
         "medium": AirplaneSatisfactionMedium,
         "heavy": AirplaneSatisfactionfHeavy,
+    },
+
+    "credit_score": {
+        "light": CreditScoreLight,
+        "medium": CreditScoreMedium,
+        "heavy": CreditScoreHeavy,
     }
 }
