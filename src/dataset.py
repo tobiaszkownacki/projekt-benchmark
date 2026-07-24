@@ -44,6 +44,10 @@ from models.light.credit_score_light import CreditScoreLight
 from models.medium.credit_score_medium import CreditScoreMedium
 from models.heavy.credit_score_heavy import CreditScoreHeavy
 
+from models.light.churn_modelling_light import ChurnModellingLight
+from models.medium.churn_modelling_medium import ChurnModellingMedium
+from models.heavy.churn_modelling_heavy import ChurnModellingHeavy
+
 from models.wine_quality import WineQuality
 from models.digits_mlp import DigitsMLP
 
@@ -60,6 +64,7 @@ from src.datasets.apple_quality import AppleQualityDataset
 from src.datasets.ai_student_impact import AiStudentImpactDataset
 from src.datasets.airplane_satisfaction import AirplaneSatisfactionDataset
 from src.datasets.credit_score import CreditScoreDataset
+from src.datasets.churn_modelling import ChurnModellingDataset
 
 
 class DataSetFactory:
@@ -92,6 +97,8 @@ class DataSetFactory:
                 return AirplaneSatisfactionDataset().get()
             case "credit_score":
                 return CreditScoreDataset().get()
+            case "churn_modelling":
+                return ChurnModellingDataset().get()
             case _:
                 raise ValueError(f"Unsupported data set: {data_set_name}")
 
@@ -135,6 +142,9 @@ DATA_SETS = {
     },
     "credit_score": {
         "data_set": lambda: DataSetFactory.get_data_set("credit_score")
+    },
+    "churn_modelling": {
+        "data_set": lambda: DataSetFactory.get_data_set("churn_modelling")
     }
 }
 
@@ -207,5 +217,11 @@ MODELS = {
         "light": CreditScoreLight,
         "medium": CreditScoreMedium,
         "heavy": CreditScoreHeavy,
+    },
+
+    "churn_modelling": {
+        "light": ChurnModellingLight,
+        "medium": ChurnModellingMedium,
+        "heavy": ChurnModellingHeavy,
     }
 }
