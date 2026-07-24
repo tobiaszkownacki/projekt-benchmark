@@ -1,6 +1,24 @@
+import json
+from dataclasses import dataclass
 from typing import Any
 import streamlit as st
+from psycopg.types import none
+
 from views.mock_data import DATASETS, OPTIMIZERS
+from core.config import get_rabbitmq_connection_params
+import pika
+
+
+@dataclass
+class TaskDTO:
+    run_name: str
+    dataset: str
+    optimizer: str
+    created_at: str
+    updated_at: str
+    status: str
+
+Executors = ["Athena"]
 
 
 def render_run_form(instructions_page: Any | None = None) -> None:
@@ -34,4 +52,50 @@ def render_run_form(instructions_page: Any | None = None) -> None:
             )
 
         if submitted:
+
+            task_json = {
+                "run_name": st.text_input("Run name"),
+                "dataset": st.selectbox("Dataset", DATASETS)
+            }
+            task_json = json.dumps(task_json)
+            #TODO diffrent queue names available
+            with RabbitMQConnector("ATHENA") as publisher:
+                publisher.publish(task_json)
+
+            st.success("Zadanie wysłane pomyślnie!")
+
+
+
             st.success("This is a mockup. The UI works correctly.")
+
+class RabbitMQConnector:
+
+    def __init__(self,queue_name: str) -> None:
+        self.queue_name = queue_name
+        self.connection = none
+
+    def __enter__(self):
+        credentials = get_rabbitmq_connection_params()
+        self.connection = pika.BlockingConnection(credentials)
+        self.channel = self.connection.channel()
+        self.channel.queue_declare(queue=self.queue_name, durable=True)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+
+        if self.connection and not self.connection.is_closed:
+            self.connection.close()
+        if exc_type:
+            st.error(f"Błąd RabbitMQ: {exc_val}")
+
+    def publish(self,task_dict: TaskDTO) -> None:
+        payload = json.dumps(task_dict)
+        self.channel.basic_publish(
+            exchange='',
+            routing_key=self.queue_name,
+            body=payload,
+            properties=pika.BasicProperties(
+                delivery_mode=pika.DeliveryMode.Persistent,
+                content_type='application/json'
+            )
+        )
