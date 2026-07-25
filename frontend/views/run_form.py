@@ -2,7 +2,6 @@ import json
 from dataclasses import dataclass
 from typing import Any
 import streamlit as st
-from psycopg.types import none
 
 from views.mock_data import DATASETS, OPTIMIZERS
 from core.config import get_rabbitmq_connection_params
@@ -58,8 +57,8 @@ def render_run_form(instructions_page: Any | None = None) -> None:
                 "dataset": st.selectbox("Dataset", DATASETS)
             }
             task_json = json.dumps(task_json)
-            #TODO diffrent queue names available
-            with RabbitMQConnector("ATHENA") as publisher:
+            #TODO diffrent routing keys per executor
+            with RabbitMQConnector(exchange="main_exchange") as publisher:
                 publisher.publish(task_json)
 
             st.success("Zadanie wysłane pomyślnie!")
@@ -70,15 +69,16 @@ def render_run_form(instructions_page: Any | None = None) -> None:
 
 class RabbitMQConnector:
 
-    def __init__(self,queue_name: str) -> None:
-        self.queue_name = queue_name
-        self.connection = none
+    def __init__(self, exchange: str, routing_key: str) -> None:
+        self.exchange = exchange
+        self.routing_key = routing_key
+        self.connection = None
 
     def __enter__(self):
         credentials = get_rabbitmq_connection_params()
         self.connection = pika.BlockingConnection(credentials)
         self.channel = self.connection.channel()
-        self.channel.queue_declare(queue=self.queue_name, durable=True)
+        self.channel.exchange_declare(exchange=self.exchange, exchange_type="direct", durable=True)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -86,13 +86,13 @@ class RabbitMQConnector:
         if self.connection and not self.connection.is_closed:
             self.connection.close()
         if exc_type:
-            st.error(f"Błąd RabbitMQ: {exc_val}")
+            st.error(f"ERROR RABBITMQ: {exc_val}")
 
     def publish(self,task_dict: TaskDTO) -> None:
         payload = json.dumps(task_dict)
         self.channel.basic_publish(
-            exchange='',
-            routing_key=self.queue_name,
+            exchange=self.exchange,
+            routing_key=self.routing_key,
             body=payload,
             properties=pika.BasicProperties(
                 delivery_mode=pika.DeliveryMode.Persistent,

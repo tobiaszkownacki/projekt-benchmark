@@ -1,0 +1,42 @@
+{
+  "vhosts": [
+    {"name": "/"}
+  ],
+  "users": [
+    {"name": "__RABBITMQ_USER__", "password": "__RABBITMQ_PASSWORD__", "tags": "administrator"}
+  ],
+  "permissions": [
+    {"user": "__RABBITMQ_USER__", "vhost": "/", "configure": ".*", "write": ".*", "read": ".*"}
+  ],
+  "exchanges": [
+    {"name": "dlx_exchange", "vhost": "/", "type": "direct", "durable": true, "auto_delete": false},
+    {"name": "main_exchange", "vhost": "/", "type": "direct", "durable": true, "auto_delete": false}
+  ],
+  "queues": [
+    {"name": "DLQ_ATHENA_QUEUE", "vhost": "/", "durable": true},
+    {
+      "name": "ATHENA_QUEUE",
+      "vhost": "/",
+      "durable": true,
+      "arguments": {
+        "x-dead-letter-exchange": "dlx_exchange",
+        "x-dead-letter-routing-key": "failed-athena-task"
+      }
+    }
+  ],
+  "bindings": [
+    {
+      "source": "dlx_exchange",
+      "vhost": "/",
+      "destination": "DLQ_ATHENA_QUEUE",
+      "destination_type": "queue",
+      "routing_key": "failed-athena-task"
+    },
+    {
+      "source": "main_exchange",
+      "vhost": "/",
+      "destination": "ATHENA_QUEUE",
+      "destination_type": "queue"
+    }
+  ]
+}

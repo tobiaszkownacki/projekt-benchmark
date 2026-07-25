@@ -32,18 +32,24 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+      - ./rabbitmq_config/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+      - ./rabbitmq_config/definitions.json:/etc/rabbitmq/definitions.json:ro
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
+
+
   worker_athena:
-      build: ./sciezka_do_workera
-      command: python worker.py
+      build:
+        context: .
+        dockerfile: workers/athena/Dockerfile
       depends_on:
-        - rabbitmq
-      volumes:
-        - wspolny_dysk:/dane_wspolne
+        rabbitmq:
+          condition: service_healthy
+      env_file:
+        - .env
 volumes:
   postgres_data:
   rabbitmq_data:
