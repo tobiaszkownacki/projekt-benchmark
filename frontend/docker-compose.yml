@@ -35,16 +35,18 @@ services:
       - ./rabbitmq_config/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
       - ./rabbitmq_config/definitions.json:/etc/rabbitmq/definitions.json:ro
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 20s
 
 
   worker_athena:
       build:
         context: .
         dockerfile: workers/athena/Dockerfile
+      restart: on-failure:5
       depends_on:
         rabbitmq:
           condition: service_healthy
