@@ -47,4 +47,4 @@ class NumpyCMAES(NumpyBenchmarkOptimizer):
         self.params = self.es.result.xbest
         evaluator.set_params(self.params)
 
-        return self.es.stop()
+        return bool(self.es.stop())

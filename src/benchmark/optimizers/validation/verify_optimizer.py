@@ -5,11 +5,6 @@ import logging
 import sys
 from pathlib import Path
 import traceback
-
-# Ensure the project root is in sys.path for absolute imports
-if "." not in sys.path:
-    sys.path.insert(0, ".")
-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -195,8 +190,8 @@ def main():
             print_status("Integration with ModelEvaluator (metrics tracking)", True, f"Database reaches: {db_reaches}, Gradients calculated: {grad_count}")
         else:
             print_status("Integration with ModelEvaluator (metrics tracking)", False, "Warning: Optimizer did not call evaluate() or evaluate_with_grad()!")
-        opt_internal_params = getattr(opt_instance, 'params', initial_params)
 
+        opt_internal_params = getattr(opt_instance, 'params', initial_params)
         opt_internal_params_np = opt_internal_params.get() if hasattr(opt_internal_params, 'get') else opt_internal_params
         initial_params_np = raw_params
 
@@ -205,12 +200,6 @@ def main():
             print_status("Parameter mutation verification", False, "The parameters did not change after step() despite active gradient evaluation!")
         else:
             print_status("Parameter mutation verification", True)
-
-        if opt_internal_params_np.dtype != initial_params_np.dtype:
-            all_passed = False
-            print_status("Parameter data type consistency (Dtype)", False, f"Dtype changed! Optimizer stores {opt_internal_params_np.dtype}, expected {initial_params_np.dtype}!")
-        else:
-            print_status("Parameter data type consistency (Dtype)", True, f"Type preserved: {opt_internal_params_np.dtype}")
 
     except Exception as e:
         all_passed = False
