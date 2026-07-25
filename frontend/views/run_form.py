@@ -58,7 +58,7 @@ def render_run_form(instructions_page: Any | None = None) -> None:
             }
             task_json = json.dumps(task_json)
             #TODO diffrent routing keys per executor
-            with RabbitMQConnector(exchange="main_exchange") as publisher:
+            with RabbitMQConnector(exchange="main_exchange",routing_key="ATHENA_QUEUE") as publisher:
                 publisher.publish(task_json)
 
             st.success("Zadanie wysłane pomyślnie!")

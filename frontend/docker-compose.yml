@@ -46,7 +46,7 @@ services:
       build:
         context: .
         dockerfile: workers/athena/Dockerfile
-      restart: on-failure:5
+      restart: unless-stopped
       depends_on:
         rabbitmq:
           condition: service_healthy

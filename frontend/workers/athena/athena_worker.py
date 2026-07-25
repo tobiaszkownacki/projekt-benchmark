@@ -4,26 +4,8 @@ import os
 from abc import abstractmethod, ABC
 
 import pika
-def get_rabbitmq_connection_params():
 
-    user = os.environ["RABBITMQ_USER"]
-    password = os.environ["RABBITMQ_PASSWORD"]
-    host = os.environ.get("RABBITMQ_HOST", "rabbitmq")
-    port = int(os.environ.get("RABBITMQ_PORT", 5672))
-
-    credentials = pika.PlainCredentials(user, password)
-    return pika.ConnectionParameters(
-        host=host,
-        port=port,
-        credentials=credentials,
-    )
-
-
-class Worker(ABC):
-
-    @abstractmethod
-    def execute(self):
-        pass
+from frontend.workers.abstract_worker import Worker
 
 
 class SSHWorker(Worker):
@@ -41,6 +23,7 @@ def callback(rabbitmq_channel,method,
         rabbitmq_channel.basic_ack(delivery_tag=method.delivery_tag)
     except Exception as e:
         #TODO update task status to POSTGRES
+        print(e)
         print("Failed to execute")
         rabbitmq_channel.basic_nack(delivery_tag=method.delivery_tag,
                                     requeue=False)
