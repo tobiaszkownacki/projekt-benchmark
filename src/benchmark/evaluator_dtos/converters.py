@@ -22,8 +22,7 @@ def pytorch_to_numpy(source_dto: PyTorchTensorEvaluatorDto, **params):
 
 def pytorch_to_cupy(source_dto: PyTorchTensorEvaluatorDto, **params):
     """Converts a PyTorch DTO to a CuPy DTO."""
-    dlpack = torch.to_dlpack(source_dto.data())
-    data = cp.from_dlpack(dlpack)
+    data = cp.from_dlpack(source_dto.data().detach())
     return CupyNdarrayTensorEvaluatorDto(data)
 
 
@@ -42,8 +41,7 @@ def numpy_to_pytorch(source_dto: NumpyNdarrayTensorEvaluatorDto, **params):
 
 def cupy_to_pytorch(source_dto: CupyNdarrayTensorEvaluatorDto, **params):
     """Converts a CuPy DTO to a PyTorch DTO."""
-    dlpack = source_dto.data().toDlpack()
-    data = torch.from_dlpack(dlpack)
+    data = torch.from_dlpack(source_dto.data())
     return PyTorchTensorEvaluatorDto(data)
 
 
