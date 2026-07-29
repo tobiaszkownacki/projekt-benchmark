@@ -15,20 +15,24 @@ from torch import Tensor
 from torch.nn import Module
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
 
-from benchmark.evaluator_dtos import PyTorchTensorEvaluatorDto
-from benchmark.evaluator_dtos.evaluator_dto import T
+from .evaluator_dtos import PyTorchTensorEvaluatorDto
+from .evaluator_dtos.evaluator_dto import T
 
 
 class ModelEvaluator:
     """
-    Provided functions:
-    - get_params() -> np.ndarray
-    - set_params(params: np.ndarray) -> None
-    - evaluate() -> float
-    - evaluate_with_grad() -> Tuple[float, np.ndarray]
-    - get_predictions() -> Tuple[np.ndarray, np.ndarray]
-    - batch_size() -> int
-    - param_count() -> int
+    This class wraps a model, data batch, and loss function, providing a unified interface
+    for optimizers to interact with the model's parameters and evaluate its performance.
+    It automatically tracks metrics such as database reaches and gradient computations.
+
+    Key functionalities provided:
+    - `get_params() -> object`: Retrieves current model parameters, converted via DTO.
+    - `set_params(params: object) -> None`: Sets model parameters from a DTO-converted object.
+    - `evaluate() -> float`: Performs a forward pass and returns the loss.
+    - `evaluate_with_grad() -> Tuple[float, object]`: Performs a forward and backward pass, returning loss and gradients (DTO-converted).
+    - `get_predictions() -> Tuple[object, object]`: Retrieves model predictions and targets (DTO-converted).
+    - `batch_size() -> int`: Returns the number of samples in the current batch.
+    - `param_count() -> int`: Returns the total number of model parameters.
     """
 
     def __init__(
@@ -38,9 +42,19 @@ class ModelEvaluator:
         targets: Tensor,
         criterion: Callable,
         device: torch.device,
-        # (db_reaches, gradients)
         metrics_callback: Callable[[int, int], None],
     ):
+        """
+        Initializes the ModelEvaluator.
+
+        Args:
+            model: The neural network model (torch.nn.Module).
+            inputs: The input data batch (torch.Tensor).
+            targets: The target data batch (torch.Tensor).
+            criterion: The loss function (callable).
+            device: The device to run the computations on (e.g., 'cpu' or 'cuda').
+            metrics_callback: A callback function to track metrics (e.g., database reaches, gradient count).
+        """
         self._model = model
         self._inputs = inputs.to(device)
         self._targets = targets.to(device)
@@ -65,7 +79,13 @@ class ModelEvaluator:
         return self._param_count
 
     def get_params(self) -> object:
-        """Get current model parameters as flat numpy array"""
+        """
+        Retrieves the current model parameters as a flattened vector, converted to the specified
+        output DTO type.
+
+        Returns:
+            An object containing the flattened model parameters, conforming to the set output DTO.
+        """
         return (
             PyTorchTensorEvaluatorDto(parameters_to_vector(self._model.parameters()))
             .to(self.type)
@@ -73,7 +93,13 @@ class ModelEvaluator:
         )
 
     def set_params(self, params: object) -> None:
-        """Set model parameters from flat numpy array"""
+        """
+        Sets the model parameters from a flattened vector provided as a DTO-converted object.
+
+        Args:
+            params: An object containing the flattened parameters to set, conforming to the
+                    specified input DTO type.
+        """
         params_torch_flat = self.type(params).to(
             PyTorchTensorEvaluatorDto, device=self._device
         )
@@ -100,14 +126,15 @@ class ModelEvaluator:
 
     def evaluate_with_grad(self) -> Tuple[float, object]:
         """
-        Evaluate and compute gradients (forward + backward pass)
+        Evaluates the current parameters on the batch (forward pass) and computes
+        gradients (backward pass).
 
         Returns:
-            Tuple of (loss_value, gradient_as_flat_numpy_array)
-
+            Tuple[float, object]: A tuple containing the loss value and the
+                                   DTO-converted flattened gradient vector.
         Effect:
-            Increments database_reaches by batch_size
-            Increments gradient_count by 1
+            Increments database_reaches by batch_size.
+            Increments gradient_count by 1.
         """
         self._model.train()
         self._model.zero_grad()
@@ -122,8 +149,39 @@ class ModelEvaluator:
         self._metrics_callback(self._batch_size, 1)
         return loss.item(), grad.to(self.type).data()
 
+    def grad(self) -> object:
+        """
+        Computes gradients for the current parameters on the batch (performs forward and backward pass).
+
+        Returns:
+            object: The DTO-converted flattened gradient vector.
+
+        Effect:
+            Increments database_reaches by batch_size.
+            Increments gradient_count by 1.
+        """
+        self._model.train()
+        self._model.zero_grad()
+
+        outputs = self._model(self._inputs)
+        loss = self._criterion(outputs, self._targets)
+        loss.backward()
+
+        grad = PyTorchTensorEvaluatorDto(self._get_gradients_as_vector(self._model))
+
+        # Track: forward+backward = database reach + gradient
+        self._metrics_callback(self._batch_size, 1)
+        return grad.to(self.type).data()
+
     def get_predictions(self) -> Tuple[object, object]:
-        """Get current predictions and targets for accuracy calculation"""
+        """
+        Retrieves the model's predictions and the actual targets for the current batch,
+        both converted to the specified output DTO type.
+
+        Returns:
+            Tuple[object, object]: A tuple containing the DTO-converted predictions
+                                and DTO-converted targets.
+        """
         self._model.eval()
         with torch.no_grad():
             outputs = self._model(self._inputs)
@@ -133,6 +191,17 @@ class ModelEvaluator:
         ).data(), PyTorchTensorEvaluatorDto(self._targets).to(self.type).data()
 
     def _get_gradients_as_vector(self, model: torch.nn.Module) -> torch.Tensor:
+        """
+        Extracts and concatenates the gradients of all trainable parameters in the model
+        into a single flattened tensor.
+
+        Args:
+            model: The PyTorch model from which to extract gradients.
+
+        Returns:
+            torch.Tensor: A 1D tensor containing all gradients.
+                        Returns zeros for parameters that do not have gradients.
+        """
         grads = []
         for param in model.parameters():
             if param.requires_grad:
