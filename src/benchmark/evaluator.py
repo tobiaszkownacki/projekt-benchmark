@@ -186,9 +186,14 @@ class ModelEvaluator:
         with torch.no_grad():
             outputs = self._model(self._inputs)
             _, predicted = torch.max(outputs, 1)
-        return PyTorchTensorEvaluatorDto(predicted).to(
-            self.type
-        ).data(), PyTorchTensorEvaluatorDto(self._targets).to(self.type).data()
+
+        # Track: forward pass = database reach
+        self._metrics_callback(self._batch_size, 0)
+
+        return (
+            PyTorchTensorEvaluatorDto(predicted).to(self.type).data(),
+            PyTorchTensorEvaluatorDto(self._targets).to(self.type).data(),
+        )
 
     def _get_gradients_as_vector(self, model: torch.nn.Module) -> torch.Tensor:
         """
