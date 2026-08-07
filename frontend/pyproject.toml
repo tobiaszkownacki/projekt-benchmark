@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=70"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "projekt-benchmark-frontend"
+version = "0.1.0"
+description = "Streamlit frontend for the benchmark project"
+requires-python = ">=3.11"
+dependencies = [
+    "authlib>=1.7.2",
+    "bcrypt>=4.1",
+    "email-validator>=2.1",
+    "httpx>=0.27",
+    "pika>=1.4.2",
+    "psycopg-pool>=3.2",
+    "psycopg[binary]>=3.1",
+    "streamlit[auth]>=1.59",
+]
+
+[tool.setuptools]
+packages = ["core", "auth", "views", "views.admin", "db"]
+
+[tool.flake8]
+max-line-length = 120
+exclude = [".venv", ".git", "__pycache__", ".streamlit", "db"]
+
+[dependency-groups]
+athena_worker = [
+    "pika==1.4.2",
+    "paramiko>=5.0.0",
+    "python-dotenv>=1.0",
+    "psycopg[binary]>=3.1",
+]
+athena_poller = [
+    "python-dotenv>=1.0",
+    "psycopg[binary]>=3.1",
+    "paramiko>=3.4",
+    "pika>=1.3",
+]
+athena_downloader = [
+    "pika==1.4.2",
+    "paramiko>=5.0.0",
+    "psycopg[binary]>=3.1",
+]
