@@ -70,9 +70,9 @@ def main():
         default="reports/model_analysis",
         help="Directory where plots are written",
     )
-
+    parser.add_argument("--task-id", default=None, help="Task id - outputs land in reports/task_<id>")
     args = parser.parse_args()
-
+    report_dir = f"reports/task_{args.task_id}" if args.task_id else "reports"
     if not args.optimizer:
         parser.print_help()
         return
@@ -105,6 +105,7 @@ def main():
             stop_condition=stop_condition,
             batch_size=args.batch_size,
             random_seed=args.seed,
+            report_dir=report_dir
         )
 
         model_results = runner.compare(optimizers)
@@ -115,7 +116,7 @@ def main():
             all_results[run_identifier] = result
 
     if args.plot:
-        analyzer = BenchmarkAnalyzer(output_dir=args.plot_dir)
+        analyzer = BenchmarkAnalyzer(output_dir=report_dir)
         analyzer.plot_results(all_results)
 
 

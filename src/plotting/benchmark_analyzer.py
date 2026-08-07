@@ -44,7 +44,7 @@ class BenchmarkAnalyzer:
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     def plot_results(self, results: Dict[str, BenchmarkResult]) -> Path:
-        run_dir = Path("reports/runs") / datetime.now().strftime("%Y%m%d_%H%M%S")
+        run_dir = self.output_dir
         run_dir.mkdir(parents=True, exist_ok=True)
 
         n = len(results)

@@ -119,6 +119,7 @@ class BenchmarkRunner:
         random_seed: int = 2137,
         log_interval: int = 10,
         device: Optional[str] = None,
+        report_dir: str = "reports"
     ):
         from src.dataset import (
             DATA_SETS,
@@ -135,6 +136,7 @@ class BenchmarkRunner:
         self.random_seed = random_seed
         self.log_interval = log_interval
 
+        self.report_dir: str = report_dir
         # Set device
         if device:
             self.device = torch.device(device)
@@ -191,7 +193,8 @@ class BenchmarkRunner:
         )
         criterion = CrossEntropyLoss()
 
-        log = Log(output_file=f"benchmark-{name}-{self.dataset_name}.csv")
+        log = Log(output_file=f"benchmark-{name}-{self.dataset_name}.csv",
+                                  base_dir = self.report_dir,)
 
         loss_history = []
         accuracy_history = []
