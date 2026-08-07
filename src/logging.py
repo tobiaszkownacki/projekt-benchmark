@@ -3,14 +3,13 @@ import os
 
 
 class Log:
-    def __init__(self, output_file: str = "train_log.csv"):
+    def __init__(self, output_file: str = "train_log.csv",base_dir: str = "reports"):
         self.number_of_samples: int = 0  # This IS database_reaches
         self.number_of_mini_batches: int = 0
         self.gradient_count: int = 0
         self.records = []
-        logs_dir = os.path.join("reports", "logs")
-        os.makedirs(logs_dir, exist_ok=True)
-        self.output_file = os.path.join(logs_dir, output_file)
+        os.makedirs(base_dir, exist_ok=True)
+        self.output_file = os.path.join(base_dir, output_file)
 
         with open(self.output_file, mode="w", newline="") as f:
             writer = csv.writer(f)
