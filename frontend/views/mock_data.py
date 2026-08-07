@@ -19,20 +19,22 @@ class RunResult:
 
 
 OPTIMIZERS: list[str] = [
-    "Adam",
-    "AdamW",
-    "SGD",
-    "RMSprop",
-    "Adagrad",
-    "Lion",
+    "adam",
+    "adamw",
+    "lion",
+    "rmsprop",
+    "sgd",
+    "sgd_momentum",
+    "cma-es",
+    "de",
+    "des",
 ]
 
 DATASETS: list[str] = [
-    "CIFAR-10",
-    "CIFAR-100",
-    "MNIST",
-    "ImageNet",
-    "Fashion-MNIST",
+    "cifar10",
+    "heart_disease",
+    "wine_quality",
+    "digits",
 ]
 
 

@@ -1,0 +1,6 @@
+.venv
+.streamlit
+.env
+__pycache__
+**/__pycache__
+db/db_schemas

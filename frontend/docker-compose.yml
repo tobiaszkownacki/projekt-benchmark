@@ -1,4 +1,5 @@
 services:
+
   postgres:
     image: postgres:16-alpine
     container_name: benchmark_frontend_db
@@ -12,7 +13,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./db/init:/docker-entrypoint-initdb.d:ro
+      - ./db/db_schemas:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
@@ -42,7 +43,9 @@ services:
       start_period: 20s
 
 
-  worker_athena:
+
+
+  athena_worker:
       build:
         context: .
         dockerfile: workers/athena/Dockerfile
@@ -50,8 +53,39 @@ services:
       depends_on:
         rabbitmq:
           condition: service_healthy
+        postgres:
+          condition: service_healthy
       env_file:
         - .env
+  athena_poller:
+    build:
+      context: .
+      dockerfile: pollers/athena/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    entrypoint: ["/bin/sh", "/poller/init.sh"]
+
+  athena_downloader:
+    build:
+      context: .
+      dockerfile: downloaders/athena/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      - ./downloads:/downloads
+
 volumes:
   postgres_data:
   rabbitmq_data:

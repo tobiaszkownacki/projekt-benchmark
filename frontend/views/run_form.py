@@ -1,18 +1,20 @@
-import json
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 from typing import Any
 import streamlit as st
 
 from views.mock_data import DATASETS, OPTIMIZERS
-from core.config import get_rabbitmq_connection_params
-import pika
+from connectors.rabbitmq_connector import RabbitMQConnector
+from auth import repository
 
 
 @dataclass
 class TaskDTO:
+    task_id: str
     run_name: str
     dataset: str
     optimizer: str
+    submitted_by: str
     created_at: str
     updated_at: str
     status: str
@@ -20,7 +22,7 @@ class TaskDTO:
 Executors = ["Athena"]
 
 
-def render_run_form(instructions_page: Any | None = None) -> None:
+def render_run_form(instructions_page: Any | None = None, user: repository.User | None = None) -> None:
     form_col, side_col = st.columns([3, 1])
 
     with side_col:
@@ -37,9 +39,9 @@ def render_run_form(instructions_page: Any | None = None) -> None:
 
     with form_col:
         with st.form("new_run_form", clear_on_submit=False):
-            st.text_input("Run name", placeholder="e.g. lion-imagenet-sweep")
-            st.selectbox("Dataset", DATASETS)
-            st.multiselect("Optimizers", OPTIMIZERS)
+            run_name = st.text_input("Run name", placeholder="e.g. lion-imagenet-sweep")
+            dataset = st.selectbox("Dataset", DATASETS)
+            optimizers = st.multiselect("Optimizers", OPTIMIZERS)
             st.file_uploader(
                 "Upload your own optimizers",
                 accept_multiple_files=True,
@@ -52,50 +54,41 @@ def render_run_form(instructions_page: Any | None = None) -> None:
 
         if submitted:
 
-            task_json = {
-                "run_name": st.text_input("Run name"),
-                "dataset": st.selectbox("Dataset", DATASETS)
-            }
-            task_json = json.dumps(task_json)
-            #TODO diffrent routing keys per executor
-            with RabbitMQConnector(exchange="main_exchange",routing_key="ATHENA_QUEUE") as publisher:
-                publisher.publish(task_json)
-
-            st.success("Zadanie wysłane pomyślnie!")
-
-
-
-            st.success("This is a mockup. The UI works correctly.")
-
-class RabbitMQConnector:
-
-    def __init__(self, exchange: str, routing_key: str) -> None:
-        self.exchange = exchange
-        self.routing_key = routing_key
-        self.connection = None
-
-    def __enter__(self):
-        credentials = get_rabbitmq_connection_params()
-        self.connection = pika.BlockingConnection(credentials)
-        self.channel = self.connection.channel()
-        self.channel.exchange_declare(exchange=self.exchange, exchange_type="direct", durable=True)
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-
-        if self.connection and not self.connection.is_closed:
-            self.connection.close()
-        if exc_type:
-            st.error(f"ERROR RABBITMQ: {exc_val}")
-
-    def publish(self,task_dict: TaskDTO) -> None:
-        payload = json.dumps(task_dict)
-        self.channel.basic_publish(
-            exchange=self.exchange,
-            routing_key=self.routing_key,
-            body=payload,
-            properties=pika.BasicProperties(
-                delivery_mode=pika.DeliveryMode.Persistent,
-                content_type='application/json'
+            db_task = repository.create_task(
+                queue_name="ATHENA_WORKER_QUEUE",
+                executor_name="Athena",
+                submitted_by=user.id,
+                dataset=dataset.lower(),
+                run_name=run_name,
+                optimizer_params={"optimizers": optimizers},
             )
-        )
+
+            now = datetime.now(timezone.utc).isoformat()
+            task = TaskDTO(
+                task_id=db_task.task_id,
+                run_name=run_name,
+                dataset=dataset.lower(),
+                optimizer=",".join(name.lower() for name in optimizers),
+                submitted_by=str(user.id),
+                created_at=now,
+                updated_at=now,
+                status="pending",
+            )
+            #TODO diffrent routing keys per executor
+            try:
+                rmq_secrets = st.secrets["rabbitmq"]
+                with RabbitMQConnector(
+                    exchange="main-exchange",
+                    routing_key="ATHENA_WORKER_QUEUE",
+                    user=rmq_secrets["user"],
+                    password=rmq_secrets["password"],
+                    host=rmq_secrets["host"],
+                    port=rmq_secrets["port"],
+                ) as publisher:
+                    publisher.publish(asdict(task))
+            except Exception as exc:
+                st.error(f"ERROR RABBITMQ: {exc}")
+                return
+
+            st.success("Task send successfully")
+            st.success("This is a mockup. The UI works correctly.")

@@ -68,7 +68,7 @@ def _render_verified_app(user: repository.User) -> None:
 
     def _home_view() -> None:
         _render_welcome_message(user)
-        render_run_form(instructions_page)
+        render_run_form(instructions_page, user)
         st.divider()
         render_run_history()
 

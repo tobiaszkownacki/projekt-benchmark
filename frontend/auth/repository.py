@@ -4,6 +4,7 @@ from typing import List, Optional
 from uuid import UUID
 
 from psycopg.rows import dict_row
+from psycopg.types.json import Jsonb
 
 from core.database import get_connection
 from auth.passwords import hash_password
@@ -23,6 +24,27 @@ class User:
     associated_org_email: Optional[str] = None
     join_reason: Optional[str] = None
     password_hash: Optional[str] = None
+
+@dataclass
+class Task:
+    task_id: str
+    queue_name: str
+    executor_task_id: str
+    executor_name: str
+    submitted_by: str
+    task_status: str
+    created_at: str
+    updated_at: str
+    dataset: str
+    run_name: str
+    optimizer_params: dict
+    completed_at: str
+
+@dataclass
+class ExecutorStatus:
+    executor_name: str
+    is_active: bool
+    last_check: str
 
 
 def _row_to_user(row: dict) -> User:
@@ -202,3 +224,46 @@ def approve_user(user_id: UUID) -> User:
             if row is None:
                 raise ValueError(f"User with id {user_id} not found or not unverified.")
             return _row_to_user(row)
+
+
+def _row_to_task(row: dict) -> Task:
+    return Task(
+        task_id=str(row["task_id"]),
+        queue_name=row["queue_name"],
+        executor_task_id=row["executor_task_id"],
+        executor_name=row["executor_name"],
+        submitted_by=str(row["submitted_by"]),
+        task_status=row["task_status"],
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+        dataset=row["dataset"],
+        run_name=row["run_name"],
+        optimizer_params=row["optimizer_params"],
+        completed_at=row["completed_at"],
+    )
+
+
+def create_task(
+    queue_name: str,
+    executor_name: str,
+    submitted_by: UUID,
+    dataset: str,
+    run_name: str,
+    optimizer_params: dict,
+) -> Task:
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                INSERT INTO tasks (
+                    queue_name, executor_name, submitted_by, dataset, run_name, optimizer_params
+                )
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING *
+                """,
+                (queue_name, executor_name, submitted_by, dataset, run_name, Jsonb(optimizer_params)),
+            )
+            row = cur.fetchone()
+            if row is None:
+                raise RuntimeError("Failed to create task: no row returned.")
+            return _row_to_task(row)
