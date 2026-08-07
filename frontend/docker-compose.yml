@@ -48,7 +48,7 @@ services:
   athena_worker:
       build:
         context: .
-        dockerfile: workers/athena/Dockerfile
+        dockerfile: services/workers/athena/Dockerfile
       restart: unless-stopped
       depends_on:
         rabbitmq:
@@ -60,7 +60,7 @@ services:
   athena_poller:
     build:
       context: .
-      dockerfile: pollers/athena/Dockerfile
+      dockerfile: services/pollers/athena/Dockerfile
     restart: unless-stopped
     depends_on:
       rabbitmq:
@@ -74,7 +74,7 @@ services:
   athena_downloader:
     build:
       context: .
-      dockerfile: downloaders/athena/Dockerfile
+      dockerfile: services/downloaders/athena/Dockerfile
     restart: unless-stopped
     depends_on:
       rabbitmq:
