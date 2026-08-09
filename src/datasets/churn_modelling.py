@@ -8,14 +8,21 @@ from torch.utils.data.dataset import ConcatDataset
 from src.config import RAW_DATA_DIR
 from src.datasets.dataset import Dataset
 
-class StudentsPerformanceDataset(Dataset):
+from sklearn.preprocessing import LabelEncoder
+
+class ChurnModellingDataset(Dataset):
     @override
     def get(self) -> ConcatDataset:
-        filepath = RAW_DATA_DIR / "Student_performance_data _.csv"
+        filepath = RAW_DATA_DIR / "Churn_Modelling.csv"
         df = pd.read_csv(filepath, sep=',')
 
-        X = df.drop(columns=['GradeClass', 'StudentID'])
-        y = df['GradeClass']
+        label_encoder = LabelEncoder()
+
+        df['Gender'] = label_encoder.fit_transform(df['Gender'])
+        df = pd.get_dummies(df, columns=['Geography'], dtype=int)
+
+        X = df.drop(columns=['Exited', 'RowNumber', 'CustomerId', 'Surname'])
+        y = df['Exited']
 
         X_train_tensor = torch.tensor(X.values, dtype=torch.float32)
         y_train_tensor = torch.tensor(y.astype(int).values, dtype=torch.long)
