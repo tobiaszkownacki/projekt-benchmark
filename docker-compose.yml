@@ -32,8 +32,8 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
-      - ./src/queue/rabbitmq_config/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
-      - ./src/queue/rabbitmq_config/definitions.json:/etc/rabbitmq/definitions.json:ro
+      - ./src/task_queue/rabbitmq_config/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+      - ./src/task_queue/rabbitmq_config/definitions.json:/etc/rabbitmq/definitions.json:ro
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
       interval: 5s
@@ -44,7 +44,7 @@ services:
   athena_worker:
       build:
         context: .
-        dockerfile: src/queue/services/workers/athena/Dockerfile
+        dockerfile: src/task_queue/services/workers/athena/Dockerfile
       restart: unless-stopped
       depends_on:
         rabbitmq:
@@ -57,7 +57,7 @@ services:
   athena_poller:
     build:
       context: .
-      dockerfile: src/queue/services/pollers/athena/Dockerfile
+      dockerfile: src/task_queue/services/pollers/athena/Dockerfile
     restart: unless-stopped
     depends_on:
       rabbitmq:
@@ -70,7 +70,7 @@ services:
   athena_downloader:
     build:
       context: .
-      dockerfile: src/queue/services/downloaders/athena/Dockerfile
+      dockerfile: src/task_queue/services/downloaders/athena/Dockerfile
     restart: unless-stopped
     depends_on:
       rabbitmq:

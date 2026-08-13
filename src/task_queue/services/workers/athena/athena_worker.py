@@ -2,12 +2,12 @@ import json
 import logging
 import os
 
-from queue.services.workers.logging_config import configure_logging
-from queue.services.workers.abstract_worker import Worker 
+from task_queue.services.workers.logging_config import configure_logging
+from task_queue.services.shared.interfaces.abstract_worker import Worker 
 
-from queue.services.shared.connectors.rabbitmq_connector import RabbitMQConnector
-from queue.services.shared.connectors.athena_connector import AthenaConnector
-from queue.services.shared.connectors.postgres_connector import PostGresConnector
+from task_queue.services.shared.connectors.rabbitmq_connector import RabbitMQConnector
+from task_queue.services.shared.connectors.athena_connector import AthenaConnector
+from task_queue.services.shared.connectors.postgres_connector import PostGresConnector
 
 configure_logging()
 logger = logging.getLogger(__name__)

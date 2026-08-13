@@ -3,12 +3,12 @@ import os
 import sys
 from collections import Counter
 
-from queue.services.shared.interfaces.abstract_poller import Poller
-from queue.services.pollers.logging_config import configure_logging
+from task_queue.services.shared.interfaces.abstract_poller import Poller
+from task_queue.services.pollers.logging_config import configure_logging
 
-from queue.services.shared.connectors.postgres_connector import PostGresConnector
-from queue.services.shared.connectors.athena_connector import AthenaConnector
-from queue.services.shared.connectors.rabbitmq_connector import RabbitMQConnector
+from task_queue.services.shared.connectors.postgres_connector import PostGresConnector
+from task_queue.services.shared.connectors.athena_connector import AthenaConnector
+from task_queue.services.shared.connectors.rabbitmq_connector import RabbitMQConnector
 
 configure_logging()
 logger = logging.getLogger(__name__)

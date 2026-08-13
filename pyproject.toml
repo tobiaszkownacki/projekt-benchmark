@@ -33,15 +33,15 @@ exclude = [".venv", ".git", "__pycache__", "reports","data",".github","weights"]
 athena-downloader = [
     "paramiko>=5.0.0",
     "pika>=1.4.4",
-    "psycopg-binary>=3.3.4",
+    "psycopg[binary]>=3.3.4",
 ]
 athena-poller = [
     "paramiko>=5.0.0",
     "pika>=1.4.4",
-    "psycopg-binary>=3.3.4",
+    "psycopg[binary]>=3.3.4",
 ]
 athena-worker = [
     "paramiko>=5.0.0",
     "pika>=1.4.4",
-    "psycopg-binary>=3.3.4",
+    "psycopg[binary]>=3.3.4",
 ]

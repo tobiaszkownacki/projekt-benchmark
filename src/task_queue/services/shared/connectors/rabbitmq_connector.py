@@ -10,15 +10,19 @@ class RabbitMQConnector:
         self,
         exchange: str,
         routing_key: str,
-        exchange_type: str
+        exchange_type: str = "direct",
+        user: str | None = None,
+        password: str | None = None,
+        host: str | None = None,
+        port: int | None = None,
     ) -> None:
         self.exchange = exchange
         self.routing_key = routing_key
         self.exchange_type = exchange_type
-        self.user = os.environ.get("RABBITMQ_USER")
-        self.password = os.environ.get("RABBITMQ_PASSWORD")
-        self.host = os.environ.get("RABBITMQ_HOST", "rabbitmq")
-        self.port = os.environ.get("RABBITMQ_PORT", 5672)
+        self.user = user or os.environ.get("RABBITMQ_USER")
+        self.password = password or os.environ.get("RABBITMQ_PASSWORD")
+        self.host = host or os.environ.get("RABBITMQ_HOST", "rabbitmq")
+        self.port = port or os.environ.get("RABBITMQ_PORT", 5672)
         self.connection = None
         self.channel = None
 
