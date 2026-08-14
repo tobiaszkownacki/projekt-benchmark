@@ -1,1 +1,0 @@
-from .verify_optimizer import main as run_validation
