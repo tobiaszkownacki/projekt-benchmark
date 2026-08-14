@@ -32,8 +32,8 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
-      - ./src/task_queue/rabbitmq_config/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
-      - ./src/task_queue/rabbitmq_config/definitions.json:/etc/rabbitmq/definitions.json:ro
+      - ./src/task_queue/config/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+      - ./src/task_queue/config/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
       interval: 5s
