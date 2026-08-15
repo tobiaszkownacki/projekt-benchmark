@@ -32,8 +32,7 @@ def load_custom_optimizer(path: str):
         if (
             isinstance(obj, type)
             and hasattr(obj, "step")
-            and name not in ["BenchmarkOptimizer", "NumpyBenchmarkOptimizer", "CupyBenchmarkOptimizer"]
-            and not name.endswith("Dto")
+            and getattr(obj, "__module__", "") == module.__name__
         ):
             return obj
     raise ValueError(f"No valid optimizer class found in file: {path}")

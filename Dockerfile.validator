@@ -1,0 +1,19 @@
+FROM python:3.12-slim
+RUN pip install --no-cache-dir uv
+
+RUN useradd -m -s /bin/bash sandboxuser
+WORKDIR /app
+
+COPY pyproject.toml uv.lock ./
+
+RUN uv export --no-hashes --frozen -o requirements.txt && uv pip install --system -r requirements.txt
+
+COPY src/ /app/src/
+
+RUN chown -R sandboxuser:sandboxuser /app
+
+ENV PYTHONPATH=/app:/app/src
+
+USER sandboxuser
+
+ENTRYPOINT ["python", "-m", "src.benchmark.optimizers.validation.verify_optimizer"]

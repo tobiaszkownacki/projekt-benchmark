@@ -22,7 +22,7 @@ from torch.nn import CrossEntropyLoss
 from benchmark.evaluator import ModelEvaluator
 from benchmark.evaluator_dtos import PyTorchTensorEvaluatorDto
 from benchmark.optimizer_protocols import BenchmarkableOptimizer
-from src.logging import Log
+from custom_logging import Log
 
 
 class StopReason(Enum):
