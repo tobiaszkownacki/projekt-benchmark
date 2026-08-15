@@ -10,7 +10,6 @@ import torch
 import torch.nn as nn
 
 from src.benchmark.evaluator import ModelEvaluator
-from src.benchmark.optimizers import BUILTIN_OPTIMIZERS
 
 class DummyModel(nn.Module):
     """Simple PyTorch model used for optimizer integration testing."""
@@ -69,18 +68,12 @@ def main():
 
     # --- TEST 1: Module Loading ---
     try:
-        if name in BUILTIN_OPTIMIZERS:
-            opt_class = BUILTIN_OPTIMIZERS[name][0]
-            print_status("Module and class loaded successfully", True, f"Found builtin class: {opt_class.__name__}")
-        elif Path(name).exists():
-            opt_class = load_custom_optimizer(str(name))
+        file_path = Path(name)
+        if file_path.exists() and file_path.is_file():
+            opt_class = load_custom_optimizer(str(file_path))
             print_status("Module and class loaded successfully", True, f"Found custom class: {opt_class.__name__}")
-        elif Path(f"src/benchmark/optimizers/{name}").exists():
-            resolved_path = Path(f"src/benchmark/optimizers/{name}")
-            opt_class = load_custom_optimizer(str(resolved_path))
-            print_status("Module and class loaded successfully", True, f"Found custom class in optimizers folder: {opt_class.__name__}")
         else:
-            print_status("Module and class loaded successfully", False, f"Optimizer '{name}' not found as a builtin name or local file.")
+            print_status("Module and class loaded successfully", False, f"File '{name}' does not exist inside the container.")
             sys.exit(1)
     except Exception as e:
         print_status("Module and class loaded successfully", False, str(e))
