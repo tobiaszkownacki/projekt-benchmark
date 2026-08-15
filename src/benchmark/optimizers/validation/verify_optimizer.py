@@ -205,5 +205,12 @@ def main():
         print_status("Runtime environment execution test (Mock Run)", False, f"Execution failed: {str(e)}\n{traceback.format_exc()}")
 
 
+    if not all_passed:
+        logger.error("\nValidation FAILED due to one or more errors above.")
+        sys.exit(1)
+    else:
+        logger.info("\nValidation SUCCESSFUL. All checks passed.")
+        sys.exit(0)
+
 if __name__ == "__main__":
     main()

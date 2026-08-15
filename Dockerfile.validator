@@ -16,4 +16,4 @@ ENV PYTHONPATH=/app:/app/src
 
 USER sandboxuser
 
-ENTRYPOINT ["python", "-m", "src.benchmark.optimizers.validation.verify_optimizer"]
+ENTRYPOINT ["python", "src/benchmark/optimizers/validation/verify_optimizer.py"]
