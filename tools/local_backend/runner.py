@@ -55,6 +55,8 @@ from tools.local_backend.datasets import (  # noqa: E402
     parameter_count,
 )
 
+torch.set_num_threads(1)
+
 RUNNER_VERSION = "local-cpu-1"
 
 # Family is recorded rather than guessed at query time: §13.1 calls it the axis
