@@ -62,13 +62,13 @@ select:focus-visible, input:focus-visible, textarea:focus-visible {
   z-index: 10;
 }
 .masthead-inner {
-  max-width: 1400px;
+  max-width: 1700px;
   margin: 0 auto;
-  padding: 0 var(--space-5);
+  padding: 0 var(--space-4);
   display: flex;
   align-items: center;
-  gap: var(--space-5);
-  min-height: 48px;
+  gap: var(--space-4);
+  min-height: 46px;
   flex-wrap: wrap;
 }
 .wordmark {
@@ -77,11 +77,15 @@ select:focus-visible, input:focus-visible, textarea:focus-visible {
   font-weight: 600;
   color: var(--text);
   white-space: nowrap;
+  flex: none;
 }
 .wordmark:hover { text-decoration: none; }
+/* The institution is context, not identity: it is the first thing to go when
+ * the bar runs out of room, so the navigation stays on one line. */
 .wordmark span { color: var(--text-2); font-weight: 400; }
+@media (max-width: 1250px) { .wordmark span { display: none; } }
 
-.nav { display: flex; gap: var(--space-1); flex-wrap: wrap; flex: 1; }
+.nav { display: flex; gap: 2px; flex-wrap: wrap; flex: 1; min-width: 0; }
 .nav a {
   padding: 4px var(--space-3);
   border-radius: var(--radius);
