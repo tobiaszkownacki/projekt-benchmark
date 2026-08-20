@@ -9,7 +9,7 @@ RUN uv export --only-group athena_downloader --no-hashes --frozen -o requirement
     && uv pip install --system -r requirements.txt
 
 COPY src/task_queue/services/downloaders/ /app/task_queue/services/downloaders/
-COPY src/task_queue/shared/ /app/task_queue/shared/
+COPY src/shared/ /app/shared/
 
 ENV PYTHONPATH=/app
 

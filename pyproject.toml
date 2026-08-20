@@ -30,6 +30,13 @@ max-line-length = 120
 exclude = [".venv", ".git", "__pycache__", "reports","data",".github","weights"]
 
 [dependency-groups]
+api-fastapi = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.0",
+    "pika>=1.4.4",
+    "psycopg[binary]>=3.3.4",
+]
 athena-downloader = [
     "paramiko>=5.0.0",
     "pika>=1.4.4",
@@ -44,4 +51,14 @@ athena-worker = [
     "paramiko>=5.0.0",
     "pika>=1.4.4",
     "psycopg[binary]>=3.3.4",
+]
+frontend = [
+    "authlib>=1.7.2",
+    "bcrypt>=4.1",
+    "email-validator>=2.1",
+    "httpx>=0.27",
+    "pika>=1.4.2",
+    "psycopg-pool>=3.2",
+    "psycopg[binary]>=3.1",
+    "streamlit[auth]>=1.59",
 ]

@@ -41,6 +41,38 @@ services:
       retries: 10
       start_period: 20s
 
+  frontend:
+    build:
+      context: .
+      dockerfile: src/frontend/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    ports:
+      - "${FRONTEND_PORT:-8501}:8501"
+    volumes:
+      - ./src/frontend/.streamlit:/app/.streamlit:ro
+
+  api:
+    build:
+      context: .
+      dockerfile: src/task_queue/services/api/fastapi/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    ports:
+      - "${API_PORT:-8000}:8000"
+
   athena_worker:
       build:
         context: .

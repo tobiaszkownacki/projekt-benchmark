@@ -2,12 +2,12 @@ import json
 import logging
 import os
 
-from task_queue.shared.interfaces.abstract_downloader import Downloader
+from shared.interfaces.abstract_downloader import Downloader
 from task_queue.services.downloaders.logging_config import configure_logging
 
-from task_queue.shared.connectors.rabbitmq_connector import RabbitMQConnector
-from task_queue.shared.connectors.athena_connector import AthenaConnector
-from task_queue.shared.connectors.postgres_connector import PostGresConnector
+from shared.connectors.rabbitmq_connector import RabbitMQConnector
+from shared.connectors.athena_connector import AthenaConnector
+from shared.connectors.postgres_connector import PostGresConnector
 
 configure_logging()
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ class AthenaDownloader(Downloader):
 
         try:
             with AthenaConnector() as athena_conn:
-                downloaded = athena_conn.download_directory(remote_dir, local_dir)
+                downloaded = athena_conn.download_results(remote_dir, local_dir)
 
                 if not downloaded:
                     message = f"No files found under {remote_dir}"

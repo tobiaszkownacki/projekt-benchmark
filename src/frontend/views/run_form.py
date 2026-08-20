@@ -4,7 +4,7 @@ from typing import Any
 import streamlit as st
 
 from views.mock_data import DATASETS, OPTIMIZERS
-from connectors.rabbitmq_connector import RabbitMQConnector
+from shared.connectors.rabbitmq_connector import RabbitMQConnector
 from auth import repository
 
 
