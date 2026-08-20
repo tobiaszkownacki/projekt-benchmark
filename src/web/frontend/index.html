@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Benchmark Czarnej Skrzynki</title>
+    <meta name="description" content="Platforma do testowania, analizy i porównywania optymalizatorów uczenia maszynowego." />
+    <script>
+      // Applied before the bundle loads. Deferring it to React means the light
+      // theme paints first and then flips, which is the one visible cost of not
+      // rendering on the server -- and it is avoidable in six lines.
+      (function () {
+        try {
+          var choice = localStorage.getItem('theme');
+          if (choice === 'light' || choice === 'dark') {
+            document.documentElement.setAttribute('data-theme', choice);
+          }
+        } catch (e) { /* private mode: fall back to the system preference */ }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

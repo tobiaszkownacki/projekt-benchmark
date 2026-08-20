@@ -1,0 +1,313 @@
+@import './tokens.css';
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  /* The page itself never scrolls sideways; wide content scrolls in its own
+   * container. */
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+h1 { font-size: 26px; line-height: 1.2; }
+h2 { font-size: 19px; line-height: 1.25; }
+h3 { font-size: 16px; line-height: 1.3; }
+
+p { margin: 0 0 var(--space-3); max-width: var(--measure); }
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+a:focus-visible, button:focus-visible, [tabindex]:focus-visible,
+select:focus-visible, input:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Every identifier, path and number in a column. Without tabular-nums a table
+ * of metrics does not line up, and it reads as amateur immediately. */
+.mono, code, pre, td.num, th.num, .num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.num, td.num, th.num { text-align: right; }
+
+.muted { color: var(--text-2); }
+.dim { color: var(--text-3); }
+.small { font-size: 12px; }
+.tiny { font-size: 11px; }
+
+/* ---- layout ---- */
+
+.shell { display: flex; flex-direction: column; min-height: 100%; }
+
+.masthead {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.masthead-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 var(--space-5);
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  min-height: 48px;
+  flex-wrap: wrap;
+}
+.wordmark {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+.wordmark:hover { text-decoration: none; }
+.wordmark span { color: var(--text-2); font-weight: 400; }
+
+.nav { display: flex; gap: var(--space-1); flex-wrap: wrap; flex: 1; }
+.nav a {
+  padding: 4px var(--space-3);
+  border-radius: var(--radius);
+  color: var(--text-2);
+  font-size: 13px;
+  border: 1px solid transparent;
+}
+.nav a:hover { color: var(--text); background: var(--surface-2); text-decoration: none; }
+.nav a.active {
+  color: var(--text);
+  background: var(--bg);
+  border-color: var(--border);
+}
+
+.page { flex: 1; max-width: 1400px; width: 100%; margin: 0 auto; padding: var(--space-5); }
+.page-wide { max-width: 1700px; }
+
+.page-head { margin-bottom: var(--space-5); }
+.page-head p { color: var(--text-2); margin-top: var(--space-2); }
+
+.section { margin-bottom: var(--space-6); }
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+/* ---- surfaces: 1px lines, never blur ---- */
+
+.panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+.panel-head {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.panel-body { padding: var(--space-4); }
+
+/* ---- tables: density over airiness ---- */
+
+.table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-strong);
+  text-align: left;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  padding: var(--space-2) var(--space-3);
+  white-space: nowrap;
+}
+thead th.sortable { cursor: pointer; user-select: none; }
+thead th.sortable:hover { color: var(--text); }
+tbody td { padding: 5px var(--space-3); border-bottom: 1px solid var(--border); }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: var(--surface); }
+tbody tr.selected { background: var(--accent-soft); }
+
+/* ---- state pills: shape and text, not colour alone ---- */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 1px var(--space-2);
+  border-radius: 2px;
+  border: 1px solid var(--border-strong);
+  font-size: 11px;
+  font-family: var(--font-sans);
+  white-space: nowrap;
+  color: var(--text-2);
+  background: var(--surface);
+}
+.pill::before {
+  content: '';
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+.pill-success { color: var(--success); border-color: var(--success); background: var(--success-soft); }
+.pill-error { color: var(--error); border-color: var(--error); background: var(--error-soft); }
+.pill-warning { color: var(--warning); border-color: var(--warning); background: var(--warning-soft); }
+.pill-active { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.pill-pending { color: var(--text-2); }
+/* The only motion in the interface, and it marks something that is genuinely
+ * changing: a job currently occupying a compute node. */
+.pill-active::before { animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .pill-active::before { animation: none; } }
+
+/* ---- controls ---- */
+
+button, .button {
+  font: inherit;
+  font-size: 13px;
+  padding: 4px var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+button:hover, .button:hover { background: var(--surface-2); text-decoration: none; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #FFFFFF; }
+button.primary:hover { background: var(--accent); opacity: 0.9; }
+button.subtle { border-color: transparent; color: var(--text-2); }
+button.subtle:hover { border-color: var(--border); color: var(--text); }
+button.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+input, select, textarea {
+  font: inherit;
+  font-size: 13px;
+  padding: 4px var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+}
+textarea { font-family: var(--font-mono); line-height: 1.45; width: 100%; }
+label { font-size: 12px; color: var(--text-2); display: block; margin-bottom: 2px; }
+
+.field { margin-bottom: var(--space-3); }
+.controls { display: flex; gap: var(--space-3); align-items: flex-end; flex-wrap: wrap; }
+.segmented { display: inline-flex; border: 1px solid var(--border-strong); border-radius: var(--radius); overflow: hidden; }
+.segmented button { border: none; border-radius: 0; border-right: 1px solid var(--border); }
+.segmented button:last-child { border-right: none; }
+
+/* ---- metric strip: summary before detail ---- */
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.metric { padding: var(--space-3) var(--space-4); border-right: 1px solid var(--border); }
+.metric:last-child { border-right: none; }
+.metric-label {
+  font-size: 11px;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: flex; align-items: center; gap: var(--space-1);
+}
+.metric-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 19px;
+  margin-top: 2px;
+}
+/* A number without its unit and its ceiling is not an answer. */
+.metric-context { font-size: 11px; color: var(--text-3); font-family: var(--font-mono); }
+
+.hint { border-bottom: 1px dotted var(--text-3); cursor: help; }
+
+.note {
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--text-3);
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  font-size: 13px;
+}
+.note-error { border-left-color: var(--error); background: var(--error-soft); }
+.note-accent { border-left-color: var(--accent); background: var(--accent-soft); }
+.note-warning { border-left-color: var(--warning); background: var(--warning-soft); }
+.note p:last-child { margin-bottom: 0; }
+
+pre.log {
+  margin: 0;
+  padding: var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: auto;
+  max-height: 460px;
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre;
+  tab-size: 4;
+}
+
+.empty {
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  color: var(--text-2);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+}
+
+.row { display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; }
+.spread { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); }
+.stack > * + * { margin-top: var(--space-3); }
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-4); }
+
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 2px var(--space-4); font-size: 13px; }
+.kv dt { color: var(--text-2); }
+.kv dd { margin: 0; font-family: var(--font-mono); font-variant-numeric: tabular-nums; word-break: break-all; }
+
+.breadcrumb { display: flex; gap: var(--space-1); align-items: center; font-size: 12px; flex-wrap: wrap; }
+.breadcrumb .sep { color: var(--text-3); }
+
+.skip-link {
+  position: absolute; left: -9999px;
+  background: var(--bg); border: 1px solid var(--accent);
+  padding: var(--space-2) var(--space-3); border-radius: var(--radius);
+}
+.skip-link:focus { left: var(--space-3); top: var(--space-3); z-index: 100; }
