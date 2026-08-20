@@ -3,9 +3,9 @@ from uuid import UUID
 
 import streamlit as st
 
-from src.frontend.auth import repository
-from src.frontend.auth.oauth_sync import sync_oauth_user
-from src.frontend.auth.passwords import verify_password
+from auth import repository
+from auth.oauth_sync import sync_oauth_user
+from auth.passwords import verify_password
 
 
 def is_logged_in() -> bool:

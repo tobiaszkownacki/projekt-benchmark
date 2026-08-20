@@ -1,6 +1,6 @@
 import streamlit as st
 
-from src.frontend.auth.session import logout
+from auth.session import logout
 
 
 def render_pending_approval() -> None:
