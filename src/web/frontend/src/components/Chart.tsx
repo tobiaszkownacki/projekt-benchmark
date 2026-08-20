@@ -383,6 +383,11 @@ export function Chart({
         <div className="row" style={{ gap: 'var(--space-3)' }}>
           {series.map((entry, index) => {
             const off = hidden.has(entry.label);
+            // A gradient-free optimizer never increments the gradient counter,
+            // so on the gradient axis its whole series sits at x=0 and there is
+            // no curve to draw. Saying so is better than a legend entry
+            // pointing at nothing, which reads as a bug.
+            const flat = new Set(entry.x).size < 2;
             return (
               <button
                 key={entry.label}
@@ -393,7 +398,9 @@ export function Chart({
                   return next;
                 })}
                 style={{ opacity: off ? 0.4 : 1, fontSize: 12, padding: '2px 6px' }}
-                title={off ? 'Pokaż serię' : 'Ukryj serię'}
+                title={flat
+                  ? 'Ta metoda nie zużywa tej waluty budżetu — brak krzywej na tej osi'
+                  : (off ? 'Pokaż serię' : 'Ukryj serię')}
               >
                 <svg width="20" height="8" style={{ verticalAlign: 'middle', marginRight: 5 }}>
                   <line x1="0" y1="4" x2="20" y2="4" strokeWidth="2"
@@ -402,6 +409,11 @@ export function Chart({
                 </svg>
                 {entry.label}
                 <span className="tiny muted mono" style={{ marginLeft: 5 }}>n={entry.n_runs}</span>
+                {flat && (
+                  <span className="tiny" style={{ marginLeft: 5, color: 'var(--warning)' }}>
+                    brak na tej osi
+                  </span>
+                )}
               </button>
             );
           })}
