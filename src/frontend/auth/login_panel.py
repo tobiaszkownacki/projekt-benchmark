@@ -1,12 +1,12 @@
 import streamlit as st
 from email_validator import validate_email, EmailNotValidError
 
-from src.frontend.auth import repository
-from src.frontend.auth.passwords import validate_password_strength
-from src.frontend.auth.recaptcha import verify_recaptcha
-from src.frontend.auth.session import login_with_email
-from src.frontend.auth.join_info_form import render_join_info_inputs, validate_join_info
-from src.frontend.auth.recaptcha_widget import (
+from auth import repository
+from auth.passwords import validate_password_strength
+from auth.recaptcha import verify_recaptcha
+from auth.session import login_with_email
+from auth.join_info_form import render_join_info_inputs, validate_join_info
+from auth.recaptcha_widget import (
     invalidate_recaptcha,
     render_recaptcha,
     render_recaptcha_disclaimer,

@@ -1,5 +1,5 @@
 import streamlit as st
-from src.frontend.core.validator import run_synchronous_validation
+from core.validator import run_synchronous_validation
 
 st.title("Upload your optimizer")
 

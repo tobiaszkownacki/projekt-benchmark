@@ -1,8 +1,8 @@
 import streamlit as st
 
-from src.frontend.auth import repository
-from src.frontend.auth.session import logout
-from src.frontend.auth.join_info_form import render_join_info_inputs, validate_join_info
+from auth import repository
+from auth.session import logout
+from auth.join_info_form import render_join_info_inputs, validate_join_info
 
 
 def render_join_info_onboarding(user: repository.User) -> None:
