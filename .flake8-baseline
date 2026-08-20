@@ -30,7 +30,6 @@ src/benchmark_core/optimization_engine/runner.py E251 2
 src/benchmark_core/optimization_engine/runner.py F401 1
 src/benchmark_core/plotting/benchmark_analyzer.py E272 5
 src/benchmark_core/plotting/benchmark_analyzer.py F401 1
-src/benchmark_core/plotting/benchmark_analyzer.py W391 1
 src/frontend/auth/login_panel.py E251 2
 src/frontend/auth/login_panel.py E302 1
 src/frontend/auth/login_panel.py W293 1
