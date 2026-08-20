@@ -16,6 +16,7 @@ Run with:  python -m app.outbox_publisher
 import json
 import logging
 import os
+import pathlib
 import signal
 import sys
 import time
@@ -29,6 +30,11 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)-7s outbox: %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+# Touched on every pass of the drain loop and checked by the container
+# healthcheck. A liveness probe that only asks whether the process exists would
+# report a wedged loop as healthy, which is the failure worth catching.
+HEARTBEAT = pathlib.Path(os.environ.get("OUTBOX_HEARTBEAT", "/tmp/outbox-heartbeat"))
 
 POLL_SECONDS = float(os.environ.get("OUTBOX_POLL_SECONDS", "1.0"))
 BATCH = int(os.environ.get("OUTBOX_BATCH", "50"))
@@ -129,6 +135,10 @@ def main() -> int:
             logger.info("Connected; draining outbox every %.1fs", POLL_SECONDS)
 
             while _running:
+                try:
+                    HEARTBEAT.touch()
+                except OSError:
+                    pass
                 sent = publish_batch(db, channel)
                 if sent:
                     logger.info("Published %d message(s)", sent)

@@ -135,6 +135,16 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       RABBITMQ_HOST: rabbitmq
     command: ["python", "-m", "app.outbox_publisher"]
+    # Both services share one image, and the image's healthcheck probes the HTTP
+    # endpoint. This one serves nothing, so it would fail that check forever and
+    # report unhealthy while working perfectly. Replaced with a check of the
+    # thing that actually matters here: that the process is alive.
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,sys,time; p='/tmp/outbox-heartbeat'; sys.exit(0 if os.path.exists(p) and time.time()-os.path.getmtime(p) < 60 else 1)"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 volumes:
   postgres_data:
