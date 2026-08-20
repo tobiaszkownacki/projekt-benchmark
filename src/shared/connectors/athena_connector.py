@@ -1,20 +1,16 @@
 import os
 import re
+import stat
 import time
 import paramiko
 from pathlib import Path
-from dotenv import load_dotenv
 
-load_dotenv()
+from shared.interfaces.executor_connector import ExecutorConnector
 
-ATHENA_HOST     = os.getenv("ATHENA_HOST")
-ATHENA_USER     = os.getenv("ATHENA_USER")
-ATHENA_PASSWORD = os.getenv("ATHENA_PASSWORD")
-ATHENA_ACCOUNT  = os.getenv("ATHENA_ACCOUNT")
-POLL_EVERY      = int(os.getenv("POLL_EVERY", 30))
+POLL_EVERY = int(os.environ.get("POLL_EVERY", 30))
 
 
-class AthenaConnector:
+class AthenaConnector(ExecutorConnector):
 
     def __init__(self) -> None:
         self.host = os.environ.get("ATHENA_HOST")
@@ -24,7 +20,7 @@ class AthenaConnector:
         self.client = None
         self._scratch: str | None = None
 
-    def __enter__(self) -> "AthenaClient":
+    def __enter__(self) -> "AthenaConnector":
         self.client = paramiko.SSHClient()
         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.client.connect(
@@ -49,6 +45,12 @@ class AthenaConnector:
         if exit_code != 0:
             raise RuntimeError(stderr.read().decode().strip())
         return out
+
+    def ssh_capture(self, cmd: str) -> tuple[str, str, int]:
+        """Run a command on Athena, returning (stdout, stderr, exit_code) without raising."""
+        _, stdout, stderr = self.client.exec_command(cmd)
+        exit_code = stdout.channel.recv_exit_status()
+        return stdout.read().decode().strip(), stderr.read().decode().strip(), exit_code
 
     def get_scratch(self) -> str:
         """Resolve $SCRATCH once and cache it."""
@@ -107,7 +109,7 @@ class AthenaConnector:
 #SBATCH --mem={mem}
 #SBATCH --gres=gpu:{gpus}
 #SBATCH --time={time_limit}
-#SBATCH --output=%j.out
+#SBATCH --output={workdir}/reports/{job_name}/%j.out
 {extra_sbatch}
 
 {env_exports}
@@ -136,9 +138,13 @@ cd {workdir}
         self.upload_file(local_script, remote_path)
         return remote_path
 
-    def submit_job(self, job: dict, local_script: str | None = None) -> str:
+    def submit_job(self, job: dict, local_script: str | None = None) -> tuple[str, str]:
         """
-        Submit a job to Athena. Returns the Slurm job ID.
+        Submit a job to Athena. Returns (job_id, stderr).
+
+        stderr is whatever the sbatch command wrote to stderr -- it may be
+        non-empty even on a successful submission (e.g. warnings), so callers
+        should inspect it even when no exception is raised.
 
         If local_script is provided it is uploaded first and
         script_remote_path is set automatically.
@@ -155,30 +161,39 @@ cd {workdir}
 
         scratch    = self.get_scratch()
         job_name   = job.get("job_name", "benchmark_job")
+        workdir    = job.get("workdir", "$SCRATCH")
         job_dir    = f"{scratch}/{job_name}"
         job_sh     = f"{job_dir}/job.sh"
+
+        # the output dir must exist before sbatch starts, since Slurm won't create it for --output
+        self.ssh(f"mkdir -p {workdir}/reports/{job_name}")
 
         escaped = script_content.replace("'", "'\\''")
         self.ssh(f"mkdir -p {job_dir} && printf '%s' '{escaped}' > {job_sh}")
 
-        output = self.ssh(f"cd {job_dir} && sbatch job.sh")
-        match  = re.search(r"(\d+)", output)
-        if not match:
-            raise RuntimeError(f"Could not parse job ID from sbatch output: {output}")
+        stdout, stderr, exit_code = self.ssh_capture(f"cd {job_dir} && sbatch job.sh")
+        if exit_code != 0:
+            raise RuntimeError(stderr or f"sbatch exited with status {exit_code}")
 
-        job_id = match.group(1)
-        print(f"Submitted job {job_id}")
-        return job_id
+        match = re.search(r"(\d+)", stdout)
+        if not match:
+            raise RuntimeError(f"Could not parse job ID from sbatch output: {stdout!r}")
+
+        return match.group(1), stderr
+
+    def get_job_status(self, job_id: str) -> str:
+        """Return the live Slurm queue state for job_id, or '' once it has left the queue."""
+        try:
+            return self.ssh(f"squeue -j {job_id} -h -o '%T'")
+        except RuntimeError:
+            return ""
 
     def wait_for_job(self, job_id: str, poll_every: int = POLL_EVERY) -> str:
         """
         Block until the job leaves the queue. Returns the final Slurm state string.
         """
         while True:
-            try:
-                state = self.ssh(f"squeue -j {job_id} -h -o '%T'")
-            except RuntimeError:
-                state = ""
+            state = self.get_job_status(job_id)
 
             if not state:
                 try:
@@ -212,12 +227,27 @@ cd {workdir}
         print(f"Fetched log: {local_path}")
         return local_path
 
+    def download_results(self, remote_dir: str, local_dir: str) -> list[str]:
+        local_path = Path(local_dir)
+        local_path.mkdir(parents=True, exist_ok=True)
+
+        downloaded: list[str] = []
+        with self.client.open_sftp() as sftp:
+            for entry in sftp.listdir_attr(remote_dir):
+                if stat.S_ISDIR(entry.st_mode):
+                    continue
+                local_file = local_path / entry.filename
+                sftp.get(f"{remote_dir}/{entry.filename}", str(local_file))
+                downloaded.append(str(local_file))
+
+        return downloaded
+
     def run_job(self, job: dict, local_script: str | None = None, local_dir: str = "./results") -> dict:
         """
         Full pipeline: upload (optional)  submit  wait  fetch log.
         Returns a result dict with job_id, state, and log_path.
         """
-        job_id   = self.submit_job(job, local_script=local_script)
+        job_id, _stderr = self.submit_job(job, local_script=local_script)
         state    = self.wait_for_job(job_id)
         log_path = self.fetch_log(job_id, local_dir=local_dir)
 

@@ -1,6 +1,6 @@
 import httpx
 
-from src.frontend.core.config import get_recaptcha_min_score, get_recaptcha_secret_key
+from core.config import get_recaptcha_min_score, get_recaptcha_secret_key
 
 
 def verify_recaptcha(token: str, *, action: str = "register") -> bool:

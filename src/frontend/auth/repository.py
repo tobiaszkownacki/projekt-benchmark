@@ -6,8 +6,8 @@ from uuid import UUID
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
-from src.frontend.core.database import get_connection
-from src.frontend.auth.passwords import hash_password
+from core.database import get_connection
+from auth.passwords import hash_password
 
 
 @dataclass

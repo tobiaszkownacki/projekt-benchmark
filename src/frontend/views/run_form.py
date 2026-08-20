@@ -3,10 +3,9 @@ from datetime import datetime, timezone
 from typing import Any
 import streamlit as st
 
-from src.frontend.views.mock_data import DATASETS, OPTIMIZERS
-from src.frontend.auth import repository
-from src.frontend.core.validator import run_synchronous_validation
-from src.task_queue.shared.connectors.rabbitmq_connector import RabbitMQConnector
+from views.mock_data import DATASETS, OPTIMIZERS
+from shared.connectors.rabbitmq_connector import RabbitMQConnector
+from auth import repository
 
 
 @dataclass
