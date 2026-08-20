@@ -25,6 +25,7 @@ class User:
     join_reason: Optional[str] = None
     password_hash: Optional[str] = None
 
+
 @dataclass
 class Task:
     task_id: str
@@ -39,6 +40,7 @@ class Task:
     run_name: str
     optimizer_params: dict
     completed_at: str
+
 
 @dataclass
 class ExecutorStatus:
