@@ -7,8 +7,11 @@ containers §5.1 describes rather than gaining a fifth runtime to patch. It also
 removes cross-origin cookies and CORS from the picture entirely.
 """
 
+import base64
+import hashlib
 import logging
 import os
+import re
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
@@ -35,6 +38,8 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)-7s %(name)s: %(message)s",
 )
 logger = logging.getLogger("web")
+
+_INDEX = settings.static_root / "index.html"
 
 
 @asynccontextmanager
@@ -93,6 +98,33 @@ _SECURITY_HEADERS = {
 }
 
 
+def _inline_script_hashes() -> list[str]:
+    """SHA-256 hashes of the inline scripts in index.html.
+
+    index.html carries one inline script, which reads the saved theme and sets
+    it on <html> before the bundle loads -- without it a reader who chose the
+    dark theme gets a flash of the light one on every navigation, which is the
+    one visible cost of not rendering on the server.
+
+    A blanket 'unsafe-inline' would buy that back at the price of the policy, so
+    the hash is computed from the file instead. Computed rather than pinned, so
+    editing the script cannot silently break it: this was caught exactly once,
+    by a console error during screenshotting, and a hardcoded constant would
+    have re-broken it the next time the script changed.
+    """
+    if not _INDEX.is_file():
+        return []
+    markup = _INDEX.read_text(encoding="utf-8")
+    hashes = []
+    for body in re.findall(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>", markup, re.S):
+        digest = hashlib.sha256(body.encode("utf-8")).digest()
+        hashes.append(f"'sha256-{base64.b64encode(digest).decode()}'")
+    return hashes
+
+
+_SCRIPT_SRC = " ".join(["'self'", *_inline_script_hashes()])
+
+
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
     response = await call_next(request)
@@ -105,13 +137,11 @@ async def security_headers(request: Request, call_next):
         response.headers.setdefault(
             "Content-Security-Policy",
             "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; "
-            "script-src 'self'; connect-src 'self'; font-src 'self'; "
+            f"script-src {_SCRIPT_SRC}; connect-src 'self'; font-src 'self'; "
             "object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
         )
     return response
 
-
-_INDEX = settings.static_root / "index.html"
 
 if settings.static_root.is_dir():
     app.mount(

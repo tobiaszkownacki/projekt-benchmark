@@ -62,3 +62,32 @@ def test_deep_link_serves_the_application(client, path):
 def test_unknown_api_path_is_still_404(client):
     """The catch-all must not swallow API mistakes into a 200 page."""
     assert client.get("/api/definitely-not-a-route").status_code == 404
+
+
+def test_inline_theme_script_is_allowed_by_the_policy(client):
+    """The theme script must survive the CSP.
+
+    It runs before the bundle and sets the saved theme on <html>; blocked, a
+    reader who chose dark gets a flash of light on every navigation. This was a
+    real defect -- script-src 'self' rejected it -- found only because a browser
+    console was being watched during screenshotting. The hash is computed from
+    the file, and this test is what keeps the two in step.
+    """
+    import re
+
+    from app.main import _SCRIPT_SRC
+
+    markup = client.get("/").text
+    inline = re.findall(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>", markup, re.S)
+
+    policy = client.get("/").headers.get("content-security-policy", "")
+    assert "script-src" in policy
+
+    if inline:
+        # Every inline script present must have a hash in the policy.
+        import base64
+        import hashlib
+        for body in inline:
+            digest = base64.b64encode(hashlib.sha256(body.encode()).digest()).decode()
+            assert f"'sha256-{digest}'" in _SCRIPT_SRC
+            assert f"'sha256-{digest}'" in policy
