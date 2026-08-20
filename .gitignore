@@ -189,3 +189,23 @@ outputs/
 # user_configs
 user_configs/*.yaml
 reports/
+
+# ---------------------------------------------------------------------------
+# Secrets - never commit. Local dev credentials live in these files.
+# .env.template / .env.example stay tracked as the documented shape.
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.template
+!.env.example
+env
+**/env
+secrets.toml
+**/secrets.toml
+.streamlit/
+**/.streamlit/
+*.pem
+*.key
+*.p12
+credentials.json
+service-account*.json

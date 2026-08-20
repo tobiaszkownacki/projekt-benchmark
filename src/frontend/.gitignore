@@ -4,3 +4,10 @@
 __pycache__/
 rabbitmq_config/definitions.json
 downloads/
+
+# Secrets - never commit.
+.env.*
+env
+secrets.toml
+**/secrets.toml
+.streamlit/
