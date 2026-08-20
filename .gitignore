@@ -217,3 +217,5 @@ src/web/frontend/dist/
 .venv-tools/
 .vite/
 *.tsbuildinfo
+egg-info/
+*.egg-info/
