@@ -1,6 +1,6 @@
 import streamlit as st
 
-from frontend.core.config import get_recaptcha_site_key
+from src.frontend.core.config import get_recaptcha_site_key
 import streamlit.components.v2 as components
 
 _RECAPTCHA_JS = """

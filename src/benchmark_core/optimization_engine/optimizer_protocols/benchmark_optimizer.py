@@ -1,7 +1,7 @@
 from typing import Type
 
-from benchmark.evaluator import ModelEvaluator
-from benchmark.evaluator_dtos import EvaluatorDto
+from src.benchmark_core.optimization_engine.evaluator import ModelEvaluator
+from src.benchmark_core.optimization_engine.evaluator_dtos import EvaluatorDto
 
 
 class BenchmarkOptimizer:

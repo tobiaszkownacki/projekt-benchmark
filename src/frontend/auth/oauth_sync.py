@@ -1,6 +1,6 @@
 import streamlit as st
 
-from auth import repository
+from src.frontend.auth import repository
 
 
 def _detect_provider() -> str:

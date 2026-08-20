@@ -24,8 +24,8 @@ To add a new optimization algorithm to the benchmark suite:
     ```python
     # src/benchmark/optimizers/my_custom_optimizer.py
     import numpy as np
-    from benchmark.evaluator import ModelEvaluator
-    from benchmark.optimizer_protocols import NumpyBenchmarkOptimizer # Or CupyBenchmarkOptimizer
+    from src.benchmark_core.optimization_engine.evaluator import ModelEvaluator
+    from src.benchmark_core.optimization_engine.optimizer_protocols import NumpyBenchmarkOptimizer # Or CupyBenchmarkOptimizer
 
     class MyCustomOptimizer(NumpyBenchmarkOptimizer):
         def __init__(self, initial_params: np.ndarray, custom_param: float = 0.1, **config):

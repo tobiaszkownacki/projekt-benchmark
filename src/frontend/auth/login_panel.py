@@ -1,12 +1,12 @@
 import streamlit as st
 from email_validator import validate_email, EmailNotValidError
 
-from auth import repository
-from auth.passwords import validate_password_strength
-from auth.recaptcha import verify_recaptcha
-from auth.session import login_with_email
-from auth.join_info_form import render_join_info_inputs, validate_join_info
-from auth.recaptcha_widget import (
+from src.frontend.auth import repository
+from src.frontend.auth.passwords import validate_password_strength
+from src.frontend.auth.recaptcha import verify_recaptcha
+from src.frontend.auth.session import login_with_email
+from src.frontend.auth.join_info_form import render_join_info_inputs, validate_join_info
+from src.frontend.auth.recaptcha_widget import (
     invalidate_recaptcha,
     render_recaptcha,
     render_recaptcha_disclaimer,
@@ -72,7 +72,7 @@ def _render_oauth_tab() -> None:
 def _render_login_form() -> None:
     _render_auth_error()
     render_recaptcha_disclaimer()
-    
+
     captcha_token = render_recaptcha(action="login", key="login_recaptcha")
 
     email = st.text_input("Email", key="login_email")

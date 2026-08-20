@@ -1,5 +1,5 @@
 import streamlit as st
-from views.mock_data import RUN_HISTORY
+from src.frontend.views.mock_data import RUN_HISTORY
 
 _STATUS_ICON = {
     "completed": ":green[:material/check_circle:]",
