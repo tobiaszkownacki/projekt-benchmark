@@ -1,0 +1,119 @@
+/* Design tokens.
+ *
+ * The register is a benchmark leaderboard and a paper, not a product page:
+ * Papers With Code, OpenReview, Distill, the scikit-learn documentation. Density
+ * and typography carry the hierarchy; colour carries meaning and nothing else.
+ *
+ * Every colour is defined here on :root first. Defining one only inside a media
+ * query means it does not exist when the query does not match, which is how
+ * themes end up with holes in them. */
+
+:root {
+  --bg: #FCFCFD;
+  --surface: #F3F5F7;
+  --surface-2: #EAEEF2;
+  --border: #D9DEE4;
+  --border-strong: #BCC5CF;
+  --text: #11161C;
+  --text-2: #5F6B79;
+  --text-3: #8A94A0;
+  --accent: #1D4E89;
+  --accent-soft: #E4EBF4;
+  --success: #2C6E49;
+  --success-soft: #E2EEE7;
+  --error: #9C4221;
+  --error-soft: #F6E7E0;
+  --warning: #8A6116;
+  --warning-soft: #F5EEDC;
+
+  /* Okabe-Ito, minus the yellow, which lacks contrast on a light ground.
+   * Chosen because these figures end up in papers: the set survives the common
+   * forms of colour blindness, and series are distinguished by line style as
+   * well, so nothing is lost in greyscale print. */
+  --series-1: #0072B2;
+  --series-2: #D55E00;
+  --series-3: #009E73;
+  --series-4: #CC79A7;
+  --series-5: #E69F00;
+  --series-6: #56B4E9;
+  --series-7: #333333;
+  --series-8: #8A6116;
+
+  --font-serif: Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+               "Liberation Mono", monospace;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --radius: 3px;
+  --measure: 68ch;
+}
+
+/* A researcher reading convergence curves at 23:00 is a real scenario, so dark
+ * mode is not optional. Both the system preference and the explicit choice are
+ * handled, and the explicit one wins in both directions. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1116;
+    --surface: #161B22;
+    --surface-2: #1D242D;
+    --border: #2A313A;
+    --border-strong: #3C4550;
+    --text: #E6EAF0;
+    --text-2: #9AA6B2;
+    --text-3: #6E7B88;
+    /* #1D4E89 does not reach 4.5:1 on this ground; this is the same hue lifted. */
+    --accent: #6BA3E5;
+    --accent-soft: #17263A;
+    --success: #5FB37E;
+    --success-soft: #14241B;
+    --error: #E08A5F;
+    --error-soft: #2A1912;
+    --warning: #D9AE5A;
+    --warning-soft: #262013;
+
+    --series-1: #7FB8E8;
+    --series-2: #F08A4B;
+    --series-3: #5FC3A0;
+    --series-4: #E3A0C4;
+    --series-5: #F0BF62;
+    --series-6: #8FCDF0;
+    --series-7: #CBD3DC;
+    --series-8: #D9AE5A;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0E1116;
+  --surface: #161B22;
+  --surface-2: #1D242D;
+  --border: #2A313A;
+  --border-strong: #3C4550;
+  --text: #E6EAF0;
+  --text-2: #9AA6B2;
+  --text-3: #6E7B88;
+  --accent: #6BA3E5;
+  --accent-soft: #17263A;
+  --success: #5FB37E;
+  --success-soft: #14241B;
+  --error: #E08A5F;
+  --error-soft: #2A1912;
+  --warning: #D9AE5A;
+  --warning-soft: #262013;
+
+  --series-1: #7FB8E8;
+  --series-2: #F08A4B;
+  --series-3: #5FC3A0;
+  --series-4: #E3A0C4;
+  --series-5: #F0BF62;
+  --series-6: #8FCDF0;
+  --series-7: #CBD3DC;
+  --series-8: #D9AE5A;
+}
