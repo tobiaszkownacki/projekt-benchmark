@@ -186,7 +186,24 @@ importowały nieistniejący pakiet `frontend`, a warstwa danych była wpięta w
 `st.cache_resource`. Po naprawie te moduły importują się bez Streamlita, a
 Streamlit działa dalej bez zmian.
 
-### 2.7 Zrzuty ekranu
+### 2.7 Co zostało faktycznie uruchomione
+
+Tabela jest po to, żeby oddzielić „zaimplementowane" od „sprawdzone".
+
+| Co | Dowód |
+|---|---|
+| Cały system z jednego compose | `docker compose up -d --build` → cztery kontenery, wszystkie `healthy` |
+| Migracje na istniejącym wolumenie | 8 migracji zastosowanych na bazie, którą `initdb.d` już zainicjował — obie ścieżki zbiegają się |
+| Ścieżka zgłoszenia end-to-end | `POST /api/submissions` → wiersz w `queue_outbox` w tej samej transakcji co zadanie → publisher w osobnym kontenerze → wiadomość w `ATHENA_WORKER_QUEUE`, w ~4 s, bez udziału API w rozmowie z brokerem |
+| Limit dzienny | `409` z komunikatem po wyczerpaniu puli (zadziałał od razu — 194 zasiane przebiegi wyczerpały limit 3/dzień) |
+| Status na żywo | Otwarty strumień SSE, `UPDATE tasks` z psql, zdarzenie `task_changed` w strumieniu w tej samej sekundzie. Dwie zmiany, dwa zdarzenia |
+| Stan brokera w panelu | Realne 4 kolejki z management API, w tym 2 DLQ |
+| Deep linki | 14 ścieżek otwartych na zimno przez Playwright, `200` i wyrenderowana aplikacja; do tego test parametryzowany |
+| Tryb ciemny | Zrzuty w obu motywach, bez mignięcia (skrypt motywu przechodzi przez CSP — patrz §4.9) |
+| Testy | **69**: 27 bezpieczeństwo artefaktów, 12 statystyka i downsampling, 16 kontrakt API, 14 routing SPA |
+| Lint | `flake8` bez nowych naruszeń, ESLint czysty, grep zakazów wizualnych czysty, `npm run build` przechodzi |
+
+### 2.8 Zrzuty ekranu
 
 W `docs/screenshots/`: przegląd, ranking (jasny i ciemny), lista uruchomień,
 strona runu, przeglądarka plików (podgląd PNG i tabela CSV), run nieudany,
@@ -330,6 +347,28 @@ Cztery pozycje z §7 briefu (brak `remaining_budget`, brak
 `@classmethod`) są **udokumentowane wprost na `/docs`**, razem z 4.2. Uczciwość
 wobec uczestników jest wartością: znalezienie tych rzeczy metodą prób i błędów w
 trakcie konkursu byłoby gorsze dla wszystkich.
+
+### 4.9 Własne defekty znalezione przy weryfikacji
+
+Odnotowane, bo zostały znalezione dopiero przez uruchomienie, nie przez czytanie
+kodu — i to jest argument za tym, żeby nie deklarować gotowości bez uruchomienia.
+
+1. **CSP blokowała własny skrypt motywu.** `script-src 'self'` odrzucała jedyny
+   skrypt inline w `index.html` — ten, który ustawia zapisany motyw przed
+   załadowaniem bundla. Efekt: mignięcie jasnego motywu przy każdej nawigacji, u
+   każdego, kto wybrał ciemny. Strona wyglądała poprawnie, polityka wyglądała
+   poprawnie; widać to było wyłącznie w konsoli przeglądarki. Hash jest teraz
+   liczony z pliku przy starcie, a nie wpisany na stałe, i jest na to test.
+2. **`chmod 600` na `definitions.json`** czyniło plik nieczytelnym dla
+   nieuprzywilejowanego użytkownika w kontenerze RabbitMQ, który wpadał w pętlę
+   restartów z komunikatem sugerującym brak pliku, a nie brak uprawnień.
+3. **Liczenie katalogów nadrzędnych** do znalezienia `src/benchmark_core`
+   działało w repozytorium i wywalało się w obrazie, gdzie hierarchia jest
+   płytsza.
+4. **Healthcheck z obrazu** odpytywał endpoint HTTP, którego publisher nie
+   serwuje — raportował `unhealthy` przy poprawnej pracy.
+5. **Wykresy w funkcji gradientów dla metod bezgradientowych** zwijały się do
+   pionowej kreski w zerze. Dane były poprawne, wykres bezużyteczny.
 
 ---
 
