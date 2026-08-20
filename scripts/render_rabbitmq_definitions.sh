@@ -42,5 +42,10 @@ json.loads(raw)  # fail loudly here rather than inside the broker at boot
 open(output_path, "w", encoding="utf-8").write(raw)
 PY
 
-chmod 600 "$output"
+# 0644, not 0600: the file is bind-mounted into the RabbitMQ container, which
+# runs as an unprivileged user, and a root-owned 0600 file is unreadable there.
+# The failure is not obvious from the outside -- the broker crash-loops with
+# "management.load_definitions invalid, file does not exist or cannot be read by
+# the node", which reads like the file is missing rather than unreadable.
+chmod 644 "$output"
 echo "wrote $output"
