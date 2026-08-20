@@ -9,7 +9,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from src.benchmark.evaluator import ModelEvaluator
+from src.benchmark_core.optimization_engine.evaluator import ModelEvaluator
 
 class DummyModel(nn.Module):
     """Simple PyTorch model used for optimizer integration testing."""

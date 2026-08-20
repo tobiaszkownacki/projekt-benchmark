@@ -1,6 +1,6 @@
 import streamlit as st
 
-from views.mock_data import LEADERBOARD
+from src.frontend.views.mock_data import LEADERBOARD
 
 
 def render_leaderboard(limit: int | None = None) -> None:

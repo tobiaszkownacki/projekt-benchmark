@@ -3,18 +3,20 @@ import streamlit as st
 st.set_page_config(page_title="Benchmark", layout="wide")
 
 from streamlit.navigation.page import StreamlitPage
-from auth import repository
-from auth.recaptcha_widget import hide_recaptcha_badge
-from auth.session import get_current_user, is_logged_in, logout
-from auth.join_info_onboarding import render_join_info_onboarding
-from auth.login_panel import render_login_panel
-from auth.pending_approval import render_pending_approval
-from views.admin.admin_panel import render_admin_panel
-from views.instructions import render_instructions
-from views.leaderboard import render_leaderboard
-from views.run_form import render_run_form
-from views.run_history import render_run_history
-from views.welcome_page import render_welcome_page
+
+from src.frontend.auth import repository
+from src.frontend.auth.recaptcha_widget import hide_recaptcha_badge
+from src.frontend.auth.session import get_current_user, is_logged_in, logout
+from src.frontend.auth.join_info_onboarding import render_join_info_onboarding
+from src.frontend.auth.login_panel import render_login_panel
+from src.frontend.auth.pending_approval import render_pending_approval
+
+from src.frontend.views.admin.admin_panel import render_admin_panel
+from src.frontend.views.instructions import render_instructions
+from src.frontend.views.leaderboard import render_leaderboard
+from src.frontend.views.run_form import render_run_form
+from src.frontend.views.run_history import render_run_history
+from src.frontend.views.welcome_page import render_welcome_page
 
 def _render_welcome_message(user: repository.User) -> None:
     st.title("Benchmark")

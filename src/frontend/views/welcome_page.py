@@ -1,6 +1,6 @@
 from typing import Any
 import streamlit as st
-from views.leaderboard import render_leaderboard
+from src.frontend.views.leaderboard import render_leaderboard
 
 
 def render_welcome_page(login_page: Any | None = None) -> None:
