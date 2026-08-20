@@ -5,6 +5,24 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 
+def find_source_root() -> Path:
+    """Locate the directory that contains ``src/benchmark_core``.
+
+    Counting parent directories breaks between layouts: in the repository this
+    package sits at src/web/app/, and in the image it sits at /app/app/, so a
+    fixed index is right in one and an IndexError in the other. Searching
+    upwards for a landmark works in both, and SOURCE_ROOT overrides it outright.
+    """
+    override = os.environ.get("SOURCE_ROOT")
+    if override:
+        return Path(override)
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        if (parent / "src" / "benchmark_core").is_dir():
+            return parent
+    return here.parents[-1]
+
+
 def _bool(name: str, default: bool) -> bool:
     raw = os.environ.get(name)
     if raw is None:

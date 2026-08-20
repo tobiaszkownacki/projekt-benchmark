@@ -5,17 +5,16 @@ from the engine's own source files rather than copied into the page. If someone
 changes example_gradient_optimizer.py, the documentation changes with it.
 """
 
-from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import PlainTextResponse
 
 from app.services import naming
-from app.settings import settings
+from app.settings import find_source_root, settings
 
 router = APIRouter(prefix="/api", tags=["meta"])
 
-REPO_ROOT = Path(__file__).resolve().parents[4]
+REPO_ROOT = find_source_root()
 PROTOCOLS = REPO_ROOT / "src/benchmark_core/optimization_engine/optimizer_protocols"
 
 EXAMPLES = {
@@ -96,7 +95,9 @@ async def protocol() -> dict:
         available[key] = {
             "filename": path.name,
             "present": path.is_file(),
-            "repo_path": str(path.relative_to(REPO_ROOT)) if path.is_file() else None,
+            "repo_path": (
+                str(path.relative_to(REPO_ROOT)) if path.is_file() else None
+            ),
         }
     return {
         "evaluator_api": EVALUATOR_API,
