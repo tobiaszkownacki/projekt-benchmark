@@ -82,6 +82,60 @@ services:
     volumes:
       - ./downloads:/downloads
 
+  web:
+    build:
+      context: .
+      dockerfile: src/web/Dockerfile
+    container_name: benchmark_web
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      SESSION_SECRET: ${SESSION_SECRET}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_MANAGEMENT_URL: http://rabbitmq:15672
+      PUBLIC_RESULTS: ${PUBLIC_RESULTS:-1}
+      DAILY_SUBMISSION_LIMIT: ${DAILY_SUBMISSION_LIMIT:-3}
+      # The validator needs a Docker socket to start its sandbox. Off by default
+      # so the web container does not require one; submissions are then accepted
+      # with an explicit note that nothing was checked, rather than silently.
+      VALIDATOR_ENABLED: ${VALIDATOR_ENABLED:-0}
+    ports:
+      - "${WEB_PORT:-8000}:8000"
+    volumes:
+      # Read-only on purpose. The downloader owns this directory; the web layer
+      # only reads it, and defence in depth means a bug here cannot write into
+      # the artifact tree.
+      - ./downloads:/downloads:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3).status==200 else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+
+  outbox_publisher:
+    build:
+      context: .
+      dockerfile: src/web/Dockerfile
+    container_name: benchmark_outbox_publisher
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      RABBITMQ_HOST: rabbitmq
+    command: ["python", "-m", "app.outbox_publisher"]
+
 volumes:
   postgres_data:
   rabbitmq_data:

@@ -209,3 +209,11 @@ secrets.toml
 *.p12
 credentials.json
 service-account*.json
+.seed-credentials
+
+# Frontend build tooling
+node_modules/
+src/web/frontend/dist/
+.venv-tools/
+.vite/
+*.tsbuildinfo
