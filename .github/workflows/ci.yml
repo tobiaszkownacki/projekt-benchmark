@@ -23,10 +23,13 @@ jobs:
           python-version: "3.11"
           enable-cache: true
 
-      - name: Install dependencies
-        run: uv sync --extra ci
+      # Only the lint tooling. The project's runtime dependencies include torch,
+      # torchvision and a CUDA 13 build of CuPy; installing those in order to run
+      # a linter costs minutes and is a reliable source of timeouts.
+      - name: Install lint tooling
+        run: uv sync --only-group ci
 
-      - name: Run Flake8
+      - name: Run flake8
         run: uv run flake8
 
   test:
@@ -36,22 +39,42 @@ jobs:
 
       - uses: astral-sh/setup-uv@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           enable-cache: true
 
-      - name: Install dependencies
-        run: uv sync --extra ci
-
-      - name: Find test files
-        id: tests
-        run: |
-          found=$(find . -name "test_*.py" -not -path "./.venv/*" | head -1)
-          echo "found=$found" >> $GITHUB_OUTPUT
+      - name: Install web layer with test tooling
+        working-directory: src/web
+        run: uv sync --group dev
 
       - name: Run pytest
-        if: steps.tests.outputs.found != ''
-        run: uv run pytest
+        working-directory: src/web
+        run: uv run pytest tests -q
 
-      - name: No test files found
-        if: steps.tests.outputs.found == ''
-        run: echo "No test files found, skipping pytest."
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: src/web/frontend/package-lock.json
+
+      - name: Install
+        working-directory: src/web/frontend
+        run: npm ci
+
+      - name: Lint
+        working-directory: src/web/frontend
+        run: npm run lint
+
+      # §14 bans gradients, glassmorphism and heavy shadows. A ban nobody
+      # enforces stops being a ban by the third pull request, so it is grepped.
+      - name: Check visual constraints
+        working-directory: src/web/frontend
+        run: npm run lint:css
+
+      - name: Build
+        working-directory: src/web/frontend
+        run: npm run build
