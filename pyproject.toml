@@ -25,11 +25,15 @@ dependencies = [
     "paramiko>=5.0.0",
 ]
 
-[tool.flake8]
-max-line-length = 120
-exclude = [".venv", ".git", "__pycache__", "reports","data",".github","weights"]
-
 [dependency-groups]
+# Linting and test tooling. Deliberately a dependency group rather than an
+# optional extra: these are development dependencies, not an opt-in feature of
+# the package, and the repository already uses groups for the Athena services.
+ci = [
+    "flake8>=7",
+    "pytest>=8",
+]
+
 athena-downloader = [
     "paramiko>=5.0.0",
     "pika>=1.4.4",

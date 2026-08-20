@@ -21,10 +21,6 @@ dependencies = [
 [tool.setuptools]
 packages = ["core", "auth", "views", "views.admin", "db"]
 
-[tool.flake8]
-max-line-length = 120
-exclude = [".venv", ".git", "__pycache__", ".streamlit", "db"]
-
 [dependency-groups]
 athena_worker = [
     "pika==1.4.2",
