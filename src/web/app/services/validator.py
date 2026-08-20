@@ -22,11 +22,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from app.settings import settings
+from app.settings import find_source_root, settings
 
 logger = logging.getLogger(__name__)
 
-REPO_ROOT = Path(__file__).resolve().parents[4]
+REPO_ROOT = find_source_root()
 VALIDATOR_SCRIPT = (
     "src/benchmark_core/optimization_engine/optimizers/validation/verify_optimizer.py"
 )
