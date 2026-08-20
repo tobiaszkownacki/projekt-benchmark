@@ -178,6 +178,41 @@ def _insert_task(conn, **kwargs) -> uuid.UUID:
         return cur.fetchone()["task_id"]
 
 
+def _walk_states(conn, task_id, created, started, completed, failed=False) -> None:
+    """Move a task through the states a real run passes through.
+
+    The transitions table is filled by a trigger on tasks, so inserting a row
+    already marked completed produces a history with exactly one entry. That
+    both undersells the feature and leaves the update path of the trigger
+    untested. Walking pending -> running -> completed writes the same history
+    the worker and poller would, and proves the trigger fires on updates.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            """UPDATE tasks SET task_status = 'running', started_at = %s,
+                                updated_at = %s WHERE task_id = %s""",
+            (started, started, task_id),
+        )
+        if failed:
+            cur.execute(
+                """UPDATE tasks SET task_status = 'failed', completed_at = %s,
+                                    updated_at = %s WHERE task_id = %s""",
+                (completed, completed, task_id),
+            )
+            return
+        # The downloader has not finished yet: a real intermediate state.
+        cur.execute(
+            """UPDATE tasks SET task_status = 'completed', artifact_status = 'downloading',
+                                completed_at = %s, updated_at = %s WHERE task_id = %s""",
+            (completed, completed, task_id),
+        )
+        cur.execute(
+            """UPDATE tasks SET artifact_status = 'ready', updated_at = %s
+                WHERE task_id = %s""",
+            (completed, task_id),
+        )
+
+
 def _store_result(conn, task_id, result) -> None:
     with conn.cursor() as cur:
         cur.execute(
@@ -271,7 +306,7 @@ def main() -> None:
                     submission_id=submission_id, seed=seed, suite="test",
                     model_name=model, optimizer_name=optimizer_key, family=family,
                     stop_condition=Jsonb({"max_epochs": args.epochs}),
-                    task_status="completed", artifact_status="ready",
+                    task_status="pending", artifact_status="absent",
                     artifact_root=None, artifact_bytes=0, artifact_files=0,
                     executor_task_id=str(4700000 + completed),
                     error_message=None, runner_version=RUNNER_VERSION,
@@ -300,6 +335,11 @@ def main() -> None:
                                             artifact_bytes = %s WHERE task_id = %s""",
                         (str(root), files, total, task_id),
                     )
+                _walk_states(
+                    conn, task_id, created,
+                    created + timedelta(seconds=40),
+                    created + timedelta(seconds=40 + result.wall_time_seconds),
+                )
                 _store_result(conn, task_id, result)
                 completed += 1
                 print(f"  {dataset}/{model} {optimizer_key} seed={seed} "
@@ -327,7 +367,7 @@ def main() -> None:
             model_name="mlp-1x16", optimizer_name=optimizer_key,
             family=LOCAL_OPTIMIZERS[optimizer_key][2],
             stop_condition=Jsonb({"max_epochs": args.epochs}),
-            task_status="completed", artifact_status="ready", artifact_root=None,
+            task_status="pending", artifact_status="absent", artifact_root=None,
             artifact_bytes=0, artifact_files=0, executor_task_id=str(4800001),
             error_message=None, runner_version=RUNNER_VERSION,
             gpu_model="CPU (local backend)", created_at=now - timedelta(hours=2),
@@ -345,6 +385,8 @@ def main() -> None:
                                     artifact_bytes=%s WHERE task_id=%s""",
                 (str(root), files, total, task_id),
             )
+        _walk_states(conn, task_id, now - timedelta(hours=2),
+                     now - timedelta(hours=2), now - timedelta(hours=1))
         _store_result(conn, task_id, result)
     conn.commit()
 

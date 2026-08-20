@@ -60,24 +60,35 @@ def write_run_artifacts(
     colour = OKABE_ITO[1]
     epochs = result.epoch_history or list(range(1, len(result.loss_history) + 1))
 
+    # A gradient-free method never calls evaluate_with_grad(), so its gradient
+    # counter stays at zero for the whole run and a "loss against gradients"
+    # figure collapses to a vertical line at x=0. Drawing it anyway produces an
+    # artifact that looks like a broken plot rather than like the correct answer,
+    # so those two figures are omitted and metadata.json records why.
+    uses_gradients = bool(result.gradient_history) and result.gradient_history[-1] > 0
+
     if result.loss_history:
         _plot(reports / "loss_vs_epoch.png", epochs, result.loss_history,
               "Strata wg epok", "Epoka", "Strata", colour)
-        # The most important figure in the project: loss against budget spent,
-        # which is the axis a gradient method and a population method can
-        # actually be compared on.
-        _plot(reports / "loss_vs_grads.png", result.gradient_history,
-              result.loss_history, "Strata wg liczby gradientów",
-              "Wyliczone gradienty", "Strata", colour)
+        # The axis on which a gradient method and a population method can
+        # actually be compared.
         _plot(reports / "loss_vs_db_reaches.png", result.database_reaches_history,
               result.loss_history, "Strata wg liczby próbek",
               "Przetworzone próbki", "Strata", colour)
+        if uses_gradients:
+            _plot(reports / "loss_vs_grads.png", result.gradient_history,
+                  result.loss_history, "Strata wg liczby gradientów",
+                  "Wyliczone gradienty", "Strata", colour)
     if result.accuracy_history:
         _plot(reports / "acc_vs_epoch.png", epochs, result.accuracy_history,
               "Dokładność wg epok", "Epoka", "Dokładność [%]", OKABE_ITO[3])
-        _plot(reports / "acc_vs_grads.png", result.gradient_history,
-              result.accuracy_history, "Dokładność wg liczby gradientów",
-              "Wyliczone gradienty", "Dokładność [%]", OKABE_ITO[3])
+        _plot(reports / "acc_vs_db_reaches.png", result.database_reaches_history,
+              result.accuracy_history, "Dokładność wg liczby próbek",
+              "Przetworzone próbki", "Dokładność [%]", OKABE_ITO[3])
+        if uses_gradients:
+            _plot(reports / "acc_vs_grads.png", result.gradient_history,
+                  result.accuracy_history, "Dokładność wg liczby gradientów",
+                  "Wyliczone gradienty", "Dokładność [%]", OKABE_ITO[3])
 
     csv_name = f"benchmark-{result.optimizer_name}-{result.dataset_name}.csv"
     with open(data / csv_name, "w", newline="", encoding="utf-8") as handle:
@@ -110,6 +121,14 @@ def write_run_artifacts(
         "total_steps": result.total_steps,
         "total_epochs": result.total_epochs,
         "wall_time_seconds": result.wall_time_seconds,
+        "uses_gradients": uses_gradients,
+        "omitted_plots": [] if uses_gradients else [
+            "loss_vs_grads.png", "acc_vs_grads.png",
+        ],
+        "omitted_plots_reason": None if uses_gradients else (
+            "Optymalizator bezgradientowy — licznik gradientów pozostaje zerowy, "
+            "więc wykres w funkcji gradientów nie niesie informacji."
+        ),
         **(extra_metadata or {}),
     }
     (root / "metadata.json").write_text(
