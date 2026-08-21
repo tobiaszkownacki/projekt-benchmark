@@ -11,16 +11,9 @@ def get_database_url() -> str:
     return f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
 
 
-def get_rabbitmq_connection_params():
-    import pika
 
-    rmq = st.secrets["rabbitmq"]
-    credentials = pika.PlainCredentials(rmq["user"], rmq["password"])
-    return pika.ConnectionParameters(
-        host=rmq["host"],
-        port=rmq["port"],
-        credentials=credentials,
-    )
+def get_api_base_url() -> str:
+    return st.secrets["api"]["base_url"]
 
 
 def get_recaptcha_site_key() -> str:
