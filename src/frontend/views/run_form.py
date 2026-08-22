@@ -1,23 +1,10 @@
-from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
 from typing import Any
+import httpx
 import streamlit as st
 
+from core.config import get_api_base_url
 from views.mock_data import DATASETS, OPTIMIZERS
-from connectors.rabbitmq_connector import RabbitMQConnector
 from auth import repository
-
-
-@dataclass
-class TaskDTO:
-    task_id: str
-    run_name: str
-    dataset: str
-    optimizer: str
-    submitted_by: str
-    created_at: str
-    updated_at: str
-    status: str
 
 Executors = ["Athena"]
 
@@ -42,9 +29,10 @@ def render_run_form(instructions_page: Any | None = None, user: repository.User 
             run_name = st.text_input("Run name", placeholder="e.g. lion-imagenet-sweep")
             dataset = st.selectbox("Dataset", DATASETS)
             optimizers = st.multiselect("Optimizers", OPTIMIZERS)
-            st.file_uploader(
-                "Upload your own optimizers",
+            uploaded_files = st.file_uploader(
+                "Upload your own optimizers (.py)",
                 accept_multiple_files=True,
+                type=["py"]
             )
             st.caption("TODO: more run options to be added")
 
@@ -53,42 +41,56 @@ def render_run_form(instructions_page: Any | None = None, user: repository.User 
             )
 
         if submitted:
+            custom_optimizers_data = {}
+            validation_passed = True
 
-            db_task = repository.create_task(
-                queue_name="ATHENA_WORKER_QUEUE",
-                executor_name="Athena",
-                submitted_by=user.id,
-                dataset=dataset.lower(),
-                run_name=run_name,
-                optimizer_params={"optimizers": optimizers},
-            )
+            if uploaded_files:
+                with st.spinner("Running security checks and validating custom optimizers..."):
+                    for uploaded_file in uploaded_files:
+                        filename = uploaded_file.name
+                        code = uploaded_file.getvalue().decode("utf-8")
 
-            now = datetime.now(timezone.utc).isoformat()
-            task = TaskDTO(
-                task_id=db_task.task_id,
-                run_name=run_name,
-                dataset=dataset.lower(),
-                optimizer=",".join(name.lower() for name in optimizers),
-                submitted_by=str(user.id),
-                created_at=now,
-                updated_at=now,
-                status="pending",
-            )
-            #TODO diffrent routing keys per executor
+                        result = run_synchronous_validation(code, filename)
+
+                        if result["status"] != "success":
+                            validation_passed = False
+                            st.error(f"Validation failed for `{filename}`. Reason: {result['status'].upper()}")
+                            with st.expander("View Validation Logs", expanded=True):
+                                st.code(result["logs"], language="text")
+                            break
+                        else:
+                            st.success(f"Validation passed for `{filename}`!")
+                            with st.expander("View Validation Logs (Success)", expanded=False):
+                                st.code(result["logs"], language="text")
+                            custom_optimizers_data[filename] = code
+
+            if not validation_passed:
+                st.warning("Benchmark submission aborted due to validation errors. Please fix your code and try again.")
+                st.stop()
+
+            if not optimizers and not custom_optimizers_data:
+                st.error("You must select at least one built-in optimizer or upload a valid custom optimizer.")
+                st.stop()
+
+            all_optimizer_names = optimizers + list(custom_optimizers_data.keys())
+
             try:
-                rmq_secrets = st.secrets["rabbitmq"]
-                with RabbitMQConnector(
-                    exchange="main-exchange",
-                    routing_key="ATHENA_WORKER_QUEUE",
-                    user=rmq_secrets["user"],
-                    password=rmq_secrets["password"],
-                    host=rmq_secrets["host"],
-                    port=rmq_secrets["port"],
-                ) as publisher:
-                    publisher.publish(asdict(task))
-            except Exception as exc:
-                st.error(f"ERROR RABBITMQ: {exc}")
+                response = httpx.post(
+                    f"{get_api_base_url()}/tasks",
+                    json={
+                        "dataset": dataset.lower(),
+                        "optimizers": all_optimizer_names,
+                        "run_name": run_name,
+                        "submitted_by": str(user.id),
+                    },
+                    timeout=10,
+                )
+                response.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                st.error(f"Failed to submit task: {exc.response.text}")
+                return
+            except httpx.HTTPError as exc:
+                st.error(f"Failed to reach the task API: {exc}")
                 return
 
-            st.success("Task send successfully")
-            st.success("This is a mockup. The UI works correctly.")
+            st.success("Task submitted successfully")

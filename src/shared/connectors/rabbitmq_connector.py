@@ -3,8 +3,10 @@ import os
 
 import pika
 
+from shared.interfaces.message_broker import MessageBrokerConnector
 
-class RabbitMQConnector:
+
+class RabbitMQConnector(MessageBrokerConnector):
 
     def __init__(
         self,

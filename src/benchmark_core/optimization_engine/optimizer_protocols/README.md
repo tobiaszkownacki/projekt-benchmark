@@ -36,8 +36,8 @@ This is the easiest approach, especially for NumPy/CuPy based optimizers.
     Choose the appropriate base class and implement the `step` method.
     ```python
     # src/benchmark/optimizers/my_cool_optimizer.py
-    from benchmark.optimizer_protocols import NumpyBenchmarkOptimizer
-    from benchmark.evaluator import ModelEvaluator
+    from src.benchmark_core.optimization_engine.optimizer_protocols import NumpyBenchmarkOptimizer
+    from src.benchmark_core.optimization_engine.evaluator import ModelEvaluator
 
     class MyCoolOptimizer(NumpyBenchmarkOptimizer):
         def __init__(self, initial_params, my_arg=0.5, **config):
@@ -65,8 +65,8 @@ This is the easiest approach, especially for NumPy/CuPy based optimizers.
 If your optimizer has a very unique structure, you can implement the protocol without any inheritance.
 
 ```python
-from benchmark.evaluator import ModelEvaluator
-from benchmark.evaluator_dtos import MyCustomDto # Assuming you created this
+from src.benchmark_core.optimization_engine.evaluator import ModelEvaluator
+from src.benchmark_core.optimization_engine.evaluator_dtos import MyCustomDto # Assuming you created this
 
 class MyStandaloneOptimizer:
     # No inheritance needed
@@ -102,7 +102,7 @@ If you are creating a new family of optimizers that use a different data backend
     # src/benchmark/optimizer_protocols/jax_benchmark_optimizer.py
     from typing import Type
     from .benchmark_optimizer import BenchmarkOptimizer
-    from benchmark.evaluator_dtos import JaxArrayDto, EvaluatorDto
+    from src.benchmark_core.optimization_engine.evaluator_dtos import JaxArrayDto, EvaluatorDto
 
     class JaxBenchmarkOptimizer(BenchmarkOptimizer):
         @classmethod

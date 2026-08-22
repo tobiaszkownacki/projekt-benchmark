@@ -41,6 +41,38 @@ services:
       retries: 10
       start_period: 20s
 
+  frontend:
+    build:
+      context: .
+      dockerfile: src/frontend/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    ports:
+      - "${FRONTEND_PORT:-8501}:8501"
+    volumes:
+      - ./src/frontend/.streamlit:/app/.streamlit:ro
+
+  api:
+    build:
+      context: .
+      dockerfile: src/task_queue/services/api/fastapi/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    ports:
+      - "${API_PORT:-8000}:8000"
+
   athena_worker:
       build:
         context: .
@@ -106,7 +138,9 @@ services:
       # with an explicit note that nothing was checked, rather than silently.
       VALIDATOR_ENABLED: ${VALIDATOR_ENABLED:-0}
     ports:
-      - "${WEB_PORT:-8000}:8000"
+      # 8080, not 8000: main's task API claims ${API_PORT:-8000} and the two
+      # would refuse to bind together on a default `docker compose up`.
+      - "${WEB_PORT:-8080}:8000"
     volumes:
       # Read-only on purpose. The downloader owns this directory; the web layer
       # only reads it, and defence in depth means a bug here cannot write into

@@ -1,9 +1,9 @@
-from benchmark.evaluator_dtos import EvaluatorDto
+from src.benchmark_core.optimization_engine.evaluator_dtos import EvaluatorDto
 from typing import Type
 
-from benchmark.evaluator import ModelEvaluator
-from benchmark.evaluator_dtos import CupyNdarrayTensorEvaluatorDto
-from benchmark.optimizer_protocols.benchmark_optimizer import BenchmarkOptimizer
+from src.benchmark_core.optimization_engine.evaluator import ModelEvaluator
+from src.benchmark_core.optimization_engine.evaluator_dtos import CupyNdarrayTensorEvaluatorDto
+from src.benchmark_core.optimization_engine.optimizer_protocols.benchmark_optimizer import BenchmarkOptimizer
 
 
 class CupyBenchmarkOptimizer(BenchmarkOptimizer):

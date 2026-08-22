@@ -131,7 +131,9 @@ def install(cupy_stub: bool = True) -> None:
     sys.modules.setdefault("src.benchmark", sys.modules["benchmark"])
 
     # Single modules that moved rather than whole packages.
-    _bind_module("src.logging", "benchmark_core.logging")
+    # main renamed benchmark_core/logging.py to custom_logging.py; the alias
+    # follows it so the legacy name keeps resolving.
+    _bind_module("src.logging", "benchmark_core.custom_logging")
     _bind_module("src.plotting", "benchmark_core.plotting")
 
     _installed = True

@@ -3,12 +3,14 @@ import streamlit as st
 st.set_page_config(page_title="Benchmark", layout="wide")
 
 from streamlit.navigation.page import StreamlitPage
+
 from auth import repository
 from auth.recaptcha_widget import hide_recaptcha_badge
 from auth.session import get_current_user, is_logged_in, logout
 from auth.join_info_onboarding import render_join_info_onboarding
 from auth.login_panel import render_login_panel
 from auth.pending_approval import render_pending_approval
+
 from views.admin.admin_panel import render_admin_panel
 from views.instructions import render_instructions
 from views.leaderboard import render_leaderboard

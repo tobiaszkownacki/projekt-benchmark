@@ -1,7 +1,10 @@
 import os
 import psycopg
 
-class PostGresConnector:
+from shared.interfaces.database_connector import DatabaseConnector
+
+
+class PostGresConnector(DatabaseConnector):
 
     def __init__(self) -> None:
         self.host = os.environ.get("POSTGRES_HOST", "postgres")
@@ -11,7 +14,7 @@ class PostGresConnector:
         self.password = os.environ.get("POSTGRES_PASSWORD")
         self.conn = None
 
-    def __enter__(self) -> "Database":
+    def __enter__(self) -> "PostGresConnector":
         self.conn = psycopg.connect(
             host=self.host,
             port=self.port,
