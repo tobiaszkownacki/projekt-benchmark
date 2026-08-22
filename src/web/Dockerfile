@@ -10,6 +10,12 @@ WORKDIR /build
 COPY src/web/frontend/package.json src/web/frontend/package-lock.json ./
 RUN npm ci
 COPY src/web/frontend/ ./
+
+# Empty by default, so the image serves the application at the origin root.
+# Set to a prefix (e.g. "/benchmark/") to deploy behind a path on a shared host;
+# it has to be baked in here because the bundler rewrites asset URLs.
+ARG BASE_PATH=
+ENV BASE_PATH=$BASE_PATH
 RUN npm run build
 
 

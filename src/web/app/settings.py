@@ -56,6 +56,12 @@ class Settings:
     )
     run_migrations: bool = field(default_factory=lambda: _bool("RUN_MIGRATIONS", True))
     session_cookie: str = "benchmark_session"
+    # Scopes the session cookie to the deployment prefix. At the origin root
+    # this is "/" and nothing changes; behind a prefix it stops the cookie from
+    # being sent to unrelated applications sharing the same host.
+    session_cookie_path: str = field(
+        default_factory=lambda: "/" + os.environ.get("ROOT_PATH", "").strip("/")
+    )
     session_max_age: int = field(default_factory=lambda: _int("SESSION_MAX_AGE", 60 * 60 * 12))
     secure_cookies: bool = field(default_factory=lambda: _bool("SECURE_COOKIES", False))
 

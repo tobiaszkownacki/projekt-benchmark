@@ -53,12 +53,12 @@ def issue_session(response: Response, user_id: UUID) -> None:
         httponly=True,
         samesite="strict",
         secure=settings.secure_cookies,
-        path="/",
+        path=settings.session_cookie_path,
     )
 
 
 def clear_session(response: Response) -> None:
-    response.delete_cookie(settings.session_cookie, path="/")
+    response.delete_cookie(settings.session_cookie, path=settings.session_cookie_path)
 
 
 def _read_session(request: Request) -> Optional[UUID]:

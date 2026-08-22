@@ -8,8 +8,19 @@ export class ApiError extends Error {
   }
 }
 
+/** Absolute paths are relative to the deployment prefix, not to the origin.
+ *
+ * Every call in this module passes a leading-slash path, and BASE_URL is "/"
+ * unless the app was built for a prefix, so this is a no-op at the origin root.
+ */
+export function withBase(path: string): string {
+  const base = import.meta.env.BASE_URL;
+  if (base === '/' || !path.startsWith('/')) return path;
+  return base.replace(/\/$/, '') + path;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
+  const response = await fetch(withBase(path), {
     credentials: 'same-origin',
     headers: init?.body ? { 'Content-Type': 'application/json' } : undefined,
     ...init,

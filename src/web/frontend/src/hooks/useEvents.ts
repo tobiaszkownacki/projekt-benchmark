@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { withBase } from '../api';
 
 export interface TaskChange {
   task_id: string;
@@ -23,7 +24,7 @@ export function useTaskEvents(onChange: (change: TaskChange) => void): void {
 
     const connect = () => {
       if (closed) return;
-      source = new EventSource('/api/events');
+      source = new EventSource(withBase('/api/events'));
       source.addEventListener('task_changed', (event) => {
         try {
           handler.current(JSON.parse((event as MessageEvent).data));

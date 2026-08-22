@@ -1,7 +1,13 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+// Deployed behind a prefix when BASE_PATH is set (e.g. "/benchmark/"), at the
+// origin root otherwise. Vite propagates this to import.meta.env.BASE_URL, so
+// the router, the API client and the event stream all read one value.
+const base = process.env.BASE_PATH || '/';
+
 export default defineConfig({
+  base,
   plugins: [react()],
   build: { outDir: 'dist', sourcemap: false },
   server: {
