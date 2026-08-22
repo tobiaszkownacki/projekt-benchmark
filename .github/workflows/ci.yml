@@ -38,6 +38,35 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+
+    # Thirty of the sixty-nine tests skip themselves when TEST_DATABASE_URL is
+    # unset, and those thirty are the ones worth having: the SPA catch-all,
+    # which is the most common way to break a deep link, and the authorisation
+    # boundary on artifacts. Without a database here the job reported success
+    # while never running them.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: benchmark_user
+          POSTGRES_PASSWORD: benchmark_ci
+          POSTGRES_DB: benchmark_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U benchmark_user -d benchmark_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      TEST_DATABASE_URL: postgresql://benchmark_user:benchmark_ci@127.0.0.1:5432/benchmark_ci
+      # The schema is built by the application's own forward-only runner rather
+      # than by piping the files into psql, so a migration that cannot be
+      # applied fails the suite instead of passing unnoticed.
+      RUN_MIGRATIONS: "1"
+      MIGRATIONS_DIR: ../db/migrations
+
     steps:
       - uses: actions/checkout@v4
 
