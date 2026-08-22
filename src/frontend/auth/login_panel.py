@@ -72,7 +72,7 @@ def _render_oauth_tab() -> None:
 def _render_login_form() -> None:
     _render_auth_error()
     render_recaptcha_disclaimer()
-    
+
     captcha_token = render_recaptcha(action="login", key="login_recaptcha")
 
     email = st.text_input("Email", key="login_email")

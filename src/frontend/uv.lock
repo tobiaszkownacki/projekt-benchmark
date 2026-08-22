@@ -1022,7 +1022,7 @@ wheels = [
 [[package]]
 name = "projekt-benchmark-frontend"
 version = "0.1.0"
-source = { editable = "." }
+source = { virtual = "." }
 dependencies = [
     { name = "authlib" },
     { name = "bcrypt" },

@@ -61,6 +61,23 @@ def get_rabbitmq_connection_params():
     return pika.ConnectionParameters(host=host, port=port, credentials=credentials)
 
 
+def get_api_base_url() -> str:
+    """Base URL of the task API the Streamlit form posts runs to.
+
+    Resolved through ``_lookup`` like everything else here, so the value can come
+    from ``API_BASE_URL`` in a container's environment as well as from
+    ``[api] base_url`` in ``secrets.toml``. It has no default: a wrong guess
+    would be posted to and fail somewhere less obvious than here.
+    """
+    value = _lookup("API_BASE_URL", "api", "base_url")
+    if not value:
+        raise RuntimeError(
+            "API base URL is not configured. Set API_BASE_URL in the environment "
+            "or [api] base_url in secrets.toml."
+        )
+    return str(value).rstrip("/")
+
+
 def get_recaptcha_site_key() -> str:
     return _lookup("RECAPTCHA_SITE_KEY", "recaptcha", "site_key", "") or ""
 

@@ -9,7 +9,7 @@ RUN uv export --only-group athena_worker --no-hashes --frozen -o requirements.tx
     && uv pip install --system -r requirements.txt
 
 COPY src/task_queue/services/workers/ /worker/task_queue/services/workers/
-COPY src/task_queue/shared/ /worker/task_queue/shared/
+COPY src/shared/ /worker/shared/
 
 ENV PYTHONPATH=/worker
 

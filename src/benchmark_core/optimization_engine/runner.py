@@ -19,10 +19,10 @@ from torch.nn.utils import parameters_to_vector
 from torch.utils.data import DataLoader
 from torch.nn import CrossEntropyLoss
 
-from benchmark.evaluator import ModelEvaluator
-from benchmark.evaluator_dtos import PyTorchTensorEvaluatorDto
-from benchmark.optimizer_protocols import BenchmarkableOptimizer
-from src.logging import Log
+from src.benchmark_core.optimization_engine.evaluator import ModelEvaluator
+from src.benchmark_core.optimization_engine.evaluator_dtos import PyTorchTensorEvaluatorDto
+from src.benchmark_core.optimization_engine.optimizer_protocols import BenchmarkableOptimizer
+from custom_logging import Log
 
 
 class StopReason(Enum):

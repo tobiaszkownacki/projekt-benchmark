@@ -9,8 +9,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from src.benchmark.evaluator import ModelEvaluator
-from src.benchmark.optimizers import BUILTIN_OPTIMIZERS
+from src.benchmark_core.optimization_engine.evaluator import ModelEvaluator
 
 class DummyModel(nn.Module):
     """Simple PyTorch model used for optimizer integration testing."""
@@ -32,8 +31,7 @@ def load_custom_optimizer(path: str):
         if (
             isinstance(obj, type)
             and hasattr(obj, "step")
-            and name not in ["BenchmarkOptimizer", "NumpyBenchmarkOptimizer", "CupyBenchmarkOptimizer"]
-            and not name.endswith("Dto")
+            and getattr(obj, "__module__", "") == module.__name__
         ):
             return obj
     raise ValueError(f"No valid optimizer class found in file: {path}")
@@ -70,18 +68,12 @@ def main():
 
     # --- TEST 1: Module Loading ---
     try:
-        if name in BUILTIN_OPTIMIZERS:
-            opt_class = BUILTIN_OPTIMIZERS[name][0]
-            print_status("Module and class loaded successfully", True, f"Found builtin class: {opt_class.__name__}")
-        elif Path(name).exists():
-            opt_class = load_custom_optimizer(str(name))
+        file_path = Path(name)
+        if file_path.exists() and file_path.is_file():
+            opt_class = load_custom_optimizer(str(file_path))
             print_status("Module and class loaded successfully", True, f"Found custom class: {opt_class.__name__}")
-        elif Path(f"src/benchmark/optimizers/{name}").exists():
-            resolved_path = Path(f"src/benchmark/optimizers/{name}")
-            opt_class = load_custom_optimizer(str(resolved_path))
-            print_status("Module and class loaded successfully", True, f"Found custom class in optimizers folder: {opt_class.__name__}")
         else:
-            print_status("Module and class loaded successfully", False, f"Optimizer '{name}' not found as a builtin name or local file.")
+            print_status("Module and class loaded successfully", False, f"File '{name}' does not exist inside the container.")
             sys.exit(1)
     except Exception as e:
         print_status("Module and class loaded successfully", False, str(e))
@@ -205,6 +197,13 @@ def main():
         all_passed = False
         print_status("Runtime environment execution test (Mock Run)", False, f"Execution failed: {str(e)}\n{traceback.format_exc()}")
 
+
+    if not all_passed:
+        logger.error("\nValidation FAILED due to one or more errors above.")
+        sys.exit(1)
+    else:
+        logger.info("\nValidation SUCCESSFUL. All checks passed.")
+        sys.exit(0)
 
 if __name__ == "__main__":
     main()

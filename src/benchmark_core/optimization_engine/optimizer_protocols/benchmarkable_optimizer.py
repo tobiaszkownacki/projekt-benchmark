@@ -1,6 +1,6 @@
 from typing import Protocol, runtime_checkable
 
-from benchmark.evaluator import ModelEvaluator
+from src.benchmark_core.optimization_engine.evaluator import ModelEvaluator
 
 
 @runtime_checkable
