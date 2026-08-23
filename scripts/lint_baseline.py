@@ -32,6 +32,10 @@ BASELINE = ROOT / ".flake8-baseline"
 LINE = re.compile(r"^(?P<file>[^:]+):\d+:\d+: (?P<code>[A-Z]+\d+) ")
 
 
+class Flake8Unusable(RuntimeError):
+    """flake8 did not run, so its silence means nothing."""
+
+
 def run_flake8() -> collections.Counter:
     result = subprocess.run(
         [sys.executable, "-m", "flake8"],
@@ -42,6 +46,19 @@ def run_flake8() -> collections.Counter:
         match = LINE.match(line)
         if match:
             found[(match["file"].lstrip("./"), match["code"])] += 1
+
+    # flake8 exits 1 both when it finds violations and when it cannot run at
+    # all -- an uninstalled linter and a clean tree are the same exit code with
+    # the same empty stdout. Without this, a broken install makes the gate pass
+    # green having checked nothing, which is the one failure a gate must not
+    # have. Distinguish on the output: a real run that exits non-zero always
+    # names at least one violation.
+    if result.returncode not in (0, 1) or (result.returncode == 1 and not found):
+        raise Flake8Unusable(
+            f"flake8 exited {result.returncode} without reporting a violation.\n"
+            f"stderr: {result.stderr.strip() or '(empty)'}\n"
+            f"stdout: {result.stdout.strip() or '(empty)'}"
+        )
     return found
 
 
@@ -74,7 +91,11 @@ def main() -> int:
     parser.add_argument("--update", action="store_true")
     args = parser.parse_args()
 
-    found = run_flake8()
+    try:
+        found = run_flake8()
+    except Flake8Unusable as exc:
+        print(f"Lint gate did not run: {exc}", file=sys.stderr)
+        return 2
 
     if args.update:
         write_baseline(found)
