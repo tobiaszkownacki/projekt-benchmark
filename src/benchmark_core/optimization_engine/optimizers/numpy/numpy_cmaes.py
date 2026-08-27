@@ -1,4 +1,3 @@
-
 import cma
 import numpy as np
 from benchmark.evaluator import ModelEvaluator
