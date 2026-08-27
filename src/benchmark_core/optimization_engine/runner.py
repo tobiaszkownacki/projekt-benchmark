@@ -9,20 +9,21 @@ Abstract:
 TODO: 5. Plotting
 """
 
-from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any, Type, Callable
-from enum import Enum, auto
 import time
+from dataclasses import dataclass, field
+from enum import Enum, auto
+from typing import Any
+
 import numpy as np
 import torch
+from torch.nn import CrossEntropyLoss
 from torch.nn.utils import parameters_to_vector
 from torch.utils.data import DataLoader
-from torch.nn import CrossEntropyLoss
 
+from custom_logging import Log
 from src.benchmark_core.optimization_engine.evaluator import ModelEvaluator
 from src.benchmark_core.optimization_engine.evaluator_dtos import PyTorchTensorEvaluatorDto
 from src.benchmark_core.optimization_engine.optimizer_protocols import BenchmarkableOptimizer
-from custom_logging import Log
 
 
 class StopReason(Enum):
@@ -52,15 +53,15 @@ class BenchmarkResult:
     gradient_count: int
     database_reaches: int
 
-    loss_history: List[float] = field(default_factory=list)
-    accuracy_history: List[float] = field(default_factory=list)
-    gradient_history: List[int] = field(default_factory=list)
-    database_reaches_history: List[int] = field(default_factory=list)
-    time_history: List[float] = field(default_factory=list)
+    loss_history: list[float] = field(default_factory=list)
+    accuracy_history: list[float] = field(default_factory=list)
+    gradient_history: list[int] = field(default_factory=list)
+    database_reaches_history: list[int] = field(default_factory=list)
+    time_history: list[float] = field(default_factory=list)
 
     model_name: str = "default"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "optimizer": self.optimizer_name,
             "dataset": self.dataset_name,
@@ -80,10 +81,10 @@ class BenchmarkResult:
 class StopCondition:
     """When to stop the benchmark."""
 
-    max_gradient_count: Optional[int] = None
-    max_database_reaches: Optional[int] = None
-    max_epochs: Optional[int] = None
-    max_steps: Optional[int] = None  # steps = optimizer.step() calls
+    max_gradient_count: int | None = None
+    max_database_reaches: int | None = None
+    max_epochs: int | None = None
+    max_steps: int | None = None  # steps = optimizer.step() calls
 
     def __post_init__(self):
         if all(
@@ -118,8 +119,8 @@ class BenchmarkRunner:
         batch_size: int = 32,
         random_seed: int = 2137,
         log_interval: int = 10,
-        device: Optional[str] = None,
-        report_dir: str = "reports"
+        device: str | None = None,
+        report_dir: str = "reports",
     ):
         from src.dataset import (
             DATA_SETS,
@@ -151,8 +152,8 @@ class BenchmarkRunner:
 
     def run(
         self,
-        optimizer_class: Type[BenchmarkableOptimizer],
-        optimizer_name: Optional[str] = None,
+        optimizer_class: type[BenchmarkableOptimizer],
+        optimizer_name: str | None = None,
         **optimizer_config,
     ) -> BenchmarkResult:
         """
@@ -188,13 +189,13 @@ class BenchmarkRunner:
             database_reaches += db_inc
             gradient_count += grad_inc
 
-        train_loader = DataLoader(
-            self.dataset, batch_size=self.batch_size, shuffle=True
-        )
+        train_loader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=True)
         criterion = CrossEntropyLoss()
 
-        log = Log(output_file=f"benchmark-{name}-{self.dataset_name}.csv",
-                                  base_dir = self.report_dir,)
+        log = Log(
+            output_file=f"benchmark-{name}-{self.dataset_name}.csv",
+            base_dir=self.report_dir,
+        )
 
         loss_history = []
         accuracy_history = []
@@ -215,10 +216,7 @@ class BenchmarkRunner:
 
             for inputs, targets in train_loader:
                 # Checking stop conditions BEFORE step
-                if (
-                    self.stop_condition.max_gradient_count
-                    and gradient_count >= self.stop_condition.max_gradient_count
-                ):
+                if self.stop_condition.max_gradient_count and gradient_count >= self.stop_condition.max_gradient_count:
                     stop_reason = StopReason.GRADIENT_LIMIT
                     break
                 if (
@@ -227,10 +225,7 @@ class BenchmarkRunner:
                 ):
                     stop_reason = StopReason.DATABASE_LIMIT
                     break
-                if (
-                    self.stop_condition.max_steps
-                    and step_count >= self.stop_condition.max_steps
-                ):
+                if self.stop_condition.max_steps and step_count >= self.stop_condition.max_steps:
                     stop_reason = StopReason.MAX_STEPS
                     break
 
@@ -287,10 +282,7 @@ class BenchmarkRunner:
                     f"db_reaches={database_reaches}"
                 )
 
-            if (
-                self.stop_condition.max_epochs
-                and epoch_count >= self.stop_condition.max_epochs
-            ):
+            if self.stop_condition.max_epochs and epoch_count >= self.stop_condition.max_epochs:
                 stop_reason = StopReason.EPOCH_LIMIT
                 break
 
@@ -321,8 +313,8 @@ class BenchmarkRunner:
 
     def compare(
         self,
-        optimizers: Dict[str, tuple],
-    ) -> Dict[str, BenchmarkResult]:
+        optimizers: dict[str, tuple],
+    ) -> dict[str, BenchmarkResult]:
         sc = self.stop_condition
         stop_parts = []
         if sc.max_gradient_count:
@@ -356,9 +348,7 @@ class BenchmarkRunner:
         print(f"\n{'=' * 60}")
         print(f"Comparison results for model: {self.model_name}")
         print("=" * 60)
-        print(
-            f"{'Optimizer':<20} {'Loss':>10} {'Acc':>8} {'Grads':>10} {'DB Reach':>12}"
-        )
+        print(f"{'Optimizer':<20} {'Loss':>10} {'Acc':>8} {'Grads':>10} {'DB Reach':>12}")
         print("-" * 60)
         for name, r in results.items():
             print(

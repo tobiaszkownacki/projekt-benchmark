@@ -4,7 +4,6 @@ from shared.interfaces.base_connector import BaseConnector
 
 
 class ExecutorConnector(BaseConnector):
-
     @abstractmethod
     def submit_job(self):
         pass

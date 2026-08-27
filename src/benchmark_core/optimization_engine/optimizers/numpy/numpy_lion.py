@@ -1,8 +1,6 @@
-from benchmark.optimizer_protocols.numpy_benchmark_optimizer import NumpyBenchmarkOptimizer
-
 import numpy as np
-
 from benchmark.evaluator import ModelEvaluator
+from benchmark.optimizer_protocols.numpy_benchmark_optimizer import NumpyBenchmarkOptimizer
 
 
 class NumpyLion(NumpyBenchmarkOptimizer):

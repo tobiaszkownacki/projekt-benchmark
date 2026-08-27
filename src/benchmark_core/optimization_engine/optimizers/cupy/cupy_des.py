@@ -1,6 +1,5 @@
 import cupy as np
 import scipy.special
-
 from benchmark.evaluator import ModelEvaluator
 from benchmark.optimizer_protocols import CupyBenchmarkOptimizer
 
@@ -46,19 +45,11 @@ class CupyDES(CupyBenchmarkOptimizer):
         # Strategy Parameters
         self.cc = config.get("ccum", self.mu / (self.mu + 2))
         self.cp = config.get("cp", 1.0 / np.sqrt(self.dim))
-        self.histSize = config.get(
-            "history", int(np.ceil(6 + np.ceil(3 * np.sqrt(self.dim))))
-        )
+        self.histSize = config.get("history", int(np.ceil(6 + np.ceil(3 * np.sqrt(self.dim)))))
 
         # Constants
-        self.chiN = (
-            np.sqrt(2)
-            * scipy.special.gamma((self.dim + 1) / 2)
-            / scipy.special.gamma(self.dim / 2)
-        )
-        self.tol = (
-            1e-6  # IMPORTANT - another diff, in R it is 1e-12, but in paper it is 1e-6
-        )
+        self.chiN = np.sqrt(2) * scipy.special.gamma((self.dim + 1) / 2) / scipy.special.gamma(self.dim / 2)
+        self.tol = 1e-6  # IMPORTANT - another diff, in R it is 1e-12, but in paper it is 1e-6
 
         # State
         self.iter = 0
@@ -72,9 +63,7 @@ class CupyDES(CupyBenchmarkOptimizer):
         self.newMean = initial_params.copy()
 
         # (potential) TODO original code used 0.8 of original boundries
-        self.population = np.random.uniform(
-            self.lower, self.upper, (self.lambda_, self.dim)
-        ).T
+        self.population = np.random.uniform(self.lower, self.upper, (self.lambda_, self.dim)).T
         # Insert initial guess
         self.population[:, 0] = initial_params
 
@@ -104,22 +93,14 @@ class CupyDES(CupyBenchmarkOptimizer):
         too_high = repaired > upper_b
 
         # lower + abs(lower - x) % (upper - lower)
-        repaired[too_low] = (
-            lower_b[too_low]
-            + np.abs(lower_b[too_low] - repaired[too_low]) % range_b[too_low]
-        )
+        repaired[too_low] = lower_b[too_low] + np.abs(lower_b[too_low] - repaired[too_low]) % range_b[too_low]
         # upper - abs(upper - x) % (upper - lower)
-        repaired[too_high] = (
-            upper_b[too_high]
-            - np.abs(upper_b[too_high] - repaired[too_high]) % range_b[too_high]
-        )
+        repaired[too_high] = upper_b[too_high] - np.abs(upper_b[too_high] - repaired[too_high]) % range_b[too_high]
 
         np.nan_to_num(repaired, copy=False, nan=np.finfo(np.float64).max)
         return repaired
 
-    def _evaluate_population(
-        self, evaluator: ModelEvaluator, P: np.ndarray, P_repaired: np.ndarray
-    ):
+    def _evaluate_population(self, evaluator: ModelEvaluator, P: np.ndarray, P_repaired: np.ndarray):
         fits = np.zeros(self.lambda_)
 
         if self.Lamarckism:
@@ -130,8 +111,10 @@ class CupyDES(CupyBenchmarkOptimizer):
         else:
             # Darwinian: Evaluate valid points and penalize out of bounds
             for i in range(self.lambda_):
-                # IMPORTANT, this if is DIFFERENT from orignal R but I believe to be compliant with original idea and paper
-                # in R, I think, it evaluated if a point is out on ALL dimensions, here it checks if its out in even one and punishes it
+                # IMPORTANT, this if is DIFFERENT from orignal R but I believe to be compliant with
+                # original idea and paper
+                # in R, I think, it evaluated if a point is out on ALL dimensions, here it checks
+                # if its out in even one and punishes it
                 if np.array_equal(P[:, i], P_repaired[:, i]):
                     evaluator.set_params(P[:, i])
                     fits[i] = evaluator.evaluate()
@@ -151,9 +134,7 @@ class CupyDES(CupyBenchmarkOptimizer):
             if self.Lamarckism:
                 self.population = pop_repaired
 
-            self.fitness = self._evaluate_population(
-                evaluator, self.population, pop_repaired
-            )
+            self.fitness = self._evaluate_population(evaluator, self.population, pop_repaired)
             self.worst_fit = np.max(self.fitness)
 
             best_idx = np.argmin(self.fitness)
@@ -184,9 +165,7 @@ class CupyDES(CupyBenchmarkOptimizer):
 
         # 3. Update Internal Parameters
         if self.iter == 1:
-            self.pc[:, self.histHead] = (
-                np.sqrt(self.mu * self.cp * (2 - self.cp)) * step
-            )
+            self.pc[:, self.histHead] = np.sqrt(self.mu * self.cp * (2 - self.cp)) * step
         else:
             prevHead = (self.histHead - 1) % self.histSize
             self.pc[:, self.histHead] = (1 - self.cp) * self.pc[:, prevHead] + np.sqrt(
@@ -215,19 +194,14 @@ class CupyDES(CupyBenchmarkOptimizer):
 
             # IMPORTANT - difference with R
             # "Independence of the mixture components allows for the weighted summation of covariance matrices"
-            part1 = np.sqrt(self.cc) * (
-                (x1 - x2) + noise1 * self.dMean[:, hist_samples2[i]]
-            )
+            part1 = np.sqrt(self.cc) * ((x1 - x2) + noise1 * self.dMean[:, hist_samples2[i]])
             part2 = np.sqrt(1 - self.cc) * noise2 * self.pc[:, hist_samples3[i]]
 
             diffs[:, i] = part1 + part2
 
         # New population
         decay_noise = (
-            self.tol
-            * (1 - 2 / self.dim**2) ** (self.iter / 2)
-            * np.random.randn(self.dim, self.lambda_)
-            / self.chiN
+            self.tol * (1 - 2 / self.dim**2) ** (self.iter / 2) * np.random.randn(self.dim, self.lambda_) / self.chiN
         )
 
         self.population = self.newMean[:, None] + self.Ft * diffs + decay_noise
@@ -239,9 +213,7 @@ class CupyDES(CupyBenchmarkOptimizer):
         if self.Lamarckism:
             self.population = pop_repaired
 
-        self.fitness = self._evaluate_population(
-            evaluator, self.population, pop_repaired
-        )
+        self.fitness = self._evaluate_population(evaluator, self.population, pop_repaired)
 
         # 6. Updates
         current_worst = np.max(self.fitness)
@@ -251,11 +223,7 @@ class CupyDES(CupyBenchmarkOptimizer):
         best_idx = np.argmin(self.fitness)
         if self.fitness[best_idx] < self.best_fit:
             self.best_fit = self.fitness[best_idx]
-            self.params = (
-                pop_repaired[:, best_idx]
-                if not self.Lamarckism
-                else self.population[:, best_idx]
-            )
+            self.params = pop_repaired[:, best_idx] if not self.Lamarckism else self.population[:, best_idx]
 
         self.cumMean = 0.8 * self.cumMean + 0.2 * self.newMean
         cumMeanRepaired = self._bounce_back_boundary(self.cumMean[:, None])[:, 0]

@@ -25,7 +25,10 @@ To add a new optimization algorithm to the benchmark suite:
     # src/benchmark/optimizers/my_custom_optimizer.py
     import numpy as np
     from src.benchmark_core.optimization_engine.evaluator import ModelEvaluator
-    from src.benchmark_core.optimization_engine.optimizer_protocols import NumpyBenchmarkOptimizer # Or CupyBenchmarkOptimizer
+    from src.benchmark_core.optimization_engine.optimizer_protocols import (
+        NumpyBenchmarkOptimizer,
+    )  # Or CupyBenchmarkOptimizer
+
 
     class MyCustomOptimizer(NumpyBenchmarkOptimizer):
         def __init__(self, initial_params: np.ndarray, custom_param: float = 0.1, **config):
@@ -36,7 +39,7 @@ To add a new optimization algorithm to the benchmark suite:
         def step(self, evaluator: ModelEvaluator) -> bool:
             # Get loss and gradients from the evaluator.
             # The data format (NumPy, CuPy) will match your chosen base class.
-            loss, grad = evaluator.evaluate_with_grad() # 'grad' will be a NumPy array here
+            loss, grad = evaluator.evaluate_with_grad()  # 'grad' will be a NumPy array here
 
             # --- Your custom optimization logic goes here ---
             self.params = self.params - self.custom_param * grad
@@ -56,11 +59,11 @@ To add a new optimization algorithm to the benchmark suite:
     ```python
     # src/benchmark/optimizers/registry.py
     # ... other imports ...
-    from .my_custom_optimizer import MyCustomOptimizer # Import your new optimizer
+    from .my_custom_optimizer import MyCustomOptimizer  # Import your new optimizer
 
     OPTIMIZER_REGISTRY = {
         # ... existing optimizers ...
-        "my-custom-optimizer": MyCustomOptimizer, # Map a unique string name to your class
+        "my-custom-optimizer": MyCustomOptimizer,  # Map a unique string name to your class
     }
     ```
     Now your new optimizer can be selected by name when running benchmarks.

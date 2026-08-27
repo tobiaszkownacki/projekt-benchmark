@@ -1,16 +1,13 @@
 import streamlit as st
 
 from auth import repository
-from auth.session import logout
 from auth.join_info_form import render_join_info_inputs, validate_join_info
+from auth.session import logout
 
 
 def render_join_info_onboarding(user: repository.User) -> None:
     st.title("Tell us a bit more")
-    st.info(
-        "Before an administrator can review your account, please provide "
-        "the information below."
-    )
+    st.info("Before an administrator can review your account, please provide the information below.")
 
     join_info, join_mode = render_join_info_inputs("onboarding")
 

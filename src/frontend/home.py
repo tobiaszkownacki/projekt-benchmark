@@ -2,15 +2,13 @@ import streamlit as st
 
 st.set_page_config(page_title="Benchmark", layout="wide")
 
-from streamlit.navigation.page import StreamlitPage
-
 from auth import repository
-from auth.recaptcha_widget import hide_recaptcha_badge
-from auth.session import get_current_user, is_logged_in, logout
 from auth.join_info_onboarding import render_join_info_onboarding
 from auth.login_panel import render_login_panel
 from auth.pending_approval import render_pending_approval
-
+from auth.recaptcha_widget import hide_recaptcha_badge
+from auth.session import get_current_user, is_logged_in, logout
+from streamlit.navigation.page import StreamlitPage
 from views.admin.admin_panel import render_admin_panel
 from views.instructions import render_instructions
 from views.leaderboard import render_leaderboard
@@ -18,10 +16,12 @@ from views.run_form import render_run_form
 from views.run_history import render_run_history
 from views.welcome_page import render_welcome_page
 
+
 def _render_welcome_message(user: repository.User) -> None:
     st.title("Benchmark")
     st.write(f"Welcome, **{user.display_name or user.email}**!")
     st.divider()
+
 
 def _render_disabled_account() -> None:
     st.error("Your account has been disabled. Please contact an administrator.")
@@ -39,6 +39,7 @@ def _instructions_page() -> StreamlitPage:
         icon=":material/menu_book:",
         url_path="instructions",
     )
+
 
 def _render_logged_out_app() -> None:
     def _login_page() -> StreamlitPage:
@@ -164,6 +165,7 @@ def main() -> None:
         return
 
     _route_authenticated_user(user)
+
 
 if __name__ == "__main__":
     main()

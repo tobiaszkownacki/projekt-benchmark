@@ -1,7 +1,6 @@
 import streamlit as st
-
-from core.config import get_recaptcha_site_key
 import streamlit.components.v2 as components
+from core.config import get_recaptcha_site_key
 
 _RECAPTCHA_JS = """
 export default function(component) {

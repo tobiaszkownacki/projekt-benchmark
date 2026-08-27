@@ -2,12 +2,11 @@ import json
 import logging
 import os
 
-from task_queue.services.workers.logging_config import configure_logging
-from shared.interfaces.abstract_worker import Worker 
-
-from shared.connectors.rabbitmq_connector import RabbitMQConnector
 from shared.connectors.athena_connector import AthenaConnector
 from shared.connectors.postgres_connector import PostGresConnector
+from shared.connectors.rabbitmq_connector import RabbitMQConnector
+from shared.interfaces.abstract_worker import Worker
+from task_queue.services.workers.logging_config import configure_logging
 
 configure_logging()
 logger = logging.getLogger(__name__)
@@ -20,7 +19,6 @@ PROJECT_DIR = f"{ATHENA_REMOTE_PATH}/projekt-benchmark"
 
 
 class AthenaWorker(Worker):
-
     @staticmethod
     def _build_optimizer_args(optimizer_field: str) -> str:
         optimizers = [name.strip() for name in optimizer_field.split(",") if name.strip()]

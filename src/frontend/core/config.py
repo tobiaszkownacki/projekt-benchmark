@@ -11,7 +11,6 @@ def get_database_url() -> str:
     return f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
 
 
-
 def get_api_base_url() -> str:
     return st.secrets["api"]["base_url"]
 
