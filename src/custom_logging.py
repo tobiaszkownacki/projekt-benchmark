@@ -3,7 +3,7 @@ import os
 
 
 class Log:
-    def __init__(self, output_file: str = "train_log.csv",base_dir: str = "reports"):
+    def __init__(self, output_file: str = "train_log.csv", base_dir: str = "reports"):
         self.number_of_samples: int = 0  # This IS database_reaches
         self.number_of_mini_batches: int = 0
         self.gradient_count: int = 0

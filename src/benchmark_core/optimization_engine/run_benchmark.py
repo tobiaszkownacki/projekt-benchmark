@@ -6,8 +6,10 @@ Usage:
     or: uv run -m src.benchmark.run_benchmark --dataset digits --optimizer my_optimizer
 
 or with comparison and plotting:
-    python -m src.benchmark.run_benchmark --dataset wine_quality --optimizer adam sgd cma-es --max-epochs 10 --max-gradients 100000 --plot
-    or: uv run -m src.benchmark.run_benchmark --dataset wine_quality --optimizer adam sgd cma-es --max-epochs 10 --max-gradients 100000 --plot
+    python -m src.benchmark.run_benchmark --dataset wine_quality --optimizer adam sgd cma-es \
+        --max-epochs 10 --max-gradients 100000 --plot
+    or: uv run -m src.benchmark.run_benchmark --dataset wine_quality --optimizer adam sgd cma-es \
+        --max-epochs 10 --max-gradients 100000 --plot
 """
 
 import argparse
@@ -29,11 +31,7 @@ def load_custom_optimizer(path: str):
     # Find the optimizer class (first class that has 'step' method)
     for name in dir(module):
         obj = getattr(module, name)
-        if (
-            isinstance(obj, type)
-            and hasattr(obj, "step")
-            and name != "BenchmarkOptimizer"
-        ):
+        if isinstance(obj, type) and hasattr(obj, "step") and name != "BenchmarkOptimizer":
             return obj
 
     raise ValueError(f"No optimizer class found in {path}")
@@ -52,9 +50,7 @@ def main():
         default=["default"],
         help="Model architecture(s) to use (default: ['default'])",
     )
-    parser.add_argument(
-        "--optimizer", nargs="+", help="Path to custom optimizer file or builtin name"
-    )
+    parser.add_argument("--optimizer", nargs="+", help="Path to custom optimizer file or builtin name")
     parser.add_argument("--max-gradients", type=int, default=5000)
     parser.add_argument("--max-db-reaches", type=int, default=None)
     parser.add_argument("--max-epochs", type=int, default=None)
@@ -105,7 +101,7 @@ def main():
             stop_condition=stop_condition,
             batch_size=args.batch_size,
             random_seed=args.seed,
-            report_dir=report_dir
+            report_dir=report_dir,
         )
 
         model_results = runner.compare(optimizers)

@@ -2,12 +2,11 @@ import json
 import logging
 import os
 
-from shared.interfaces.abstract_downloader import Downloader
-from task_queue.services.downloaders.logging_config import configure_logging
-
-from shared.connectors.rabbitmq_connector import RabbitMQConnector
 from shared.connectors.athena_connector import AthenaConnector
 from shared.connectors.postgres_connector import PostGresConnector
+from shared.connectors.rabbitmq_connector import RabbitMQConnector
+from shared.interfaces.abstract_downloader import Downloader
+from task_queue.services.downloaders.logging_config import configure_logging
 
 configure_logging()
 logger = logging.getLogger(__name__)
@@ -18,7 +17,6 @@ LOCAL_DOWNLOAD_DIR = os.environ.get("LOCAL_DOWNLOAD_DIR", "/downloads")
 
 
 class AthenaDownloader(Downloader):
-
     def download(self, task_id: str, delete_after_download: bool = False) -> None:
         remote_dir = f"{PROJECT_DIR}/reports/task_{task_id}"
         local_dir = f"{LOCAL_DOWNLOAD_DIR}/{task_id}"

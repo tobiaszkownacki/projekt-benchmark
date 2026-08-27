@@ -3,12 +3,11 @@ import os
 import sys
 from collections import Counter
 
+from shared.connectors.athena_connector import AthenaConnector
+from shared.connectors.postgres_connector import PostGresConnector
+from shared.connectors.rabbitmq_connector import RabbitMQConnector
 from shared.interfaces.abstract_poller import Poller
 from task_queue.services.pollers.logging_config import configure_logging
-
-from shared.connectors.postgres_connector import PostGresConnector
-from shared.connectors.athena_connector import AthenaConnector
-from shared.connectors.rabbitmq_connector import RabbitMQConnector
 
 configure_logging()
 logger = logging.getLogger(__name__)
@@ -21,7 +20,6 @@ PROJECT_DIR = f"{ATHENA_REMOTE_PATH}/projekt-benchmark"
 
 
 class AthenaPoller(Poller):
-
     def is_ready(self, athena_conn: AthenaConnector) -> bool:
         partition_state, _, _ = athena_conn.ssh_capture(f"sinfo -p {SLURM_PARTITION} -h -o '%a'")
         if partition_state.strip() != "up":
@@ -49,7 +47,7 @@ class AthenaPoller(Poller):
 
         header, *rows = lines
         columns = header.split("|")
-        return [dict(zip(columns, row.split("|"))) for row in rows]
+        return [dict(zip(columns, row.split("|"), strict=True)) for row in rows]
 
     def _fetch_error_tail(self, athena_conn: AthenaConnector, job_name: str, job_id: str, lines: int = 30) -> str:
         remote_out = f"{PROJECT_DIR}/reports/{job_name}/{job_id}.out"
@@ -131,7 +129,7 @@ class AthenaPoller(Poller):
             self.publish_finished_taks2downloader(finished_task_ids)
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     logger.info("Started polling")
     poller = AthenaPoller(executor_name="Athena")
     try:

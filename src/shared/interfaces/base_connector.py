@@ -1,8 +1,7 @@
-from abc import abstractmethod, ABC
+from abc import ABC, abstractmethod
 
 
 class BaseConnector(ABC):
-
     @abstractmethod
     def __enter__(self):
         pass

@@ -1,5 +1,3 @@
-from typing import Type
-
 from src.benchmark_core.optimization_engine.evaluator import ModelEvaluator
 from src.benchmark_core.optimization_engine.evaluator_dtos import EvaluatorDto, NumpyNdarrayTensorEvaluatorDto
 from src.benchmark_core.optimization_engine.optimizer_protocols.benchmark_optimizer import BenchmarkOptimizer
@@ -21,5 +19,5 @@ class NumpyBenchmarkOptimizer(BenchmarkOptimizer):
         """
         raise NotImplementedError("Implement step() in your optimizer")
 
-    def get_output_type() -> Type[EvaluatorDto]:
+    def get_output_type() -> type[EvaluatorDto]:
         return NumpyNdarrayTensorEvaluatorDto

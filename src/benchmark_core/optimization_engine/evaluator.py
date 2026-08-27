@@ -8,7 +8,7 @@ providing a simple interface allowing optimizers to:
 Metrics are tracked AUTOMATICALLY, the optimizer doesn't need to do anything.
 """
 
-from typing import Callable, Tuple, Type
+from collections.abc import Callable
 
 import torch
 from torch import Tensor
@@ -29,7 +29,8 @@ class ModelEvaluator:
     - `get_params() -> object`: Retrieves current model parameters, converted via DTO.
     - `set_params(params: object) -> None`: Sets model parameters from a DTO-converted object.
     - `evaluate() -> float`: Performs a forward pass and returns the loss.
-    - `evaluate_with_grad() -> Tuple[float, object]`: Performs a forward and backward pass, returning loss and gradients (DTO-converted).
+    - `evaluate_with_grad() -> Tuple[float, object]`: Performs a forward and backward pass, returning loss
+      and gradients (DTO-converted).
     - `get_predictions() -> Tuple[object, object]`: Retrieves model predictions and targets (DTO-converted).
     - `batch_size() -> int`: Returns the number of samples in the current batch.
     - `param_count() -> int`: Returns the total number of model parameters.
@@ -65,7 +66,7 @@ class ModelEvaluator:
         self._param_shapes = [p.shape for p in model.parameters()]
         self._param_count = sum(p.numel() for p in model.parameters())
 
-    def set_output_type(self, output_type: Type[T]):
+    def set_output_type(self, output_type: type[T]):
         self.type = output_type
 
     @property
@@ -86,11 +87,7 @@ class ModelEvaluator:
         Returns:
             An object containing the flattened model parameters, conforming to the set output DTO.
         """
-        return (
-            PyTorchTensorEvaluatorDto(parameters_to_vector(self._model.parameters()))
-            .to(self.type)
-            .data()
-        )
+        return PyTorchTensorEvaluatorDto(parameters_to_vector(self._model.parameters())).to(self.type).data()
 
     def set_params(self, params: object) -> None:
         """
@@ -100,9 +97,7 @@ class ModelEvaluator:
             params: An object containing the flattened parameters to set, conforming to the
                     specified input DTO type.
         """
-        params_torch_flat = self.type(params).to(
-            PyTorchTensorEvaluatorDto, device=self._device
-        )
+        params_torch_flat = self.type(params).to(PyTorchTensorEvaluatorDto, device=self._device)
         vector_to_parameters(params_torch_flat.data(), self._model.parameters())
 
     def evaluate(self) -> float:
@@ -124,7 +119,7 @@ class ModelEvaluator:
         self._metrics_callback(self._batch_size, 0)
         return loss.item()
 
-    def evaluate_with_grad(self) -> Tuple[float, object]:
+    def evaluate_with_grad(self) -> tuple[float, object]:
         """
         Evaluates the current parameters on the batch (forward pass) and computes
         gradients (backward pass).
@@ -173,7 +168,7 @@ class ModelEvaluator:
         self._metrics_callback(self._batch_size, 1)
         return grad.to(self.type).data()
 
-    def get_predictions(self) -> Tuple[object, object]:
+    def get_predictions(self) -> tuple[object, object]:
         """
         Retrieves the model's predictions and the actual targets for the current batch,
         both converted to the specified output DTO type.

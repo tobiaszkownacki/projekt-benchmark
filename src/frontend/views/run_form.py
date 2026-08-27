@@ -1,10 +1,12 @@
 from typing import Any
+
 import httpx
 import streamlit as st
-
-from core.config import get_api_base_url
-from views.mock_data import DATASETS, OPTIMIZERS
 from auth import repository
+from core.config import get_api_base_url
+from core.validator import run_synchronous_validation
+
+from views.mock_data import DATASETS, OPTIMIZERS
 
 Executors = ["Athena"]
 
@@ -30,15 +32,11 @@ def render_run_form(instructions_page: Any | None = None, user: repository.User 
             dataset = st.selectbox("Dataset", DATASETS)
             optimizers = st.multiselect("Optimizers", OPTIMIZERS)
             uploaded_files = st.file_uploader(
-                "Upload your own optimizers (.py)",
-                accept_multiple_files=True,
-                type=["py"]
+                "Upload your own optimizers (.py)", accept_multiple_files=True, type=["py"]
             )
             st.caption("TODO: more run options to be added")
 
-            submitted = st.form_submit_button(
-                "Run benchmark", type="primary", width="stretch"
-            )
+            submitted = st.form_submit_button("Run benchmark", type="primary", width="stretch")
 
         if submitted:
             custom_optimizers_data = {}

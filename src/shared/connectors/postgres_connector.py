@@ -1,11 +1,11 @@
 import os
+
 import psycopg
 
 from shared.interfaces.database_connector import DatabaseConnector
 
 
 class PostGresConnector(DatabaseConnector):
-
     def __init__(self) -> None:
         self.host = os.environ.get("POSTGRES_HOST", "postgres")
         self.port = os.environ.get("POSTGRES_PORT")

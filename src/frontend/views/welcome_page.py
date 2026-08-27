@@ -1,5 +1,7 @@
 from typing import Any
+
 import streamlit as st
+
 from views.leaderboard import render_leaderboard
 
 
@@ -9,9 +11,7 @@ def render_welcome_page(login_page: Any | None = None) -> None:
 
     intro, cta = st.columns([3, 1])
     with intro:
-        st.markdown(
-            "DESC TODO"
-        )
+        st.markdown("DESC TODO")
     with cta:
         if login_page is not None:
             if st.button(

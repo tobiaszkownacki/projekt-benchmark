@@ -1,4 +1,4 @@
-from typing import Iterable
+from collections.abc import Iterable
 from uuid import UUID
 
 from psycopg.types.json import Jsonb
@@ -24,4 +24,4 @@ def create_task(dataset: str, run_name: str, optimizers: Iterable[str], submitte
         row = cur.fetchone()
         if row is None:
             raise RuntimeError("Failed to create task")
-        return dict(zip(columns, row))
+        return dict(zip(columns, row, strict=True))

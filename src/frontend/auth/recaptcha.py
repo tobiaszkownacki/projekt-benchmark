@@ -1,5 +1,4 @@
 import httpx
-
 from core.config import get_recaptcha_min_score, get_recaptcha_secret_key
 
 

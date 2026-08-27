@@ -1,5 +1,4 @@
 import cupy as np
-
 from benchmark.evaluator import ModelEvaluator
 from benchmark.optimizer_protocols import CupyBenchmarkOptimizer
 

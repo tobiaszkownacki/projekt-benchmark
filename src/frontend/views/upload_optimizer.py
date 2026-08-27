@@ -10,7 +10,6 @@ if uploaded_file is not None:
 
     if st.button("Validate and start benchmark"):
         with st.spinner("Validation of optimizer in safe sandbox container..."):
-
             result = run_synchronous_validation(user_code)
 
             if result["status"] == "success":

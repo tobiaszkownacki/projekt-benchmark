@@ -1,5 +1,4 @@
 import cupy as np
-
 from benchmark.evaluator import ModelEvaluator
 from benchmark.optimizer_protocols import CupyBenchmarkOptimizer
 
@@ -43,9 +42,7 @@ class CupyAdamW(CupyBenchmarkOptimizer):
 
         # Decoupled weight decay: params = params - lr * (step + weight_decay * params)
         if self.weight_decay > 0:
-            self.params = self.params - self.lr * (
-                step_val + self.weight_decay * self.params
-            )
+            self.params = self.params - self.lr * (step_val + self.weight_decay * self.params)
         else:
             self.params = self.params - self.lr * step_val
 

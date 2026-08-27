@@ -1,8 +1,6 @@
-from typing import Optional
 
 import cma
 import numpy as np
-
 from benchmark.evaluator import ModelEvaluator
 from benchmark.optimizer_protocols import NumpyBenchmarkOptimizer
 
@@ -14,7 +12,7 @@ class NumpyCMAES(NumpyBenchmarkOptimizer):
         self,
         initial_params: np.ndarray,
         sigma: float = 0.5,
-        population_size: Optional[int] = None,
+        population_size: int | None = None,
         **config,
     ):
         super().__init__(initial_params, **config)
