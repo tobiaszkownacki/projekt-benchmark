@@ -1,4 +1,3 @@
-from typing import Optional
 
 import cma
 import numpy as np
