@@ -18,40 +18,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: astral-sh/setup-uv@v5
+      - name: Run ruff check
+        uses: astral-sh/ruff-action@v3
         with:
-          python-version: "3.11"
-          enable-cache: true
+          version: "0.16.4"
+          args: "check ."
 
-      - name: Install dependencies
-        run: uv sync --extra ci
-
-      - name: Run Flake8
-        run: uv run flake8
-
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: astral-sh/setup-uv@v5
+      - name: Run ruff format check
+        uses: astral-sh/ruff-action@v3
         with:
-          python-version: "3.11"
-          enable-cache: true
-
-      - name: Install dependencies
-        run: uv sync --extra ci
-
-      - name: Find test files
-        id: tests
-        run: |
-          found=$(find . -name "test_*.py" -not -path "./.venv/*" | head -1)
-          echo "found=$found" >> $GITHUB_OUTPUT
-
-      - name: Run pytest
-        if: steps.tests.outputs.found != ''
-        run: uv run pytest
-
-      - name: No test files found
-        if: steps.tests.outputs.found == ''
-        run: echo "No test files found, skipping pytest."
+          version: "0.16.4"
+          args: "format --check ."

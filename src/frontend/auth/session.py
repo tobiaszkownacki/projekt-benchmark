@@ -1,4 +1,3 @@
-from typing import Optional
 from uuid import UUID
 
 import streamlit as st
@@ -12,7 +11,7 @@ def is_logged_in() -> bool:
     return bool(st.user.is_logged_in or st.session_state.get("auth_user_id"))
 
 
-def get_current_user() -> Optional[repository.User]:
+def get_current_user() -> repository.User | None:
     if st.user.is_logged_in:
         return sync_oauth_user()
 

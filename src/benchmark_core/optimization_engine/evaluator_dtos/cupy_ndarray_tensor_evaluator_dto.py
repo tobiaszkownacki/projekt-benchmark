@@ -1,4 +1,5 @@
 import cupy as cp
+
 from .evaluator_dto import EvaluatorDto
 
 

@@ -1,12 +1,11 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Optional
 from uuid import UUID
 
+from core.database import get_connection
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
-from core.database import get_connection
 from auth.passwords import hash_password
 
 
@@ -16,14 +15,15 @@ class User:
     email: str
     role: str
     auth_provider: str
-    display_name: Optional[str]
+    display_name: str | None
     is_active: bool
     created_at: datetime
-    last_login_at: Optional[datetime]
-    associated_organisation: Optional[str] = None
-    associated_org_email: Optional[str] = None
-    join_reason: Optional[str] = None
-    password_hash: Optional[str] = None
+    last_login_at: datetime | None
+    associated_organisation: str | None = None
+    associated_org_email: str | None = None
+    join_reason: str | None = None
+    password_hash: str | None = None
+
 
 @dataclass
 class Task:
@@ -39,6 +39,7 @@ class Task:
     run_name: str
     optimizer_params: dict
     completed_at: str
+
 
 @dataclass
 class ExecutorStatus:
@@ -68,7 +69,7 @@ def has_join_info(user: User) -> bool:
     return bool(user.join_reason or user.associated_organisation)
 
 
-def get_by_id(user_id: UUID) -> Optional[User]:
+def get_by_id(user_id: UUID) -> User | None:
     with get_connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("SELECT * FROM users WHERE id = %s", (user_id,))
@@ -76,7 +77,7 @@ def get_by_id(user_id: UUID) -> Optional[User]:
             return _row_to_user(row) if row else None
 
 
-def get_by_email(email: str) -> Optional[User]:
+def get_by_email(email: str) -> User | None:
     with get_connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("SELECT * FROM users WHERE email = %s", (email.lower(),))
@@ -87,10 +88,10 @@ def get_by_email(email: str) -> Optional[User]:
 def create_email_user(
     email: str,
     password: str,
-    display_name: Optional[str] = None,
-    associated_organisation: Optional[str] = None,
-    associated_org_email: Optional[str] = None,
-    join_reason: Optional[str] = None,
+    display_name: str | None = None,
+    associated_organisation: str | None = None,
+    associated_org_email: str | None = None,
+    join_reason: str | None = None,
 ) -> User:
     email_lower = email.lower()
     password_hash = hash_password(password)
@@ -122,10 +123,10 @@ def create_email_user(
 
 def set_join_info(
     user_id: UUID,
-    associated_organisation: Optional[str] = None,
-    associated_org_email: Optional[str] = None,
-    join_reason: Optional[str] = None,
-) -> Optional[User]:
+    associated_organisation: str | None = None,
+    associated_org_email: str | None = None,
+    join_reason: str | None = None,
+) -> User | None:
     with get_connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
@@ -147,7 +148,7 @@ def upsert_oauth_user(
     email: str,
     oauth_sub: str,
     auth_provider: str,
-    display_name: Optional[str] = None,
+    display_name: str | None = None,
 ) -> User:
     email_lower = email.lower()
     with get_connection() as conn:
@@ -196,7 +197,7 @@ def update_last_login(user_id: UUID) -> None:
         )
 
 
-def list_unverified() -> List[User]:
+def list_unverified() -> list[User]:
     with get_connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(

@@ -1,6 +1,5 @@
-from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import Callable, Optional
+from collections.abc import Callable
+from dataclasses import dataclass
 from enum import Enum, auto
 
 
@@ -15,16 +14,13 @@ class StopReason(Enum):
 
 @dataclass
 class StopCondition:
-    max_gradients: Optional[int] = None  # None = unlimited
-    max_database_reaches: Optional[int] = None  # None = unlimited
-    max_epochs: Optional[int] = None
-    convergence_threshold: Optional[float] = None
+    max_gradients: int | None = None  # None = unlimited
+    max_database_reaches: int | None = None  # None = unlimited
+    max_epochs: int | None = None
+    convergence_threshold: float | None = None
 
     def __post_init__(self):
-        if all(
-            v is None
-            for v in [self.max_gradients, self.max_database_reaches, self.max_epochs]
-        ):
+        if all(v is None for v in [self.max_gradients, self.max_database_reaches, self.max_epochs]):
             raise ValueError("At least one stop condition must be specified")
 
 
@@ -40,7 +36,7 @@ class MetricsTracker:
         self._database_reach_count: int = 0
         self._epoch_count: int = 0
         self._stop_reason: StopReason = StopReason.NONE
-        self._callbacks: list[Callable[["MetricsTracker"], None]] = []
+        self._callbacks: list[Callable[[MetricsTracker], None]] = []
 
     @property
     def gradient_count(self) -> int:
@@ -82,10 +78,7 @@ class MetricsTracker:
             self._stop_reason = StopReason.OPTIMIZER_SIGNAL
 
     def _check_gradient_limit(self) -> bool:
-        if (
-            self.stop_condition.max_gradients is not None
-            and self._gradient_count >= self.stop_condition.max_gradients
-        ):
+        if self.stop_condition.max_gradients is not None and self._gradient_count >= self.stop_condition.max_gradients:
             self._stop_reason = StopReason.GRADIENT_LIMIT
             return True
         return False
@@ -100,10 +93,7 @@ class MetricsTracker:
         return False
 
     def _check_epoch_limit(self) -> bool:
-        if (
-            self.stop_condition.max_epochs is not None
-            and self._epoch_count >= self.stop_condition.max_epochs
-        ):
+        if self.stop_condition.max_epochs is not None and self._epoch_count >= self.stop_condition.max_epochs:
             self._stop_reason = StopReason.EPOCH_LIMIT
             return True
         return False

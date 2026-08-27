@@ -1,6 +1,6 @@
 from src.benchmark_core.optimization_engine.runner import (
-    BenchmarkRunner,
     BenchmarkResult,
+    BenchmarkRunner,
     StopCondition,
     StopReason,
 )
@@ -11,4 +11,3 @@ __all__ = [
     "StopCondition",
     "StopReason",
 ]
-

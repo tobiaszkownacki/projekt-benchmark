@@ -49,18 +49,10 @@ def cupy_to_pytorch(source_dto: CupyNdarrayTensorEvaluatorDto, **params):
 # Register all conversion functions
 # =================================================================
 def register_all():
-    registry.register_converter(
-        PyTorchTensorEvaluatorDto, NumpyNdarrayTensorEvaluatorDto, pytorch_to_numpy
-    )
-    registry.register_converter(
-        PyTorchTensorEvaluatorDto, CupyNdarrayTensorEvaluatorDto, pytorch_to_cupy
-    )
-    registry.register_converter(
-        NumpyNdarrayTensorEvaluatorDto, PyTorchTensorEvaluatorDto, numpy_to_pytorch
-    )
-    registry.register_converter(
-        CupyNdarrayTensorEvaluatorDto, PyTorchTensorEvaluatorDto, cupy_to_pytorch
-    )
+    registry.register_converter(PyTorchTensorEvaluatorDto, NumpyNdarrayTensorEvaluatorDto, pytorch_to_numpy)
+    registry.register_converter(PyTorchTensorEvaluatorDto, CupyNdarrayTensorEvaluatorDto, pytorch_to_cupy)
+    registry.register_converter(NumpyNdarrayTensorEvaluatorDto, PyTorchTensorEvaluatorDto, numpy_to_pytorch)
+    registry.register_converter(CupyNdarrayTensorEvaluatorDto, PyTorchTensorEvaluatorDto, cupy_to_pytorch)
 
 
 register_all()

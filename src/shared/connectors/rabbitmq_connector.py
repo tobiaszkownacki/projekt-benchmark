@@ -7,7 +7,6 @@ from shared.interfaces.message_broker import MessageBrokerConnector
 
 
 class RabbitMQConnector(MessageBrokerConnector):
-
     def __init__(
         self,
         exchange: str,

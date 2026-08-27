@@ -1,16 +1,16 @@
 import streamlit as st
-from email_validator import validate_email, EmailNotValidError
+from email_validator import EmailNotValidError, validate_email
 
 from auth import repository
+from auth.join_info_form import render_join_info_inputs, validate_join_info
 from auth.passwords import validate_password_strength
 from auth.recaptcha import verify_recaptcha
-from auth.session import login_with_email
-from auth.join_info_form import render_join_info_inputs, validate_join_info
 from auth.recaptcha_widget import (
     invalidate_recaptcha,
     render_recaptcha,
     render_recaptcha_disclaimer,
 )
+from auth.session import login_with_email
 
 _REGISTER_SUCCESS_KEY = "register_success"
 _AUTH_ERROR_KEY = "auth_error"
@@ -113,10 +113,8 @@ def on_go_to_sign_in() -> None:
 
 def _render_register_form() -> None:
     if st.session_state.get(_REGISTER_SUCCESS_KEY):
-        st.success(
-            "Account created! You can sign in once an administrator has approved your account."
-        )
-        st.button("Go to Sign in", width="stretch", key="register_success_continue", on_click = on_go_to_sign_in)
+        st.success("Account created! You can sign in once an administrator has approved your account.")
+        st.button("Go to Sign in", width="stretch", key="register_success_continue", on_click=on_go_to_sign_in)
         return
 
     _render_auth_error()
@@ -174,6 +172,7 @@ def _render_register_form() -> None:
 
         st.session_state[_REGISTER_SUCCESS_KEY] = True
         st.rerun()
+
 
 def render_login_panel() -> None:
     with st.container(horizontal_alignment="center"):

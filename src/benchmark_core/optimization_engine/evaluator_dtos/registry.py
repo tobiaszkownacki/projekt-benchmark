@@ -17,7 +17,5 @@ def register_converter(source_type, target_type, func):
     """
     if (source_type, target_type) in CONVERSION_REGISTRY:
         # This could be a warning instead of an error if overwriting is desired.
-        raise ValueError(
-            f"Converter from {source_type.__name__} to {target_type.__name__} already registered."
-        )
+        raise ValueError(f"Converter from {source_type.__name__} to {target_type.__name__} already registered.")
     CONVERSION_REGISTRY[(source_type, target_type)] = func

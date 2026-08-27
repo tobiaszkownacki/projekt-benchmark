@@ -25,10 +25,6 @@ dependencies = [
     "paramiko>=5.0.0",
 ]
 
-[tool.flake8]
-max-line-length = 120
-exclude = [".venv", ".git", "__pycache__", "reports","data",".github","weights"]
-
 [dependency-groups]
 api-fastapi = [
     "fastapi>=0.115",
@@ -62,3 +58,28 @@ frontend = [
     "psycopg[binary]>=3.1",
     "streamlit[auth]>=1.59",
 ]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = [
+    "reports",
+    "data",
+    "weights",
+    "downloads",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "W",
+    "I",
+    "UP",
+    "B",
+    "C4",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"src/frontend/home.py" = ["E402"]

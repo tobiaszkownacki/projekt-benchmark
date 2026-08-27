@@ -1,4 +1,5 @@
 import streamlit as st
+
 from views.mock_data import RUN_HISTORY
 
 _STATUS_ICON = {

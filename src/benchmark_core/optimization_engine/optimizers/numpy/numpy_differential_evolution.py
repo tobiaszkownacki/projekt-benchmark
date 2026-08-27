@@ -1,5 +1,4 @@
 import numpy as np
-
 from benchmark.evaluator import ModelEvaluator
 from benchmark.optimizer_protocols.numpy_benchmark_optimizer import NumpyBenchmarkOptimizer
 
@@ -77,8 +76,6 @@ class NumpyDifferentialEvolution(NumpyBenchmarkOptimizer):
 
         # 1. Mutation (DE/rand/1)
         # Vectorized selection of r1, r2, r3
-        indices = np.arange(self.pop_size)
-
         # TODO: Make it compliant with r1 != r2 != r3 != target from orignal paper
         r1 = np.random.randint(0, self.pop_size, self.pop_size)
         r2 = np.random.randint(0, self.pop_size, self.pop_size)
@@ -87,9 +84,7 @@ class NumpyDifferentialEvolution(NumpyBenchmarkOptimizer):
         # Verification mask to ensure distinctness (simple retry logic for collisions is common)
         # For simplicity/speed in this snippet, we proceed. In strict DE, we resample collisions.
 
-        v_donor = self.population[r1] + self.F * (
-            self.population[r2] - self.population[r3]
-        )
+        v_donor = self.population[r1] + self.F * (self.population[r2] - self.population[r3])
         v_donor = self._ensure_bounds(v_donor)
 
         # 2. Binomial Crossover
