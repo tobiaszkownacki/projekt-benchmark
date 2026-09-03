@@ -1,5 +1,3 @@
-from typing import Optional
-
 import bcrypt
 
 
@@ -11,7 +9,7 @@ def verify_password(password: str, password_hash: str) -> bool:
     return bcrypt.checkpw(password.encode(), password_hash.encode())
 
 
-def validate_password_strength(password: str) -> Optional[str]:
+def validate_password_strength(password: str) -> str | None:
     if len(password) < 8:
         return "Password must be at least 8 characters long."
     return None

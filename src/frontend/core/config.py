@@ -49,18 +49,6 @@ def get_database_url() -> str:
     return f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
 
 
-def get_rabbitmq_connection_params():
-    import pika
-
-    host = _lookup("RABBITMQ_HOST", "rabbitmq", "host", "localhost")
-    port = int(_lookup("RABBITMQ_PORT", "rabbitmq", "port", 5672))
-    user = _lookup("RABBITMQ_USER", "rabbitmq", "user")
-    password = _lookup("RABBITMQ_PASSWORD", "rabbitmq", "password")
-
-    credentials = pika.PlainCredentials(user, password)
-    return pika.ConnectionParameters(host=host, port=port, credentials=credentials)
-
-
 def get_api_base_url() -> str:
     """Base URL of the task API the Streamlit form posts runs to.
 

@@ -38,6 +38,7 @@ Let's say you want to add support for JAX arrays.
     import jax.numpy as jnp
     from .evaluator_dto import EvaluatorDto
 
+
     class JaxArrayDto(EvaluatorDto):
         def __init__(self, data: jnp.ndarray):
             self._data = data
@@ -68,6 +69,7 @@ Let's say you want to add support for JAX arrays.
         device = params.get("device", "cpu")
         data = torch.from_numpy(numpy_array).float().to(device)
         return PyTorchTensorEvaluatorDto(data)
+
 
     # --- Others -> JAX ---
     def pytorch_to_jax(source_dto: PyTorchTensorEvaluatorDto, **params):

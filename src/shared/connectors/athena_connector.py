@@ -2,8 +2,9 @@ import os
 import re
 import stat
 import time
-import paramiko
 from pathlib import Path
+
+import paramiko
 
 from shared.interfaces.executor_connector import ExecutorConnector
 
@@ -11,7 +12,6 @@ POLL_EVERY = int(os.environ.get("POLL_EVERY", 30))
 
 
 class AthenaConnector(ExecutorConnector):
-
     def __init__(self) -> None:
         self.host = os.environ.get("ATHENA_HOST")
         self.user = os.environ.get("ATHENA_USER")
@@ -78,14 +78,14 @@ class AthenaConnector(ExecutorConnector):
             pre_commands    : list[str]     shell commands to run after db_schemas, before python
             env_vars        : dict[str,str] exported env vars  e.g. {"TORCH_HOME": "/path"}
         """
-        account      = job.get("account", self.account or "")
-        job_name     = job.get("job_name", "benchmark_job")
-        time_limit   = job.get("time", "01:00:00")
-        mem          = job.get("mem", "64G")
-        cpus         = job.get("cpus", 16)
-        gpus         = job.get("gpus", 1)
-        args         = job.get("args", "")
-        script_path  = job.get("script_remote_path")
+        account = job.get("account", self.account or "")
+        job_name = job.get("job_name", "benchmark_job")
+        time_limit = job.get("time", "01:00:00")
+        mem = job.get("mem", "64G")
+        cpus = job.get("cpus", 16)
+        gpus = job.get("gpus", 1)
+        args = job.get("args", "")
+        script_path = job.get("script_remote_path")
 
         if "workdir" in job:
             workdir = job["workdir"]
@@ -96,9 +96,9 @@ class AthenaConnector(ExecutorConnector):
 
         run_command = job.get("run_command", f"python {script_path} {args}")
 
-        extra_sbatch  = "\n".join(f"#SBATCH {l}" for l in job.get("extra_sbatch", []))
-        env_exports   = "\n".join(f'export {k}="{v}"' for k, v in job.get("env_vars", {}).items())
-        pre_commands  = "\n".join(job.get("pre_commands", []))
+        extra_sbatch = "\n".join(f"#SBATCH {line}" for line in job.get("extra_sbatch", []))
+        env_exports = "\n".join(f'export {k}="{v}"' for k, v in job.get("env_vars", {}).items())
+        pre_commands = "\n".join(job.get("pre_commands", []))
 
         return f"""#!/bin/bash
 #SBATCH --job-name={job_name}
@@ -159,11 +159,11 @@ cd {workdir}
 
         script_content = self.generate_job_script(job)
 
-        scratch    = self.get_scratch()
-        job_name   = job.get("job_name", "benchmark_job")
-        workdir    = job.get("workdir", "$SCRATCH")
-        job_dir    = f"{scratch}/{job_name}"
-        job_sh     = f"{job_dir}/job.sh"
+        scratch = self.get_scratch()
+        job_name = job.get("job_name", "benchmark_job")
+        workdir = job.get("workdir", "$SCRATCH")
+        job_dir = f"{scratch}/{job_name}"
+        job_sh = f"{job_dir}/job.sh"
 
         # the output dir must exist before sbatch starts, since Slurm won't create it for --output
         self.ssh(f"mkdir -p {workdir}/reports/{job_name}")
@@ -197,9 +197,7 @@ cd {workdir}
 
             if not state:
                 try:
-                    final = self.ssh(
-                        f"sacct -j {job_id} --noheader -o State | head -1"
-                    ).split()[0]
+                    final = self.ssh(f"sacct -j {job_id} --noheader -o State | head -1").split()[0]
                 except RuntimeError:
                     final = "UNKNOWN"
                 print(f"Job {job_id} finished  -  state: {final}")
@@ -213,7 +211,7 @@ cd {workdir}
         Download the Slurm .out log for job_id to local_dir.
         Returns the local Path of the downloaded file.
         """
-        scratch    = self.get_scratch()
+        scratch = self.get_scratch()
         remote_out = self.ssh(f"find {scratch} -name '{job_id}.out' | head -1")
         if not remote_out:
             raise FileNotFoundError(f"No .out file found for job {job_id} under {scratch}")
@@ -248,12 +246,12 @@ cd {workdir}
         Returns a result dict with job_id, state, and log_path.
         """
         job_id, _stderr = self.submit_job(job, local_script=local_script)
-        state    = self.wait_for_job(job_id)
+        state = self.wait_for_job(job_id)
         log_path = self.fetch_log(job_id, local_dir=local_dir)
 
         return {
-            "job_id":   job_id,
-            "state":    state,
+            "job_id": job_id,
+            "state": state,
             "log_path": str(log_path),
-            "success":  state == "COMPLETED",
+            "success": state == "COMPLETED",
         }

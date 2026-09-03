@@ -1,9 +1,6 @@
-from datetime import datetime
 from pathlib import Path
-from typing import Dict
 
 import matplotlib.pyplot as plt
-
 from src.benchmark.runner import BenchmarkResult
 
 
@@ -49,7 +46,7 @@ class BenchmarkAnalyzer:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-    def plot_results(self, results: Dict[str, BenchmarkResult]) -> Path:
+    def plot_results(self, results: dict[str, BenchmarkResult]) -> Path:
         run_dir = self.output_dir
         run_dir.mkdir(parents=True, exist_ok=True)
 
@@ -57,30 +54,60 @@ class BenchmarkAnalyzer:
         colors = [colour for colour, _ in styles]
 
         series_plots = [
-            ("loss_vs_epoch.png",      "Loss vs Epoch",       "Loss",         "Epoch",
-             lambda r: list(range(1, len(r.loss_history) + 1)), lambda r: r.loss_history),
-
-            ("loss_vs_db_reaches.png", "Loss vs DB Reaches",  "Loss",         "DB Reaches",
-             lambda r: r.database_reaches_history,              lambda r: r.loss_history),
-
-            ("loss_vs_grads.png",      "Loss vs Gradients",   "Loss",         "Gradients",
-             lambda r: r.gradient_history,                      lambda r: r.loss_history),
-
-
-            ("acc_vs_db_reaches.png",  "Accuracy vs DB Reaches", "Accuracy (%)", "DB Reaches",
-             lambda r: r.database_reaches_history,              lambda r: r.accuracy_history),
-
-            ("acc_vs_grads.png",       "Accuracy vs Gradients",  "Accuracy (%)", "Gradients",
-             lambda r: r.gradient_history,                      lambda r: r.accuracy_history),
-
-            ("acc_vs_epoch.png",       "Accuracy vs Epoch",     "Accuracy (%)", "Epoch",
-             lambda r: list(range(1, len(r.accuracy_history) + 1)), lambda r: r.accuracy_history),
+            (
+                "loss_vs_epoch.png",
+                "Loss vs Epoch",
+                "Loss",
+                "Epoch",
+                lambda r: list(range(1, len(r.loss_history) + 1)),
+                lambda r: r.loss_history,
+            ),
+            (
+                "loss_vs_db_reaches.png",
+                "Loss vs DB Reaches",
+                "Loss",
+                "DB Reaches",
+                lambda r: r.database_reaches_history,
+                lambda r: r.loss_history,
+            ),
+            (
+                "loss_vs_grads.png",
+                "Loss vs Gradients",
+                "Loss",
+                "Gradients",
+                lambda r: r.gradient_history,
+                lambda r: r.loss_history,
+            ),
+            (
+                "acc_vs_db_reaches.png",
+                "Accuracy vs DB Reaches",
+                "Accuracy (%)",
+                "DB Reaches",
+                lambda r: r.database_reaches_history,
+                lambda r: r.accuracy_history,
+            ),
+            (
+                "acc_vs_grads.png",
+                "Accuracy vs Gradients",
+                "Accuracy (%)",
+                "Gradients",
+                lambda r: r.gradient_history,
+                lambda r: r.accuracy_history,
+            ),
+            (
+                "acc_vs_epoch.png",
+                "Accuracy vs Epoch",
+                "Accuracy (%)",
+                "Epoch",
+                lambda r: list(range(1, len(r.accuracy_history) + 1)),
+                lambda r: r.accuracy_history,
+            ),
         ]
 
         # (filename, title, ylabel, value_getter)
         bar_plots = [
-            ("total_gradients.png",  "Total Gradient Evaluations", "Gradients",       lambda r: r.gradient_count),
-            ("total_db_reaches.png", "Total Database Reaches",     "Samples Processed", lambda r: r.database_reaches),
+            ("total_gradients.png", "Total Gradient Evaluations", "Gradients", lambda r: r.gradient_count),
+            ("total_db_reaches.png", "Total Database Reaches", "Samples Processed", lambda r: r.database_reaches),
         ]
 
         # Default (light) style rather than dark_background: the plots are read
@@ -90,7 +117,7 @@ class BenchmarkAnalyzer:
             ax.set_title(title)
             ax.set_ylabel(ylabel)
             ax.set_xlabel(xlabel)
-            for (name, result), (color, linestyle) in zip(results.items(), styles):
+            for (name, result), (color, linestyle) in zip(results.items(), styles, strict=True):
                 x = x_getter(result)
                 y = y_getter(result)
                 if x and y:

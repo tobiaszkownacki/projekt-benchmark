@@ -65,3 +65,28 @@ frontend = [
     "psycopg[binary]>=3.1",
     "streamlit[auth]>=1.59",
 ]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = [
+    "reports",
+    "data",
+    "weights",
+    "downloads",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "W",
+    "I",
+    "UP",
+    "B",
+    "C4",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"src/frontend/home.py" = ["E402"]

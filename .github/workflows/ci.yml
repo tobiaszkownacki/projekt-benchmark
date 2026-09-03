@@ -18,21 +18,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: astral-sh/setup-uv@v5
+      - name: Run ruff check
+        uses: astral-sh/ruff-action@v3
         with:
-          python-version: "3.11"
-          enable-cache: true
+          version: "0.16.4"
+          args: "check ."
 
-      # Only the lint tooling. The project's runtime dependencies include torch,
-      # torchvision and a CUDA 13 build of CuPy; installing those in order to run
-      # a linter costs minutes and is a reliable source of timeouts.
-      - name: Install lint tooling
-        run: uv sync --only-group ci
-
-      # Fails on new violations only. Pre-existing ones are recorded in
-      # .flake8-baseline.
-      - name: Run flake8
-        run: uv run python scripts/lint_baseline.py
+      - name: Run ruff format check
+        uses: astral-sh/ruff-action@v3
+        with:
+          version: "0.16.4"
+          args: "format --check ."
 
   test:
     runs-on: ubuntu-latest

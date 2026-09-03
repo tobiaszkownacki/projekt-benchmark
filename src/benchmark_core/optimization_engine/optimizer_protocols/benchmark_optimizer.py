@@ -1,5 +1,3 @@
-from typing import Type
-
 from src.benchmark_core.optimization_engine.evaluator import ModelEvaluator
 from src.benchmark_core.optimization_engine.evaluator_dtos import EvaluatorDto
 
@@ -31,5 +29,5 @@ class BenchmarkOptimizer:
         """
         raise NotImplementedError("Implement step() in your optimizer")
 
-    def get_output_type() -> Type[EvaluatorDto]:
+    def get_output_type() -> type[EvaluatorDto]:
         raise NotImplementedError("Implement get_output_type() in your optimizer")

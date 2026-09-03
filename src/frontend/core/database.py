@@ -8,15 +8,15 @@ the control plane.
 
 import atexit
 import threading
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Generator, Optional
 
 import psycopg
 from psycopg_pool import ConnectionPool
 
 from core.config import get_database_url
 
-_pool: Optional[ConnectionPool] = None
+_pool: ConnectionPool | None = None
 _pool_lock = threading.Lock()
 
 
