@@ -101,9 +101,8 @@ export function RunDetail({ user, revision }: { user: User | null; revision: num
         </div>
       </div>
 
-      {/* Failures put the reason on the page, not behind a disclosure control.
-          §11.3 is explicit about this, and it is the moment a user most needs
-          the information. */}
+      {/* Failures put the reason directly on the page, not behind a disclosure
+          control, since this is the moment a user most needs the information. */}
       {item.error_message && (
         <div className="note note-error section">
           <strong>Komunikat błędu</strong>

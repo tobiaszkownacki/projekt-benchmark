@@ -1,8 +1,7 @@
 -- Every state change, with who caused it.
 --
--- §18 names the alternative: answering "why has my run been stuck for two
--- hours" by reading five services' logs. This table is the cheap version of
--- that answer, and it is only cheap if it exists from the start.
+-- Without this table, answering "why has my run been stuck" means reading
+-- five services' logs instead of one.
 
 CREATE TABLE IF NOT EXISTS task_state_transitions (
     id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

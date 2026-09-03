@@ -102,8 +102,7 @@ jobs:
         working-directory: src/web/frontend
         run: npm run lint
 
-      # §14 bans gradients, glassmorphism and heavy shadows. A ban nobody
-      # enforces stops being a ban by the third pull request, so it is grepped.
+      # Enforced in CI so the rule does not erode over time.
       - name: Check visual constraints
         working-directory: src/web/frontend
         run: npm run lint:css

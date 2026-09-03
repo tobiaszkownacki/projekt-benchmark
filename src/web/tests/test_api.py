@@ -43,9 +43,9 @@ def test_overview_counters_are_present(client):
 def test_leaderboard_describes_its_own_formula(client):
     """The aggregate must say which formula produced it.
 
-    §13.1 forbids reducing the ranking to one unexplained number, because the
-    exchange rate between a gradient and a sample is an open question that
-    decides who wins.
+    The exchange rate between a gradient and a sample is an open question
+    that decides who wins, so the ranking must not be reduced to one
+    unexplained number.
     """
     body = client.get("/api/leaderboard").json()
     assert body["score_formula"]["id"]

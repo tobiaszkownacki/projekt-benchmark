@@ -1,7 +1,6 @@
 -- Bearer tokens for programmatic submission.
 --
--- §15 makes this a product requirement rather than tidiness: a GECCO entrant
--- submits from a CLI or from CI, not from a browser form. Only the hash is
+-- Entrants submit from a CLI or CI, not a browser form. Only the hash is
 -- stored, so a database dump does not yield usable tokens.
 
 CREATE TABLE IF NOT EXISTS api_tokens (

@@ -2,16 +2,13 @@ import { useMemo, useRef, useState } from 'react';
 import type { AggregatedSeries } from '../types';
 import { decimal, integer } from './format';
 
-/* A convergence chart drawn directly as SVG.
+/* A convergence chart drawn directly as SVG, rather than pulled in from a
+ * charting library.
  *
- * Written rather than pulled in, for three reasons that all point the same way.
- * The plan's own constraint is to add no runtime dependency that is not
- * load-bearing, because whoever maintains this in three years is not in the team
- * today. The band, the step-wise median and the "stop drawing a full band where
- * the runs ran out" rule are specific enough that a general chart library has to
- * be bent into them anyway. And §9.3 wants SVG export of exactly what is on
- * screen -- which is free when the thing on screen is already SVG, and a second
- * rendering path otherwise.
+ * The band, the step-wise median and the "stop drawing a full band where the
+ * runs ran out" rule are specific enough that a general chart library would
+ * need to be bent into shape anyway, and drawing SVG directly makes exact
+ * on-screen export free instead of needing a second rendering path.
  *
  * Series are downsampled server-side to about a thousand points, and each one
  * becomes a single <path>, so the element count stays flat regardless of the

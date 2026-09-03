@@ -91,10 +91,9 @@ def step_value_at(points: Sequence[tuple[float, float]], budget: float) -> Optio
 
     None outside the range the run actually covers -- on both sides. The upper
     guard is the one that matters: without it a run that stopped early keeps
-    contributing its final value to every later grid point, so it silently props
-    up the median and narrows the band exactly where it should be widening. That
-    is the failure §9.2 describes, and it flatters whichever method gave up
-    soonest.
+    contributing its final value to every later grid point, so it silently
+    props up the median and narrows the band exactly where it should be
+    widening, flattering whichever method gave up soonest.
     """
     if not points or budget < points[0][0] or budget > points[-1][0]:
         return None

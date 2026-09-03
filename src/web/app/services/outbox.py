@@ -1,19 +1,17 @@
 """Queue publication through a transactional outbox.
 
-§15 warns that pika blocks and is not async-safe, and recommends aio-pika. That
-solves half the problem. The other half is that writing the task and publishing
-the message are two operations with no shared transaction: lose the broker
-between them and the run exists but never starts; lose the process after
-publishing but before committing and a job runs that no row describes.
+Writing the task and publishing the message are two operations with no shared
+transaction: lose the broker between them and the run exists but never
+starts; lose the process after publishing but before committing and a job
+runs that no row describes.
 
-Inserting the message into queue_outbox inside the same transaction as the task
-makes the pair atomic. A separate drain process publishes with ordinary blocking
-pika, outside any event loop -- so the async-safety question disappears rather
-than being worked around, and the API keeps no broker credentials at all, which
-was the point of §9's complaint about the UI holding infrastructure secrets.
+Inserting the message into queue_outbox inside the same transaction as the
+task makes the pair atomic. A separate drain process publishes with ordinary
+blocking pika, outside any event loop, so the API keeps no broker credentials
+at all.
 
-The cost is a publication delay of about a second. At one to three submissions
-per user per day (§5.2) that is not a cost.
+The cost is a publication delay of about a second, which is negligible given
+typical submission rates.
 """
 
 import json

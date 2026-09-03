@@ -1,14 +1,10 @@
 """Leaderboard aggregation.
 
-§13.1 is explicit that the ranking must not collapse into a single "Score"
-column: D2 -- the exchange rate between a gradient evaluation and a sample
-evaluation -- is open, and it decides who wins. Anything hard-coded here would
-be a scientific claim the team has expressly delegated to people at the
-university.
-
-So the aggregate is one selectable, self-describing column beside the dimensions
-it is derived from, and the formulas on offer are only those that do not presume
-an answer to D2. None of them mixes gradients with samples.
+The ranking must not collapse into a single "Score" column: the exchange rate
+between a gradient evaluation and a sample evaluation is undecided, so the
+aggregate is one selectable, self-describing column beside the dimensions it
+is derived from, and none of the offered formulas mixes gradients with
+samples.
 
 Aggregation is median with quartiles, never the best run: evolutionary methods
 are stochastic, and ranking by best result rewards luck.

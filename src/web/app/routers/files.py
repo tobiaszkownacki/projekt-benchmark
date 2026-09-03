@@ -1,8 +1,7 @@
 """The filesystem view: tree, raw file access and the archive download.
 
-Every refusal in here answers to §12.4, and the tests in tests/test_artifacts.py
-exercise the cases it names. The security reasoning lives next to the code that
-enforces it, in services/artifacts.py.
+The security reasoning for refusals lives next to the code that enforces it,
+in services/artifacts.py.
 """
 
 import io
@@ -51,8 +50,7 @@ async def file_tree(
     try:
         base = artifacts.run_root(task_id)
     except artifacts.ArtifactNotFound:
-        # Not an error: §12.3 asks for a specific empty state per artifact
-        # status, and "the run has not produced files yet" is one of them.
+        # Not an error: the run just has not produced files yet.
         return {
             "task_id": str(task_id),
             "entries": [],

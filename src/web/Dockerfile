@@ -1,9 +1,7 @@
 # Two stages: Node builds the frontend, and does not appear in the result.
 #
-# That is the whole reason for choosing a build-time bundler over a
-# server-rendered framework here. §5.1 describes the deployment as "four dockers
-# that just sit there"; a framework needing a Node process at runtime makes it
-# five, adds a second runtime to patch, and buys nothing this application needs.
+# A build-time bundler avoids needing a Node process at runtime, which would
+# add a second runtime to patch for no benefit here.
 FROM node:22-alpine AS frontend
 
 WORKDIR /build
@@ -34,9 +32,8 @@ RUN pip install --no-cache-dir \
         "httpx>=0.27" "authlib>=1.3" "pika>=1.3" "email-validator>=2.1"
 
 COPY src/web/app       /app/app
-# The existing authentication code, reused rather than reimplemented. Its
-# repository module is the one §19.2 names, and it is on the path here so it can
-# be imported without Streamlit.
+# The existing authentication code, reused rather than reimplemented, copied
+# here so it can be imported without Streamlit.
 COPY src/frontend/auth /app/auth
 COPY src/frontend/core /app/core
 COPY src/db/migrations /app/migrations

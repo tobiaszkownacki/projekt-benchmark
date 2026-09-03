@@ -1,18 +1,14 @@
 """A local CPU execution backend for the benchmark.
 
-§6 of the brief describes the multi-backend seam already present in
-``shared/interfaces/`` and notes that a local CPU backend on a micro budget
-would be the obvious second implementation, because it unblocks testing the web
-layer without going through SLURM. This is that backend, at the smallest useful
-size.
+Uses the multi-backend seam already present in ``shared/interfaces/`` to
+unblock testing the web layer without going through SLURM.
 
-It exists for a second, more immediate reason. The repository's own
-``BenchmarkRunner`` cannot run here: it imports ``src.dataset`` and ``src.config``,
-neither of which is present on main -- the datasets are deliberately absent
-(§5.3) and the module that indexes them went with them. Rather than invent
-convergence curves for the interface to display, this runner reuses the parts
-that do exist -- the real ``ModelEvaluator`` and the real NumPy optimizers -- over
-public scikit-learn data.
+The repository's own ``BenchmarkRunner`` cannot run here: it imports
+``src.dataset`` and ``src.config``, neither of which is present on main, since
+the datasets are deliberately absent and the module that indexes them went
+with them. Rather than invent convergence curves for the interface to display,
+this runner reuses the parts that do exist -- the real ``ModelEvaluator`` and
+the real NumPy optimizers -- over public scikit-learn data.
 
 Consequently the numbers the site displays are measured, not fabricated: the
 gradient and sample counters are incremented by the project's own evaluator, on
@@ -59,8 +55,7 @@ torch.set_num_threads(1)
 
 RUNNER_VERSION = "local-cpu-1"
 
-# Family is recorded rather than guessed at query time: §13.1 calls it the axis
-# the whole thesis turns on, so it has to be filterable in SQL.
+# Family is recorded rather than guessed at query time, so it is filterable in SQL.
 LOCAL_OPTIMIZERS: dict[str, tuple[Any, dict, str]] = {
     "adam": (NumpyAdam, {"lr": 0.01}, "gradient"),
     "adamw": (NumpyAdamW, {"lr": 0.01, "weight_decay": 0.01}, "gradient"),
@@ -131,8 +126,7 @@ class LocalBenchmarkRunner:
         optimizer_class, config, _family = LOCAL_OPTIMIZERS[optimizer_key]
 
         # Seeded before anything allocates, so a repeated (optimizer, seed) pair
-        # reproduces. §18 flags reproducibility as a real risk on the cluster;
-        # it costs nothing to get right here.
+        # reproduces.
         np.random.seed(self.seed)
         torch.manual_seed(self.seed)
 

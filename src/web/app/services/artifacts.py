@@ -1,10 +1,9 @@
 """Safe access to a single run's artifact directory.
 
 This module is the only barrier between a logged-in participant's browser and
-the datasets, which §5.3 names as the project's most valuable asset: anyone
-holding them can run the benchmark privately and the competition stops meaning
-anything. The threat model is therefore not an anonymous scanner but a
-legitimate, verified entrant with a valid task_id.
+the datasets: anyone holding them can run the benchmark privately, which would
+undermine the competition. The threat model is therefore not an anonymous
+scanner but a legitimate, verified entrant with a valid task_id.
 
 Two rules shape everything below:
 

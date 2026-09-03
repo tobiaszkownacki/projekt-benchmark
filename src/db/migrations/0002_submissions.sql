@@ -1,5 +1,5 @@
 -- Optimizer submissions: the code a participant sends, and what the validator
--- said about it. BRIEF.md §10 lists this as missing from the data model.
+-- said about it.
 
 DO $$ BEGIN
     CREATE TYPE optimizer_family_t AS ENUM ('gradient', 'gradient_free');

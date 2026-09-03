@@ -2,9 +2,9 @@
 
 Shape follows what BenchmarkRunner and AthenaDownloader actually produce --
 reports/ with the analyzer's plots, the run log as CSV, the SLURM stdout file --
-plus the two additions §12.1 recommends: metadata.json, so the directory
-describes itself, and a copy of the submitted optimizer, so an artifact can be
-tied to the exact code that produced it.
+plus two additions: metadata.json, so the directory describes itself, and a
+copy of the submitted optimizer, so an artifact can be tied to the exact code
+that produced it.
 """
 
 import csv

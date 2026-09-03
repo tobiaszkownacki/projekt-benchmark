@@ -1,6 +1,5 @@
 """The vocabulary the interface uses.
 
-§14.6 asks for the researcher's words rather than the implementation's.
 "database_reaches" is a good column name and a bad label; "task_status =
 running" tells a user nothing about where their job actually is.
 
@@ -67,8 +66,8 @@ STOP_REASONS = {
     },
 }
 
-# §11.3: a job waiting in someone else's scheduler has more states than
-# "loading" and "done", and each one owes the user a different sentence.
+# A job waiting in someone else's scheduler has more states than "loading"
+# and "done", and each one owes the user a different sentence.
 RUN_STATES = {
     "queued_broker": {
         "label": "w kolejce systemu",

@@ -30,13 +30,11 @@ CREATE INDEX IF NOT EXISTS idx_results_loss ON results (final_loss);
 
 -- Parallel arrays, one row per run.
 --
--- A narrow (task, epoch, metric, value) table would allow percentile_cont in
--- SQL, but that is the wrong trade here: the X axis of every chart is budget,
--- not epoch (§13.2), and different optimizers spend wildly different budget per
--- epoch. Measurements are therefore not aligned across runs on the budget axis,
--- so quantiles require interpolating each run onto a common grid first --
--- something SQL will not do usefully. Since aggregation happens in Python
--- anyway, arrays cost one row instead of 5 x epochs and read in a single fetch.
+-- The X axis of every chart is budget, not epoch, and different optimizers
+-- spend different budget per epoch, so measurements are not aligned across
+-- runs and quantiles would need interpolation onto a common grid before SQL
+-- could use them. Aggregation happens in Python anyway, so arrays cost one
+-- row instead of many and read in a single fetch.
 CREATE TABLE IF NOT EXISTS result_series (
     task_id           UUID PRIMARY KEY REFERENCES tasks (task_id) ON DELETE CASCADE,
     epochs            INTEGER[]          NOT NULL,

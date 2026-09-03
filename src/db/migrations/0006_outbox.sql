@@ -6,9 +6,9 @@
 -- that no row describes. Inserting the message in the same transaction as the
 -- task removes both cases.
 --
--- It also removes the async trap in §15: a separate drain process publishes
--- with ordinary blocking pika, outside any event loop, so the question of
--- pika's async safety never arises. And the API keeps no broker credentials.
+-- A separate drain process publishes with ordinary blocking pika, outside any
+-- event loop, so async safety is never a concern. The API itself keeps no
+-- broker credentials.
 
 CREATE TABLE IF NOT EXISTS queue_outbox (
     id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

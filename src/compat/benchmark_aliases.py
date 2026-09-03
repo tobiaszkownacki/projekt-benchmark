@@ -9,9 +9,9 @@ evaluator, the optimizers, the runner and the protocol validator are all present
 on main and all unreachable.
 
 The real fix is to rewrite those imports, and it should be done. It is not done
-here: the optimization engine belongs to the project lead (§4 -- "wejście w cudzy
-moduł wymaga uzgodnienia"), and a forty-file rename landed from a web branch
-would collide with whatever is in flight there. The defect is reported instead.
+here: the optimization engine module belongs to another team, and a forty-file
+rename landed from this branch would collide with whatever is in flight there.
+The defect is reported instead.
 
 Meanwhile this module re-creates the old package names as views onto the
 directories that now hold the code, so the existing modules import unmodified.

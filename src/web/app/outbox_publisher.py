@@ -1,14 +1,12 @@
 """Drains queue_outbox into RabbitMQ.
 
-A separate process on purpose. §15 warns that pika blocks and is not async-safe;
-running it here, outside any event loop, means that is simply not a problem
-rather than a problem worked around with a thread pool. It also keeps broker
-credentials out of the API process entirely.
+A separate process on purpose: pika blocks and is not async-safe, so running
+it outside any event loop avoids working around that with a thread pool. It
+also keeps broker credentials out of the API process entirely.
 
 Delivery is at-least-once. A message published just before the row is marked
-published gets sent twice after a crash, which is why the worker is expected to
-treat task_id as an idempotency key -- the same property §18 already asks for to
-avoid orphaned SLURM jobs.
+published gets sent twice after a crash, which is why the worker is expected
+to treat task_id as an idempotency key.
 
 Run with:  python -m app.outbox_publisher
 """

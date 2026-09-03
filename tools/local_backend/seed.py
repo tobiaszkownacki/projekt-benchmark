@@ -8,9 +8,9 @@ look like anything, and the point of a demonstration is that it cannot.
 
 Runs are also created in the states that have no data: waiting in the broker,
 waiting in SLURM, running, downloading, failed with a log, failed with no
-artifacts at all, and rejected by the validator. §11.3 lists those states
-precisely because they are the ones that never get built, and they are exactly
-where an interface is usually at its worst.
+artifacts at all, and rejected by the validator. These are the states that
+never get built, and they are exactly where an interface is usually at its
+worst.
 """
 
 import argparse
@@ -42,9 +42,8 @@ from tools.local_backend.runner import (  # noqa: E402
 #
 # CMA-ES maintains a covariance matrix over the parameter vector: O(n^2) to
 # store and O(n^3) to decompose. On a 1603-parameter network one run takes
-# minutes, and on a 54k-parameter one it is out of reach entirely. That is not a
-# quirk of this backend -- it is the scaling ceiling §18 names, met in practice --
-# so the population methods here sit on the smaller networks while the gradient
+# minutes, and on a 54k-parameter one it is out of reach entirely, so the
+# population methods here sit on the smaller networks while the gradient
 # methods cover the wider ones.
 #
 # Differential Evolution keeps no covariance structure, so it scales to the
@@ -348,7 +347,7 @@ def main() -> None:
             conn.commit()
 
     # A final-suite slice, so the interface can show that the competition run and
-    # the practice run are different things (§13.1).
+    # the practice run are different things.
     final_runner = LocalBenchmarkRunner(
         "wine", "mlp-1x16", StopCondition(max_epochs=args.epochs), 32, 7
     )
@@ -489,9 +488,8 @@ def seed_states(conn, downloads: Path, researcher, guest, now) -> None:
             if state["task_status"] in ("completed", "failed") else None,
             updated_at=created + timedelta(minutes=10),
         )
-        # The failed run that did produce a log gets one: §11.3 is explicit that
-        # the tail of .out must be visible rather than hidden behind a click,
-        # and there is nothing to show if the file does not exist.
+        # The failed run that did produce a log gets one, so the tail of .out
+        # is visible rather than hidden behind a click.
         if state["run_name"] == "de-digits-failed":
             root = downloads / str(task_id)
             (root / "logs").mkdir(parents=True, exist_ok=True)

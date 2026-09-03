@@ -81,8 +81,7 @@ const EMPTY_STATES: Record<string, { title: string; detail: string }> = {
 export function RunFiles() {
   const { taskId } = useParams();
   // The selected file lives in the query string, so the URL of a specific
-  // artifact is a link somebody can paste into an email. §11.2 requires this,
-  // and it is the requirement Streamlit could not meet.
+  // artifact can be shared directly (unlike in the previous Streamlit UI).
   const [params, setParams] = useSearchParams();
   const selected = params.get('path') ?? '';
 

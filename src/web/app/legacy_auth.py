@@ -1,10 +1,7 @@
 """Bridge to the existing authentication code in src/frontend.
 
-§19.2 of the brief is explicit that the control plane should reuse
-``auth/repository.py`` rather than reimplement it, and it is the right call:
-password hashing, the OAuth upsert rules and the approval flow are the one part
-of the current site that already works. Rewriting them would risk a security
-regression for no gain.
+Reuses ``auth/repository.py`` rather than reimplementing password hashing,
+the OAuth upsert rules and the approval flow.
 
 Two things made that reuse impossible before this branch and are now fixed at
 the source: four modules imported a package named ``frontend`` that does not

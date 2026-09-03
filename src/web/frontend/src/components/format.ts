@@ -1,8 +1,7 @@
 /** Formatting helpers.
  *
- * §14.5 asks for numbers with a unit and a context rather than bare digits, so
- * these return the surrounding text too where there is any. Polish digit
- * grouping uses a narrow no-break space. */
+ * Numbers are returned with their unit and surrounding context rather than as
+ * bare digits. Polish digit grouping uses a narrow no-break space. */
 
 // U+202F narrow no-break space: the Polish digit group separator. Written as
 // an escape so it is visible in review and does not trip the linter.

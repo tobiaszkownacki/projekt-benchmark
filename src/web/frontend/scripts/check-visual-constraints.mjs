@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// §14.2 bans gradients, glassmorphism, neon glow and heavy shadows. This greps
-// for them so the ban is enforced by CI rather than by reviewer memory.
+// Greps for banned CSS patterns (gradients, glassmorphism, neon glow, heavy
+// shadows) so the rule is enforced by CI rather than reviewer memory.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -38,7 +38,7 @@ for (const file of walk('src')) {
 }
 
 if (failures > 0) {
-  console.error(`\n${failures} violation(s) of the visual constraints in §14.2.`);
+  console.error(`\n${failures} violation(s) of the visual constraints.`);
   process.exit(1);
 }
 console.log('Visual constraints: clean.');

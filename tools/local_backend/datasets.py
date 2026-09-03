@@ -1,10 +1,9 @@
 """Small public datasets and matching models for the local CPU backend.
 
 These are the toy datasets bundled with scikit-learn. They are deliberately NOT
-the project's own datasets: §5.3 makes the point that the dataset collection is
-the benchmark's most valuable asset and is kept out of the repository precisely
-so that nobody can run the benchmark privately. Nothing here touches that
-material, and nothing here should ever be presented as a competition problem.
+the project's own datasets, which are kept out of the repository so nobody can
+run the benchmark privately. Nothing here touches that material, and nothing
+here should ever be presented as a competition problem.
 
 Their purpose is narrower and legitimate -- producing genuine convergence curves,
 from genuine optimizers, so the web layer can be built and judged against real

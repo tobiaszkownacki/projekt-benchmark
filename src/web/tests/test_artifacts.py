@@ -1,13 +1,8 @@
 """Containment tests for the artifact browser.
 
-§12.4 makes this the one non-negotiable piece of the web layer: it is the only
-barrier between a logged-in participant's browser and the datasets, and holding
-the datasets privately is what would make the competition meaningless.
-
-The cases below are the attack list from the plan. Three of them (5, 6, 15)
-need real symlinks on disk -- without those fixtures the most dangerous vector is
-not covered at all, and scp is documented to carry symlinks over from the
-cluster, so the link can arrive with no attacker on this side.
+This is the only barrier between a participant's browser and the datasets.
+Three cases (5, 6, 15) need real symlinks on disk, since scp is known to carry
+symlinks over from the cluster, so a link can arrive with no attacker involved.
 """
 
 import os

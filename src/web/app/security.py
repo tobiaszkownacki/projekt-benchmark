@@ -1,8 +1,7 @@
 """Session cookies for the browser, bearer tokens for CLI and CI.
 
-Both paths resolve to the same user object and the same authorisation checks --
-§15 requires programmatic submission, and a second, parallel permission model
-would be the obvious place for the two to drift apart.
+Both paths resolve to the same user object and the same authorisation checks,
+avoiding a second, parallel permission model that could drift apart.
 """
 
 import hashlib

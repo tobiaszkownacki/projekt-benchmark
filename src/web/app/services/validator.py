@@ -1,16 +1,16 @@
 """Runs the protocol validator against a submitted optimizer, in a sandbox.
 
-The point of validating before queueing is not politeness to the user -- it is
-that a broken submission which reaches SLURM burns grant hours that §5.2 says
-are the scarce resource. Catching it here costs 30 seconds of a local CPU.
+The point of validating before queueing is not politeness to the user -- a
+broken submission that reaches SLURM burns scarce grant hours. Catching it
+here costs 30 seconds of a local CPU.
 
 The code being checked is untrusted by construction: it is arbitrary Python
-written by a competition entrant. It therefore runs under every restriction §7
-lists -- no network, 2 GB, one CPU, read-only root, a writable tmpfs, a
-non-root user and a hard timeout -- and its own source is mounted read-only.
+written by a competition entrant. It therefore runs under heavy restrictions
+-- no network, 2 GB, one CPU, read-only root, a writable tmpfs, a non-root
+user and a hard timeout -- and its own source is mounted read-only.
 
-The validator's output is a readable log, which is precisely what /submit needs
-to show. It is returned verbatim rather than summarised.
+The validator's output is a readable log, which is precisely what /submit
+needs to show. It is returned verbatim rather than summarised.
 """
 
 import asyncio
@@ -62,9 +62,9 @@ def sha256(source: str) -> str:
 def infer_family(source: str) -> str:
     """Best-effort guess used only as a default the submitter can override.
 
-    A guess is acceptable here and would not be on the leaderboard: §13.1 makes
-    method family the axis the whole thesis turns on, so it is stored as a
-    column and is editable, not re-derived from source text at query time.
+    A guess is acceptable here and would not be on the leaderboard: method
+    family is stored as a column and is editable, not re-derived from source
+    text at query time.
     """
     lowered = source.lower()
     if any(token in lowered for token in _FAMILY_HINTS["gradient"]):

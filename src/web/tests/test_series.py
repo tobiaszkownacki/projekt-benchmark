@@ -1,8 +1,8 @@
 """Tests for downsampling and for the median/IQR aggregation.
 
-The aggregation tests matter more than they look. §9.2 describes a specific way
-to draw a median-and-band chart that is wrong while looking convincing, and the
-failure is invisible on the chart itself -- so it has to be caught here.
+The aggregation tests matter more than they look: a median-and-band chart can
+be drawn in a way that is wrong while looking convincing, and the failure is
+invisible on the chart itself, so it has to be caught here.
 """
 
 import pytest
@@ -63,9 +63,7 @@ def test_quantiles_match_the_usual_definition():
 
 
 def test_band_stops_being_full_where_the_first_run_ends():
-    """The failure §9.2 warns about, stated as a test.
-
-    Three runs, one of which stops at a quarter of the budget. Past that point
+    """Three runs, one of which stops at a quarter of the budget. Past that point
     the band is computed from fewer runs, so it narrows for a reason that has
     nothing to do with agreement between them. If full_until_index did not move,
     the chart would quietly flatter whichever method gave up first.

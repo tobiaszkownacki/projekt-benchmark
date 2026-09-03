@@ -1,11 +1,11 @@
 -- Columns tasks needs before a run page or a leaderboard can be built.
 --
--- seed / runner_version / gpu_model address the reproducibility risk in §18:
--- cuDNN is non-deterministic on A100 by default, so a result without its seed
--- and versions cannot be defended on a competition leaderboard.
+-- seed / runner_version / gpu_model: cuDNN is non-deterministic on A100 by
+-- default, so a result without its seed and versions cannot be defended on a
+-- competition leaderboard.
 --
--- queued_at / started_at exist so /runs can show time spent waiting, which §11.2
--- asks for and which cannot be derived from created_at alone.
+-- queued_at / started_at let /runs show time spent waiting, which cannot be
+-- derived from created_at alone.
 
 DO $$ BEGIN
     CREATE TYPE benchmark_suite_t AS ENUM ('test', 'final');

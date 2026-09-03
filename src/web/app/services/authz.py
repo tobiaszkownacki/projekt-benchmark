@@ -1,9 +1,8 @@
 """Who may see a run.
 
-D4 -- whether results are public or owner-only -- is not ours to close; §17 lists
-it as a team decision. So the policy lives in one function behind one flag
-instead of being spread across endpoints as a repeated condition. Closing D4
-means changing PUBLIC_RESULTS, not auditing every route.
+Whether results are public or owner-only is a pending decision, so the policy
+lives in one function behind one flag (PUBLIC_RESULTS) instead of being spread
+across endpoints as a repeated condition.
 """
 
 from typing import Optional

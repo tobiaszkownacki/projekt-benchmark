@@ -1,10 +1,8 @@
 """The SPA catch-all.
 
-§11.2 makes "every resource has its own URL" a requirement rather than a
-convenience -- a participant wants to paste a link to their result into an email
-or a paper. A route that works only while navigating inside the application does
-not satisfy that, and forgetting the server-side catch-all is the standard way
-to get exactly that failure. Hence a test.
+Every resource needs its own shareable URL. Forgetting the server-side
+catch-all is the standard way to break links that only work while navigating
+inside the application, hence a test.
 """
 
 import os

@@ -65,9 +65,9 @@ async def approve(
 async def budget(_: CurrentUser = Depends(require_admin)) -> dict:
     """Consumption per user.
 
-    Reported in the currencies the evaluator actually counts. Wall time is shown
-    but kept last and labelled, because §8 deprecates it as a comparison metric
-    -- it measures which node the scheduler handed out, not the optimizer.
+    Wall time is shown but kept last and labelled: it measures which node the
+    scheduler handed out, not the optimizer, so it is not a fair comparison
+    metric.
     """
     rows = await db.fetch_all(
         """
@@ -123,10 +123,10 @@ async def _rabbitmq() -> dict[str, Any]:
 async def _orphans() -> list[dict]:
     """Runs whose observed state has stopped moving.
 
-    §18 names the mechanism: a worker that dies after sbatch but before writing
-    the job id leaves a SLURM job nobody is watching and which still burns
-    grant. The symptom visible from here is a row that has been running or
-    pending for far longer than a job of this size takes.
+    A worker that dies after sbatch but before writing the job id leaves a
+    SLURM job nobody is watching, still burning grant time. The symptom
+    visible here is a row running or pending far longer than a job of this
+    size takes.
     """
     return await db.fetch_all(
         """

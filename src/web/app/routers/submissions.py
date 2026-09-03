@@ -139,9 +139,8 @@ async def submit(
         submission_id = row["submission_id"]
 
         if not outcome.ok:
-            # Rejected submissions never reach the queue, but they are kept:
-            # the participant needs the log, and §11.3 names "rejected at
-            # validation" as a state the interface must be able to show.
+            # Rejected submissions never reach the queue, but they are kept
+            # so the participant can see the validator log.
             await conn.commit()
             raise HTTPException(
                 status.HTTP_422_UNPROCESSABLE_ENTITY,

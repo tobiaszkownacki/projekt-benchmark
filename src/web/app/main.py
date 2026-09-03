@@ -1,10 +1,8 @@
 """Control plane and static host for the single-page frontend.
 
-One process serves both the API and the built frontend. That is the reason for
-choosing a build-time bundler over a server-rendered framework: Node is needed
-to build the image and not to run it, so the deployment stays the four
-containers §5.1 describes rather than gaining a fifth runtime to patch. It also
-removes cross-origin cookies and CORS from the picture entirely.
+One process serves both the API and the built frontend: Node is needed to
+build the image but not to run it, avoiding a second runtime to patch and
+removing cross-origin cookies and CORS from the picture entirely.
 """
 
 import base64
@@ -157,9 +155,7 @@ async def spa(full_path: str) -> Response:
 
     Without this, opening /runs/<id>/files directly -- or reloading it, or
     following it from an email -- returns 404, because only the SPA knows that
-    route. §11.2 makes every resource having its own shareable URL a
-    requirement, so this is load-bearing rather than convenience, and it is
-    covered by a test.
+    route.
     """
     if full_path.startswith("api/"):
         raise HTTPException(404, "Not found")
