@@ -10,18 +10,17 @@ class QueueTopology:
     def worker_queue(self):
         return f"{self.executor_name}_worker_queue"
     @property
-    def worker_dlq_queue(self):
-        return f"{self.executor_name}_worker_dlq_queue"
-    @property
     def downloader_queue(self):
         return f"{self.executor_name}_downloader_queue"
     @property
-    def downloader_dlq_queue(self):
-        return f"{self.executor_name}_downloader_dlq_queue"
+    def worker_dlq_queue(self):
+        return f"dlq_{self.worker_queue}"
     @property
-    def downloader_dlq_routing_key(self):
-        return f"{self.executor_name}_downloader_dlq_routing_key"
+    def downloader_dlq_queue(self):
+        return f"dlq_{self.downloader_queue}"
     @property
     def worker_dlq_routing_key(self):
-        return f"{self.executor_name}_worker_dlq_routing_key"
-
+        return f"failed_{self.executor_name}_worker_task"
+    @property
+    def downloader_dlq_routing_key(self):
+        return f"failed_{self.executor_name}_downloader_task"

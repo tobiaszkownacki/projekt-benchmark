@@ -2,7 +2,7 @@ import json
 import logging
 from collections.abc import Callable
 
-from pipeline.connectors.base import MessageBrokerConnector
+from pipeline.connectors.base_connector import MessageBrokerConnector
 from pipeline.connectors.rabbitmq import RabbitMQConnector
 
 logger = logging.getLogger(__name__)
