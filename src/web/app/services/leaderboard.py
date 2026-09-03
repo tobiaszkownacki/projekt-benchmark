@@ -20,8 +20,8 @@ SCORE_FORMULAS = {
         "label": "mediana straty końcowej",
         "direction": "asc",
         "column": "final_loss",
-        "note": "Niższa jest lepsza. Nie normalizuje po budżecie — D2 "
-                "(wspólna waluta gradientów i próbek) jest nierozstrzygnięta.",
+        "note": "Niższa jest lepsza. Nie normalizuje po budżecie: gradienty "
+                "i próbki nie mają wspólnej waluty.",
     },
     "accuracy_v1": {
         "id": "accuracy_v1",

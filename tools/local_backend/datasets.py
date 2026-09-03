@@ -1,13 +1,10 @@
-"""Small public datasets and matching models for the local CPU backend.
+"""Public datasets and matching models for the local CPU backend.
 
-These are the toy datasets bundled with scikit-learn. They are deliberately NOT
-the project's own datasets, which are kept out of the repository so nobody can
-run the benchmark privately. Nothing here touches that material, and nothing
-here should ever be presented as a competition problem.
+These are the toy datasets bundled with scikit-learn, used to produce genuine
+convergence curves from genuine optimizers for development and testing.
 
-Their purpose is narrower and legitimate -- producing genuine convergence curves,
-from genuine optimizers, so the web layer can be built and judged against real
-data instead of invented numbers.
+They are not the benchmark's own datasets, which stay out of the repository, and
+they must never be presented as competition problems.
 """
 
 from dataclasses import dataclass
@@ -55,8 +52,7 @@ def build_dataset(name: str, seed: int = 0) -> tuple[TensorDataset, int, int]:
 
 
 class MLP(nn.Module):
-    """A deliberately small network: the point is a real optimizer trajectory on
-    a CPU in seconds, not a competitive result."""
+    """Small enough to produce a real optimizer trajectory on a CPU in seconds."""
 
     def __init__(self, in_features: int, classes: int, hidden: tuple[int, ...]):
         super().__init__()

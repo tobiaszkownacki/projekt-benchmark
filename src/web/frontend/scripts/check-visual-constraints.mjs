@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Greps for banned CSS patterns (gradients, glassmorphism, neon glow, heavy
-// shadows) so the rule is enforced by CI rather than reviewer memory.
+// Fails the build on banned CSS patterns: gradients, glassmorphism, neon glow
+// and heavy shadows.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 

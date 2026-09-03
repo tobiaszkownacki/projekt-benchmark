@@ -2,16 +2,13 @@
 #
 # Generates a working local .env and .seed-credentials from scratch.
 #
-# The point is that no secret ever has to travel. Every value produced here is
-# local to one developer's machine and disposable: the database and the broker
-# are containers on localhost, the session secret signs cookies nobody else
-# will ever hold. Sending these to a colleague would be strictly worse than
-# letting them run this script, because a shared secret is a secret with an
-# unknown blast radius and these have none.
+# Every value produced here is disposable and local to one machine: the database
+# and the broker are containers on localhost, and the session secret signs
+# cookies nobody else holds. No secret has to be shared to stand the stack up.
 #
-# The two things that genuinely cannot be generated -- PLGrid credentials and
-# the OAuth client secrets -- are deliberately left empty. Neither is needed to
-# run the control plane locally; see docs/LOCAL_SETUP.md for what that costs.
+# PLGrid credentials and the OAuth client secrets cannot be generated and are
+# left empty. Neither is needed to run the control plane locally; see
+# docs/LOCAL_SETUP.md.
 
 set -euo pipefail
 

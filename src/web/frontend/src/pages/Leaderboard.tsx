@@ -194,11 +194,10 @@ export function Leaderboard() {
               Aktywna formuła: {board.data.score_formula.label}. {board.data.score_formula.note}
             </p>
             <p className="small" style={{ marginBottom: 0 }}>
-              Wspólna waluta budżetu dla metod gradientowych i bezgradientowych
-              (decyzja D2) pozostaje nierozstrzygnięta i została świadomie
-              oddelegowana. Do czasu jej zamknięcia żadna z dostępnych formuł nie
-              miesza gradientów z próbkami — kolumny wymiarów stoją obok siebie,
-              a nie są sprowadzane do jednej liczby.
+              Metody gradientowe i bezgradientowe zużywają budżet w różnych
+              jednostkach, więc żadna z formuł nie miesza gradientów z próbkami —
+              kolumny wymiarów stoją obok siebie, a nie są sprowadzane do jednej
+              liczby.
             </p>
           </div>
         </>

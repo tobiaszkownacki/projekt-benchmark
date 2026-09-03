@@ -1,18 +1,11 @@
 #!/usr/bin/env python3
 """Run flake8 and fail only on violations that are not already known.
 
-Repairing the CI install step made 162 pre-existing flake8 violations visible
-for the first time -- they were always there, but both jobs died before the
-linter ran, so nobody ever saw them. They sit almost entirely in modules owned
-by other people (the queue services, the optimization engine, the Streamlit
-views), and rewriting them from a web-layer branch would be both out of scope
-and a merge conflict waiting to happen.
-
-Deleting them from the linter's scope would hide the debt. Failing the build on
-them would leave CI red and make the repair worthless. So they are recorded in
-.flake8-baseline, and this script fails only when a file gains a violation it
-did not have before. New code has to be clean; old code is visible and can be
-paid down by whoever owns it.
+The repository carries pre-existing violations across the queue services, the
+optimization engine and the Streamlit views. Excluding them would hide the debt
+and failing on them would leave CI permanently red, so they are recorded in
+.flake8-baseline and this script fails only when a file gains a violation it did
+not have before. New code has to be clean; old code stays visible.
 
     python scripts/lint_baseline.py            check
     python scripts/lint_baseline.py --update   re-record after fixing something
@@ -48,11 +41,9 @@ def run_flake8() -> collections.Counter:
             found[(match["file"].lstrip("./"), match["code"])] += 1
 
     # flake8 exits 1 both when it finds violations and when it cannot run at
-    # all -- an uninstalled linter and a clean tree are the same exit code with
-    # the same empty stdout. Without this, a broken install makes the gate pass
-    # green having checked nothing, which is the one failure a gate must not
-    # have. Distinguish on the output: a real run that exits non-zero always
-    # names at least one violation.
+    # all, so an uninstalled linter is indistinguishable from a clean tree by
+    # exit code alone. A real run that exits non-zero always names at least one
+    # violation, so the output is what decides.
     if result.returncode not in (0, 1) or (result.returncode == 1 and not found):
         raise Flake8Unusable(
             f"flake8 exited {result.returncode} without reporting a violation.\n"

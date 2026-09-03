@@ -7,17 +7,12 @@ import matplotlib.pyplot as plt
 from src.benchmark.runner import BenchmarkResult
 
 
-# Okabe-Ito, the standard colour-blind-safe qualitative set.
+# Okabe-Ito, the standard colour-blind-safe qualitative set, chosen so figures
+# stay readable in print.
 #
-# Replaces a 20-colour neon palette drawn on a black background. These figures
-# end up in papers and in front of reviewers, and the previous set had two
-# problems for that audience: several of the colours were indistinguishable
-# under the common forms of colour blindness, and on a light page a saturated
-# neon on black reads as a games console rather than as a result.
-#
-# Eight colours is a real constraint. Beyond eight series a line chart stops
-# being readable regardless of palette, so the colours cycle and the line style
-# changes with each cycle.
+# Eight colours is a hard limit: beyond eight series a line chart is unreadable
+# regardless of palette, so the colours cycle and the line style changes with
+# each cycle.
 _OKABE_ITO_PALETTE = [
     "#000000",  # black
     "#E69F00",  # orange

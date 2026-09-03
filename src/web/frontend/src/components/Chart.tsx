@@ -382,8 +382,7 @@ export function Chart({
             const off = hidden.has(entry.label);
             // A gradient-free optimizer never increments the gradient counter,
             // so on the gradient axis its whole series sits at x=0 and there is
-            // no curve to draw. Saying so is better than a legend entry
-            // pointing at nothing, which reads as a bug.
+            // no curve to draw.
             const flat = new Set(entry.x).size < 2;
             return (
               <button

@@ -1,16 +1,12 @@
-"""Populate a development database with genuinely computed runs.
+"""Populate a development database with computed runs.
 
-Every completed run in here was produced by driving the project's own
-ModelEvaluator with the project's own NumPy optimizers. The convergence curves,
-the gradient counts and the sample counts are measurements, not plausible-looking
-numbers -- which matters, because a chart drawn from invented data can be made to
-look like anything, and the point of a demonstration is that it cannot.
+Completed runs are produced by driving the project's ``ModelEvaluator`` with its
+NumPy optimizers over public scikit-learn data, so the convergence curves and
+the gradient and sample counters are measurements rather than generated numbers.
 
-Runs are also created in the states that have no data: waiting in the broker,
-waiting in SLURM, running, downloading, failed with a log, failed with no
-artifacts at all, and rejected by the validator. These are the states that
-never get built, and they are exactly where an interface is usually at its
-worst.
+Runs are also created in every state that carries no result data: waiting in the
+broker, waiting in SLURM, running, downloading, failed with a log, failed
+without artifacts, and rejected by the validator.
 """
 
 import argparse
@@ -38,16 +34,10 @@ from tools.local_backend.runner import (  # noqa: E402
     StopCondition,
 )
 
-# Model size is paired with optimizer family deliberately.
-#
-# CMA-ES maintains a covariance matrix over the parameter vector: O(n^2) to
-# store and O(n^3) to decompose. On a 1603-parameter network one run takes
-# minutes, and on a 54k-parameter one it is out of reach entirely, so the
-# population methods here sit on the smaller networks while the gradient
-# methods cover the wider ones.
-#
-# Differential Evolution keeps no covariance structure, so it scales to the
-# wider models and is used there instead.
+# Optimizer family is paired with model size by cost. CMA-ES holds a covariance
+# matrix over the parameter vector -- O(n^2) to store, O(n^3) to decompose -- so
+# it stays on the small networks. Differential Evolution keeps no covariance
+# structure and scales to the wider ones.
 MATRIX = [
     ("wine", "mlp-1x16", ["adam", "sgd", "cma-es", "des", "de"]),
     ("wine", "mlp-2x32", ["adam", "adamw", "lion", "rmsprop", "sgd_momentum"]),

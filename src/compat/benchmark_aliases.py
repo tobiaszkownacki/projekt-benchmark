@@ -1,32 +1,19 @@
-"""Import aliases that make ``src/benchmark_core`` importable again.
+"""Import aliases that make ``src/benchmark_core`` importable.
 
-The refactor in 891bf11..a9b0c6c moved the optimization engine from
-``src/benchmark/`` to ``src/benchmark_core/optimization_engine/`` but left every
-absolute import inside it pointing at the old layout. Roughly forty modules
-still say ``from benchmark.evaluator import ModelEvaluator`` or
-``from src.logging import Log``, so the package does not import at all -- the
-evaluator, the optimizers, the runner and the protocol validator are all present
-on main and all unreachable.
+The optimization engine lives in ``src/benchmark_core/optimization_engine/``
+while its own absolute imports still name the previous layout
+(``from benchmark.evaluator import ...``, ``from src.logging import ...``).
+Until those imports are rewritten, the package cannot be imported at all.
 
-The real fix is to rewrite those imports, and it should be done. It is not done
-here: the optimization engine module belongs to another team, and a forty-file
-rename landed from this branch would collide with whatever is in flight there.
-The defect is reported instead.
+This module binds the old names as synthetic packages whose ``__path__`` points
+at the current directories, so the existing modules import unmodified. Binding a
+``__path__`` rather than aliasing an already-imported module is what avoids the
+cycle: ``optimization_engine/__init__.py`` imports through the legacy names
+itself, so the alias has to resolve before that module is loaded.
 
-Meanwhile this module re-creates the old package names as views onto the
-directories that now hold the code, so the existing modules import unmodified.
-
-The names are bound as synthetic packages with a ``__path__`` rather than as
-aliases of already-imported modules, and that detail is what makes it work:
-``optimization_engine/__init__.py`` itself does ``from benchmark.runner import
-...``, so importing it in order to alias it needs the alias to exist first.
-Pointing ``benchmark.__path__`` straight at the directory lets ``benchmark.runner``
-resolve as an ordinary submodule and the cycle never forms.
-
-Call install() before importing anything from the engine, and import through the
-legacy names consistently -- mixing them with ``benchmark_core.*`` would load the
-same source twice under two identities. Delete this module once the imports
-upstream are fixed; it is a bridge with a known expiry, not a design.
+Call :func:`install` before importing anything from the engine, and import
+through the legacy names consistently -- mixing them with ``benchmark_core.*``
+loads the same source twice under two identities.
 """
 
 import importlib
@@ -64,16 +51,14 @@ def _bind_module(alias: str, real_name: str) -> None:
 def _install_cupy_stub() -> None:
     """Stand in for CuPy on a host that has no CUDA build of it.
 
-    ``evaluator_dtos/__init__.py`` imports the CuPy DTO unconditionally, and that
-    DTO does ``import cupy`` at module scope. The effect is that the entire
-    optimization engine -- including every pure-NumPy optimizer -- is unimportable
-    on any machine without a matching CuPy build, which is a second defect worth
-    reporting separately from the stale import paths.
+    ``evaluator_dtos/__init__.py`` imports the CuPy DTO unconditionally and that
+    DTO does ``import cupy`` at module scope, so the whole engine -- including
+    every pure-NumPy optimizer -- is unimportable without a matching CuPy build.
 
     The stub supplies only the names touched during import: an ``ndarray``
-    symbol used in annotations, and conversion entry points that raise if they
-    are ever actually called. Nothing silently produces wrong numbers -- a CuPy
-    code path under the stub fails loudly instead of pretending to work.
+    symbol used in annotations, and conversion entry points that raise when
+    called, so a CuPy code path under the stub fails loudly rather than
+    producing wrong numbers.
     """
     if "cupy" in sys.modules:
         return
@@ -121,8 +106,8 @@ def install(cupy_stub: bool = True) -> None:
     if str(_SRC) not in sys.path:
         sys.path.insert(0, str(_SRC))
 
-    # `benchmark` was the engine package; `src` was the repository root treated
-    # as a package. Neither exists on main any more.
+    # `benchmark` was the engine package, `src` the repository root treated as
+    # one. Neither directory exists under those names any more.
     if "benchmark" not in sys.modules:
         _synthetic_package("benchmark", _ENGINE)
     if "src" not in sys.modules:
@@ -131,8 +116,6 @@ def install(cupy_stub: bool = True) -> None:
     sys.modules.setdefault("src.benchmark", sys.modules["benchmark"])
 
     # Single modules that moved rather than whole packages.
-    # main renamed benchmark_core/logging.py to custom_logging.py; the alias
-    # follows it so the legacy name keeps resolving.
     _bind_module("src.logging", "benchmark_core.custom_logging")
     _bind_module("src.plotting", "benchmark_core.plotting")
 

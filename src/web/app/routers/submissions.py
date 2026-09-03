@@ -1,12 +1,11 @@
 """Submitting an optimizer: validate, record, queue.
 
-The whole point of validating before queueing is that a broken submission which
-reaches the cluster spends grant hours, and grant hours are the scarce resource.
-Thirty seconds of local CPU is the cheaper place to find out.
+Submissions are validated locally before they are queued, so a broken optimizer
+costs thirty seconds of CPU here instead of grant hours on the cluster.
 
-Nothing here publishes to the broker. The task row and the queue message are
-written in one transaction and drained by a separate process, so a broker outage
-cannot lose a submission and the API needs no broker credentials.
+Nothing in this module publishes to the broker. The task row and the queue
+message are written in one transaction and drained by a separate process, so a
+broker outage cannot lose a submission and the API needs no broker credentials.
 """
 
 from datetime import date
@@ -64,8 +63,6 @@ async def quota(user: CurrentUser = Depends(require_verified)) -> dict:
         "limit": settings.daily_submission_limit,
         "remaining": remaining,
         "used": settings.daily_submission_limit - remaining,
-        # D7 is open. The API reports a remainder in a shape that survives
-        # whichever model the team picks; only the number behind it changes.
         "model": "daily",
     }
 
@@ -220,8 +217,8 @@ async def get_submission(
         "validator_version": row["validator_version"],
         "created_at": row["created_at"],
         "task_ids": [str(t["task_id"]) for t in tasks],
-        # Source is returned only to people who may already read the run, and it
-        # is text for display. It is never imported and never executed.
+        # Returned as text for display to callers who may already read the run.
+        # Never imported, never executed.
         "source_code": row["source_code"],
     }
 

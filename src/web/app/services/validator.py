@@ -1,16 +1,15 @@
 """Runs the protocol validator against a submitted optimizer, in a sandbox.
 
-The point of validating before queueing is not politeness to the user -- a
-broken submission that reaches SLURM burns scarce grant hours. Catching it
-here costs 30 seconds of a local CPU.
+A broken submission that reaches SLURM burns grant hours; catching it here
+costs 30 seconds of local CPU.
 
-The code being checked is untrusted by construction: it is arbitrary Python
-written by a competition entrant. It therefore runs under heavy restrictions
--- no network, 2 GB, one CPU, read-only root, a writable tmpfs, a non-root
-user and a hard timeout -- and its own source is mounted read-only.
+The code being checked is untrusted by construction -- arbitrary Python written
+by a competition entrant -- so it runs with no network, 2 GB, one CPU, a
+read-only root with a writable tmpfs, a non-root user and a hard timeout, and
+its own source mounted read-only.
 
-The validator's output is a readable log, which is precisely what /submit
-needs to show. It is returned verbatim rather than summarised.
+The validator log is returned verbatim rather than summarised, because /submit
+displays it to the participant.
 """
 
 import asyncio

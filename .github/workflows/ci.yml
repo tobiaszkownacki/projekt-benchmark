@@ -29,21 +29,17 @@ jobs:
       - name: Install lint tooling
         run: uv sync --only-group ci
 
-      # Fails on new violations only. The repository carries 160 pre-existing
-      # ones, recorded in .flake8-baseline: repairing the install step made them
-      # visible for the first time, they belong to modules owned by other
-      # people, and neither hiding them nor leaving the build red is useful.
+      # Fails on new violations only. Pre-existing ones are recorded in
+      # .flake8-baseline.
       - name: Run flake8
         run: uv run python scripts/lint_baseline.py
 
   test:
     runs-on: ubuntu-latest
 
-    # Thirty of the sixty-nine tests skip themselves when TEST_DATABASE_URL is
-    # unset, and those thirty are the ones worth having: the SPA catch-all,
-    # which is the most common way to break a deep link, and the authorisation
-    # boundary on artifacts. Without a database here the job reported success
-    # while never running them.
+    # Thirty of the tests skip themselves without TEST_DATABASE_URL, including
+    # the SPA catch-all and the authorisation boundary on artifacts. A database
+    # is needed here or the job passes without running them.
     services:
       postgres:
         image: postgres:16-alpine

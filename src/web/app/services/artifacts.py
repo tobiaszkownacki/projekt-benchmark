@@ -1,21 +1,18 @@
 """Safe access to a single run's artifact directory.
 
-This module is the only barrier between a logged-in participant's browser and
-the datasets: anyone holding them can run the benchmark privately, which would
-undermine the competition. The threat model is therefore not an anonymous
-scanner but a legitimate, verified entrant with a valid task_id.
+This module is the only barrier between a participant's browser and the
+datasets, so the threat model is a legitimate, verified entrant holding a valid
+task_id rather than an anonymous scanner.
 
-Two rules shape everything below:
+Two invariants shape everything below:
 
-1.  Textual checks are not the authority; ``realpath`` is. Rejecting ".." by
-    string comparison misses URL encoding, overlapping prefixes and symlinks, so
-    the string checks here are only a cheap early exit and the containment
-    decision is always made on the resolved path.
-2.  The check and the open must not be separable. Between resolving a path and
-    reading it, the downloader can write into the same directory -- and ``scp -r``
-    happily carries symlinks over from the cluster, so a hostile link can appear
-    with no attacker present on this side. Opening with O_NOFOLLOW and stat-ing
-    the descriptor rather than the path closes that window.
+1.  ``realpath`` decides containment, not string comparison. Rejecting ".." by
+    substring misses URL encoding, overlapping prefixes and symlinks, so the
+    textual checks are only a cheap early exit.
+2.  The check and the open are not separable. The downloader writes into the
+    same directory while a request is in flight, and ``scp -r`` carries symlinks
+    over from the cluster, so a hostile link can appear with no attacker on this
+    side. Opening with O_NOFOLLOW and stat-ing the descriptor closes that window.
 """
 
 import os

@@ -1,17 +1,12 @@
-"""Bridge to the existing authentication code in src/frontend.
+"""Bridge to the authentication code in ``src/frontend``.
 
-Reuses ``auth/repository.py`` rather than reimplementing password hashing,
-the OAuth upsert rules and the approval flow.
+Reuses ``auth/repository.py`` rather than reimplementing password hashing, the
+OAuth upsert rules and the approval flow.
 
-Two things made that reuse impossible before this branch and are now fixed at
-the source: four modules imported a package named ``frontend`` that does not
-exist, and the data layer was wired to ``st.cache_resource``. With those gone,
-these modules import cleanly outside Streamlit.
-
-What remains is that they are synchronous. FastAPI already runs plain ``def``
-dependencies and endpoints in a worker thread, so the calls here are wrapped in
-``asyncio.to_thread`` and the blocking pool never touches the event loop. User
-mutations are rare; the hot read paths use the async pool directly.
+Those modules are synchronous. FastAPI runs plain ``def`` dependencies in a
+worker thread anyway, so the calls here go through ``asyncio.to_thread`` and the
+blocking pool never touches the event loop. User mutations are rare; the hot
+read paths use the async pool directly.
 """
 
 import asyncio

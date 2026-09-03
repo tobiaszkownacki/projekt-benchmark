@@ -1,9 +1,8 @@
 """Operational views: accounts, queue depth, cluster state, orphans, budget.
 
-Everything here reads. The queue, the poller and the cluster connection belong
-to other people's modules, and this panel observes them through interfaces they
-already expose -- the RabbitMQ management API and the tasks table -- rather than
-reaching into their code.
+Every endpoint here is read-only. The queue, the poller and the cluster
+connection are observed through the interfaces they already expose -- the
+RabbitMQ management API and the tasks table -- never by importing their code.
 """
 
 import asyncio
@@ -173,9 +172,8 @@ async def queue(_: CurrentUser = Depends(require_admin)) -> dict:
         "slurm": {
             "jobs": slurm,
             # sinfo/sacct run inside the poller's container, which holds the
-            # only SSH credentials. Surfacing them here means agreeing an
-            # interface with that module rather than opening a second connection
-            # to the cluster from the web layer.
+            # only SSH credentials; the web layer opens no second connection to
+            # the cluster.
             "cluster_probe": {
                 "available": False,
                 "reason": "sinfo/sacct są dostępne wyłącznie z kontenera pollera "

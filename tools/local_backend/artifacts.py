@@ -1,10 +1,9 @@
 """Writes the artifact directory a finished run leaves behind.
 
-Shape follows what BenchmarkRunner and AthenaDownloader actually produce --
-reports/ with the analyzer's plots, the run log as CSV, the SLURM stdout file --
-plus two additions: metadata.json, so the directory describes itself, and a
-copy of the submitted optimizer, so an artifact can be tied to the exact code
-that produced it.
+The layout follows what ``BenchmarkRunner`` and ``AthenaDownloader`` produce --
+``reports/`` with the analyzer's plots, the run log as CSV, the SLURM stdout
+file -- plus ``metadata.json`` so the directory describes itself and a copy of
+the submitted optimizer so an artifact can be tied to the code that produced it.
 """
 
 import csv
@@ -17,10 +16,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-# Okabe-Ito. Chosen over the engine's current 20-colour neon palette because
-# these figures end up in papers: this set stays distinguishable for the common
-# forms of colour blindness, and line style carries the same information again
-# so nothing is lost in greyscale print.
+# Okabe-Ito: distinguishable under the common forms of colour blindness. Line
+# style repeats the same distinction so nothing is lost in greyscale print.
 OKABE_ITO = [
     "#000000", "#E69F00", "#56B4E9", "#009E73",
     "#0072B2", "#D55E00", "#CC79A7", "#F0E442",
@@ -60,11 +57,9 @@ def write_run_artifacts(
     colour = OKABE_ITO[1]
     epochs = result.epoch_history or list(range(1, len(result.loss_history) + 1))
 
-    # A gradient-free method never calls evaluate_with_grad(), so its gradient
-    # counter stays at zero for the whole run and a "loss against gradients"
-    # figure collapses to a vertical line at x=0. Drawing it anyway produces an
-    # artifact that looks like a broken plot rather than like the correct answer,
-    # so those two figures are omitted and metadata.json records why.
+    # A gradient-free method never calls evaluate_with_grad(), so a "loss against
+    # gradients" figure would collapse to a vertical line at x=0. Those figures
+    # are omitted and metadata.json records the omission.
     uses_gradients = bool(result.gradient_history) and result.gradient_history[-1] > 0
 
     if result.loss_history:

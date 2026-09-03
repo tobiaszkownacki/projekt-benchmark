@@ -8,10 +8,9 @@ from pathlib import Path
 def find_source_root() -> Path:
     """Locate the directory that contains ``src/benchmark_core``.
 
-    Counting parent directories breaks between layouts: in the repository this
-    package sits at src/web/app/, and in the image it sits at /app/app/, so a
-    fixed index is right in one and an IndexError in the other. Searching
-    upwards for a landmark works in both, and SOURCE_ROOT overrides it outright.
+    The package sits at ``src/web/app/`` in the repository and at ``/app/app/``
+    in the image, so a fixed number of parent hops is wrong in one of the two.
+    ``SOURCE_ROOT`` overrides the search.
     """
     override = os.environ.get("SOURCE_ROOT")
     if override:
@@ -65,14 +64,11 @@ class Settings:
     session_max_age: int = field(default_factory=lambda: _int("SESSION_MAX_AGE", 60 * 60 * 12))
     secure_cookies: bool = field(default_factory=lambda: _bool("SECURE_COOKIES", False))
 
-    # D4 is open: are results public, or owner-only? The whole policy is this one
-    # flag, read in exactly one place (services/authz.can_read_run), so closing
-    # D4 is a configuration change rather than an audit of every endpoint.
+    # Read in exactly one place (services/authz.can_read_run), so switching
+    # between public and owner-only results is a configuration change rather
+    # than an audit of every endpoint.
     public_results: bool = field(default_factory=lambda: _bool("PUBLIC_RESULTS", True))
 
-    # D7 is open too. The API enforces a daily submission ceiling and reports the
-    # remainder; which model the team picks (per-day, credits, machine classes)
-    # changes this number, not the shape of the response.
     daily_submission_limit: int = field(
         default_factory=lambda: _int("DAILY_SUBMISSION_LIMIT", 3)
     )

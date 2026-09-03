@@ -17,7 +17,7 @@ have nothing in common except the word:
 |---|---|---|
 | **disposable, local** | `POSTGRES_PASSWORD`, `RABBITMQ_PASSWORD`, `SESSION_SECRET`, seed passwords | generate your own, below |
 | **personal, cluster** | `ATHENA_HOST/USER/PASSWORD` | your own PLGrid account; never shared |
-| **shared, real** | Google/Microsoft OAuth, reCAPTCHA | **not needed locally** -- see §6 |
+| **shared, real** | Google/Microsoft OAuth, reCAPTCHA | **not needed locally** |
 
 The first kind is the one people are tempted to paste into a chat. Don't: a
 password for a container listening on your own localhost protects nothing, and
@@ -73,11 +73,10 @@ curl -s localhost:8080/healthz
 Without this the site is correct but empty, and most of it cannot be judged.
 The seeder drives the project's own `ModelEvaluator` with the project's own
 NumPy optimizers on three public scikit-learn datasets, so the convergence
-curves and budget counters are measurements rather than plausible-looking
-numbers. It also creates one run in each of the states §11.3 lists -- waiting in
-the broker, waiting in SLURM, running, downloading, failed with a log, failed
-with no artifacts, rejected by the validator -- because otherwise half the
-interface never renders.
+curves and budget counters are measured rather than generated. It also creates
+one run in each remaining state -- waiting in the broker, waiting in SLURM,
+running, downloading, failed with a log, failed with no artifacts, rejected by
+the validator -- because otherwise half the interface never renders.
 
 ```bash
 uv sync --group frontend               # torch, scikit-learn, psycopg
@@ -111,8 +110,8 @@ Accounts it creates -- passwords are the two values in your `.seed-credentials`:
 1. **Register** a new account. You land on "waiting for approval" -- registering
    does not grant access. Log in as the admin, go to `/admin`, approve it.
 2. **`/leaderboard`** -- switch between the two scoring formulas and watch the
-   ranking change. The note under each says it does not normalise by budget,
-   because decision D2 is open.
+   ranking change. The note under each explains that it does not normalise by
+   budget.
 3. **`/runs`** -- filter by dataset, model, optimizer, family. Open one run:
    convergence curves, `gradient_count`, `database_reaches`, stop reason.
 4. **`/compare`** -- put several runs side by side, export CSV.
@@ -169,7 +168,7 @@ Frontend:
 ```bash
 cd src/web/frontend && npm ci
 npm run lint
-npm run lint:css                         # enforces the §14 visual rules
+npm run lint:css                         # rejects gradients, glow and heavy shadows
 npm run build
 ```
 

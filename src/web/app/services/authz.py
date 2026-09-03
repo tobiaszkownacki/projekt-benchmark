@@ -1,8 +1,7 @@
-"""Who may see a run.
+"""Read and write authorization for runs, decided in one place.
 
-Whether results are public or owner-only is a pending decision, so the policy
-lives in one function behind one flag (PUBLIC_RESULTS) instead of being spread
-across endpoints as a repeated condition.
+PUBLIC_RESULTS switches the whole deployment between public and owner-only
+results without touching any endpoint.
 """
 
 from typing import Optional

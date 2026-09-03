@@ -1,18 +1,13 @@
 """A local CPU execution backend for the benchmark.
 
-Uses the multi-backend seam already present in ``shared/interfaces/`` to
-unblock testing the web layer without going through SLURM.
+Uses the multi-backend seam in ``shared/interfaces/`` to run the benchmark
+without SLURM.
 
-The repository's own ``BenchmarkRunner`` cannot run here: it imports
-``src.dataset`` and ``src.config``, neither of which is present on main, since
-the datasets are deliberately absent and the module that indexes them went
-with them. Rather than invent convergence curves for the interface to display,
-this runner reuses the parts that do exist -- the real ``ModelEvaluator`` and
-the real NumPy optimizers -- over public scikit-learn data.
-
-Consequently the numbers the site displays are measured, not fabricated: the
-gradient and sample counters are incremented by the project's own evaluator, on
-its own terms, exactly as they would be on the cluster.
+``BenchmarkRunner`` cannot be used here: it imports ``src.dataset`` and
+``src.config``, which are absent along with the datasets they index. This runner
+drives the real ``ModelEvaluator`` and the real NumPy optimizers over public
+scikit-learn data instead, so the gradient and sample counters are incremented
+by the project's own evaluator exactly as they would be on the cluster.
 """
 
 import sys

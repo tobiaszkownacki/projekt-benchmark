@@ -1,10 +1,9 @@
 -- Scalars and convergence series for a finished run.
 --
--- stop_reason mirrors the StopReason enum actually emitted by BenchmarkResult
--- (optimization_engine/runner.py:28-33). Note that metrics/stop_metrics.py
--- declares a second, differently-named StopReason; the two disagree. This
--- schema follows the one that reaches a result, and the divergence is reported
--- as a defect rather than silently reconciled here.
+-- stop_reason mirrors the StopReason enum emitted by BenchmarkResult in
+-- optimization_engine/runner.py. metrics/stop_metrics.py declares a second enum
+-- of the same name with different values; this schema follows the one that
+-- reaches a result.
 
 DO $$ BEGIN
     CREATE TYPE stop_reason_t AS ENUM (

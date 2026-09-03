@@ -118,10 +118,9 @@ async def compare(
 
     # Pairwise differences of the final median, with n on both sides.
     #
-    # No p-values. Which test and how many repetitions is an open team decision,
-    # and a test without correction for multiple comparisons is exactly the error
-    # this audience notices first. The schema records a seed per run, so the
-    # analysis is possible the moment the decision is made.
+    # No p-values: without a fixed repetition count and a correction for
+    # multiple comparisons the result would mislead. A seed is recorded per run,
+    # so the analysis stays possible outside this service.
     finals = []
     for entry in series:
         values = [v for v in entry["median"] if v is not None]
@@ -150,10 +149,10 @@ async def compare(
         "missing": len(ids) - len(visible),
         "statistical_test": {
             "available": False,
-            "note": "Test istotności nie jest liczony: liczba powtórzeń i wybór "
-                    "testu (D3) pozostają nierozstrzygnięte, a test bez poprawki "
-                    "na wielokrotne porównania byłby błędem. Schemat zapisuje "
-                    "ziarno per run, więc analiza jest możliwa po decyzji.",
+            "note": "Test istotności nie jest liczony: bez ustalonej liczby "
+                    "powtórzeń i poprawki na wielokrotne porównania wynik byłby "
+                    "mylący. Ziarno jest zapisywane per run, więc analiza "
+                    "pozostaje możliwa poza serwisem.",
         },
     }
 

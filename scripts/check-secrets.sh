@@ -2,11 +2,9 @@
 #
 # Refuses a commit that would place a secret in the repository.
 #
-# .gitignore already covers the files we know about, and nothing sensitive has
-# ever been committed here. This guards the case .gitignore cannot: a value
-# pasted into a file that is meant to be tracked -- a README, a compose
-# override, a test fixture. That is how secrets usually leak, not through the
-# file everyone remembers to ignore.
+# .gitignore covers whole files. This guards the case it cannot: a secret pasted
+# into a file that is meant to be tracked -- a README, a compose override, a
+# test fixture.
 #
 # Install as a hook:  ./scripts/check-secrets.sh --install
 # Run by hand:        ./scripts/check-secrets.sh
