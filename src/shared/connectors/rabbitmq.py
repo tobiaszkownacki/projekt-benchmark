@@ -3,7 +3,7 @@ import os
 
 import pika
 
-from pipeline.connectors.base_connector import MessageBrokerConnector
+from shared.connectors.base import MessageBrokerConnector
 
 
 class RabbitMQConnector(MessageBrokerConnector):

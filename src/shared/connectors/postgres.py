@@ -2,7 +2,7 @@ import os
 
 import psycopg
 
-from pipeline.connectors.base_connector import DatabaseConnector
+from shared.connectors.base import DatabaseConnector
 
 
 class PostGresConnector(DatabaseConnector):
