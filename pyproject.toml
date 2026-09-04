@@ -48,6 +48,13 @@ athena-worker = [
     "pika>=1.4.4",
     "psycopg[binary]>=3.3.4",
 ]
+# Linting and test tooling. Deliberately a dependency group rather than an
+# optional extra: these are development dependencies, not an opt-in feature of
+# the package, and the repository already uses groups for the Athena services.
+ci = [
+    "flake8>=7",
+    "pytest>=8",
+]
 frontend = [
     "authlib>=1.7.2",
     "bcrypt>=4.1",
@@ -83,3 +90,9 @@ select = [
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
 "src/frontend/home.py" = ["E402"]
+# Depends(), Query() and Path() in a signature default are how FastAPI declares
+# dependencies; B008 flags every one of them.
+"src/web/app/routers/*.py" = ["B008"]
+"src/web/app/security.py" = ["B008"]
+# The Streamlit path bootstrap has to run before the sibling imports.
+"src/web/app/legacy_auth.py" = ["E402"]
