@@ -15,7 +15,7 @@ import os
 import shutil
 import sys
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import psycopg
@@ -82,14 +82,28 @@ def ensure_users(conn) -> dict[str, uuid.UUID]:
     from auth.passwords import hash_password
 
     people = [
-        ("admin@benchmark.pw.edu.pl", "admin", "Administrator systemu",
-         "Politechnika Warszawska", "SEED_ADMIN_PASSWORD"),
-        ("badacz@benchmark.pw.edu.pl", "verified", "Badacz testowy",
-         "Zakład Sztucznej Inteligencji EIT", "SEED_USER_PASSWORD"),
-        ("gosc@benchmark.pw.edu.pl", "verified", "Uczestnik konkursu",
-         "Uniwersytet Jagielloński", "SEED_USER_PASSWORD"),
-        ("nowy@benchmark.pw.edu.pl", "unverified", "Konto oczekujące",
-         "Politechnika Wrocławska", "SEED_USER_PASSWORD"),
+        (
+            "admin@benchmark.pw.edu.pl",
+            "admin",
+            "Administrator systemu",
+            "Politechnika Warszawska",
+            "SEED_ADMIN_PASSWORD",
+        ),
+        (
+            "badacz@benchmark.pw.edu.pl",
+            "verified",
+            "Badacz testowy",
+            "Zakład Sztucznej Inteligencji EIT",
+            "SEED_USER_PASSWORD",
+        ),
+        (
+            "gosc@benchmark.pw.edu.pl",
+            "verified",
+            "Uczestnik konkursu",
+            "Uniwersytet Jagielloński",
+            "SEED_USER_PASSWORD",
+        ),
+        ("nowy@benchmark.pw.edu.pl", "unverified", "Konto oczekujące", "Politechnika Wrocławska", "SEED_USER_PASSWORD"),
     ]
 
     identifiers: dict[str, uuid.UUID] = {}
@@ -98,8 +112,7 @@ def ensure_users(conn) -> dict[str, uuid.UUID]:
             password = os.environ.get(env_var)
             if not password:
                 raise SystemExit(
-                    f"{env_var} is not set. Export it before seeding; this script "
-                    "will not invent a password."
+                    f"{env_var} is not set. Export it before seeding; this script will not invent a password."
                 )
             cur.execute(
                 """
@@ -113,8 +126,7 @@ def ensure_users(conn) -> dict[str, uuid.UUID]:
                         password_hash = EXCLUDED.password_hash
                 RETURNING id
                 """,
-                (email, hash_password(password), role, name, organisation,
-                 "Konto testowe utworzone przez seed."),
+                (email, hash_password(password), role, name, organisation, "Konto testowe utworzone przez seed."),
             )
             identifiers[email] = cur.fetchone()["id"]
     conn.commit()
@@ -131,9 +143,17 @@ def _submission(conn, user_id, name, kind, builtin, family, source, log, status)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'seed-1', NOW())
             RETURNING submission_id
             """,
-            (user_id, name, kind, builtin, source,
-             __import__("hashlib").sha256(source.encode()).hexdigest() if source else None,
-             family, status, log),
+            (
+                user_id,
+                name,
+                kind,
+                builtin,
+                source,
+                __import__("hashlib").sha256(source.encode()).hexdigest() if source else None,
+                family,
+                status,
+                log,
+            ),
         )
         return cur.fetchone()["submission_id"]
 
@@ -212,9 +232,17 @@ def _store_result(conn, task_id, result) -> None:
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (task_id) DO NOTHING
             """,
-            (task_id, result.final_loss, result.final_accuracy, result.gradient_count,
-             result.database_reaches, result.total_steps, result.total_epochs,
-             result.wall_time_seconds, result.stop_reason),
+            (
+                task_id,
+                result.final_loss,
+                result.final_accuracy,
+                result.gradient_count,
+                result.database_reaches,
+                result.total_steps,
+                result.total_epochs,
+                result.wall_time_seconds,
+                result.stop_reason,
+            ),
         )
         cur.execute(
             """
@@ -224,9 +252,15 @@ def _store_result(conn, task_id, result) -> None:
             VALUES (%s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (task_id) DO NOTHING
             """,
-            (task_id, result.epoch_history, result.loss_history,
-             result.accuracy_history, result.gradient_history,
-             result.database_reaches_history, result.time_history),
+            (
+                task_id,
+                result.epoch_history,
+                result.loss_history,
+                result.accuracy_history,
+                result.gradient_history,
+                result.database_reaches_history,
+                result.time_history,
+            ),
         )
 
 
@@ -260,7 +294,7 @@ def main() -> None:
                 shutil.rmtree(child, ignore_errors=True)
 
     seeds = SEEDS[: args.seeds]
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     completed = 0
 
     for dataset, model, optimizers in MATRIX:
@@ -269,7 +303,12 @@ def main() -> None:
             family = LOCAL_OPTIMIZERS[optimizer_key][2]
             owner = researcher if optimizers.index(optimizer_key) % 2 == 0 else guest
             submission_id = _submission(
-                conn, owner, optimizer_key, "builtin", optimizer_key, family,
+                conn,
+                owner,
+                optimizer_key,
+                "builtin",
+                optimizer_key,
+                family,
                 None,
                 f"Optymalizator wbudowany '{optimizer_key}' — kod pochodzi z "
                 f"repozytorium, walidacja protokołu pominięta.",
@@ -279,28 +318,41 @@ def main() -> None:
             for seed in seeds:
                 if seed not in runner_cache:
                     runner_cache[seed] = LocalBenchmarkRunner(
-                        dataset_name=dataset, model_name=model,
+                        dataset_name=dataset,
+                        model_name=model,
                         stop_condition=StopCondition(max_epochs=args.epochs),
-                        batch_size=32, seed=seed,
+                        batch_size=32,
+                        seed=seed,
                     )
                 result = runner_cache[seed].run(optimizer_key)
                 created = now - timedelta(hours=len(seeds) * 3, minutes=seed)
 
                 task_id = _insert_task(
                     conn,
-                    queue_name="ATHENA_WORKER_QUEUE", executor_name="local-cpu",
-                    submitted_by=owner, dataset=dataset,
+                    queue_name="ATHENA_WORKER_QUEUE",
+                    executor_name="local-cpu",
+                    submitted_by=owner,
+                    dataset=dataset,
                     run_name=f"{optimizer_key}-{dataset}-s{seed}",
                     optimizer_params=Jsonb({"optimizer": optimizer_key, "seed": seed}),
-                    submission_id=submission_id, seed=seed, suite="test",
-                    model_name=model, optimizer_name=optimizer_key, family=family,
+                    submission_id=submission_id,
+                    seed=seed,
+                    suite="test",
+                    model_name=model,
+                    optimizer_name=optimizer_key,
+                    family=family,
                     stop_condition=Jsonb({"max_epochs": args.epochs}),
-                    task_status="pending", artifact_status="absent",
-                    artifact_root=None, artifact_bytes=0, artifact_files=0,
+                    task_status="pending",
+                    artifact_status="absent",
+                    artifact_root=None,
+                    artifact_bytes=0,
+                    artifact_files=0,
                     executor_task_id=str(4700000 + completed),
-                    error_message=None, runner_version=RUNNER_VERSION,
+                    error_message=None,
+                    runner_version=RUNNER_VERSION,
                     gpu_model="CPU (local backend)",
-                    created_at=created, queued_at=created,
+                    created_at=created,
+                    queued_at=created,
                     started_at=created + timedelta(seconds=40),
                     completed_at=created + timedelta(seconds=40 + result.wall_time_seconds),
                     updated_at=created + timedelta(seconds=60),
@@ -308,14 +360,16 @@ def main() -> None:
 
                 root = downloads / str(task_id)
                 files, total = write_run_artifacts(
-                    root, result,
+                    root,
+                    result,
                     optimizer_source=None,
                     slurm_job_id=str(4700000 + completed),
                     extra_metadata={
-                        "task_id": str(task_id), "runner_version": RUNNER_VERSION,
-                        "backend": "local-cpu", "suite": "test",
-                        "note": "Dane publiczne scikit-learn. To NIE są zbiory "
-                                "konkursowe projektu.",
+                        "task_id": str(task_id),
+                        "runner_version": RUNNER_VERSION,
+                        "backend": "local-cpu",
+                        "suite": "test",
+                        "note": "Dane publiczne scikit-learn. To NIE są zbiory konkursowe projektu.",
                     },
                 )
                 with conn.cursor() as cur:
@@ -325,47 +379,72 @@ def main() -> None:
                         (str(root), files, total, task_id),
                     )
                 _walk_states(
-                    conn, task_id, created,
+                    conn,
+                    task_id,
+                    created,
                     created + timedelta(seconds=40),
                     created + timedelta(seconds=40 + result.wall_time_seconds),
                 )
                 _store_result(conn, task_id, result)
                 completed += 1
-                print(f"  {dataset}/{model} {optimizer_key} seed={seed} "
-                      f"loss={result.final_loss:.4f} grads={result.gradient_count} "
-                      f"samples={result.database_reaches}")
+                print(
+                    f"  {dataset}/{model} {optimizer_key} seed={seed} "
+                    f"loss={result.final_loss:.4f} grads={result.gradient_count} "
+                    f"samples={result.database_reaches}"
+                )
             conn.commit()
 
     # A final-suite slice, so the interface can show that the competition run and
     # the practice run are different things.
-    final_runner = LocalBenchmarkRunner(
-        "wine", "mlp-1x16", StopCondition(max_epochs=args.epochs), 32, 7
-    )
+    final_runner = LocalBenchmarkRunner("wine", "mlp-1x16", StopCondition(max_epochs=args.epochs), 32, 7)
     final_submission = _submission(
-        conn, researcher, "cma-es", "builtin", "cma-es", "gradient_free", None,
-        "Przebieg finałowy.", "accepted",
+        conn,
+        researcher,
+        "cma-es",
+        "builtin",
+        "cma-es",
+        "gradient_free",
+        None,
+        "Przebieg finałowy.",
+        "accepted",
     )
     for optimizer_key in ("adam", "cma-es"):
         result = final_runner.run(optimizer_key)
         task_id = _insert_task(
-            conn, queue_name="ATHENA_WORKER_QUEUE", executor_name="local-cpu",
-            submitted_by=researcher, dataset="wine",
+            conn,
+            queue_name="ATHENA_WORKER_QUEUE",
+            executor_name="local-cpu",
+            submitted_by=researcher,
+            dataset="wine",
             run_name=f"final-{optimizer_key}-wine",
             optimizer_params=Jsonb({"optimizer": optimizer_key, "seed": 7}),
-            submission_id=final_submission, seed=7, suite="final",
-            model_name="mlp-1x16", optimizer_name=optimizer_key,
+            submission_id=final_submission,
+            seed=7,
+            suite="final",
+            model_name="mlp-1x16",
+            optimizer_name=optimizer_key,
             family=LOCAL_OPTIMIZERS[optimizer_key][2],
             stop_condition=Jsonb({"max_epochs": args.epochs}),
-            task_status="pending", artifact_status="absent", artifact_root=None,
-            artifact_bytes=0, artifact_files=0, executor_task_id=str(4800001),
-            error_message=None, runner_version=RUNNER_VERSION,
-            gpu_model="CPU (local backend)", created_at=now - timedelta(hours=2),
-            queued_at=now - timedelta(hours=2), started_at=now - timedelta(hours=2),
-            completed_at=now - timedelta(hours=1), updated_at=now - timedelta(hours=1),
+            task_status="pending",
+            artifact_status="absent",
+            artifact_root=None,
+            artifact_bytes=0,
+            artifact_files=0,
+            executor_task_id=str(4800001),
+            error_message=None,
+            runner_version=RUNNER_VERSION,
+            gpu_model="CPU (local backend)",
+            created_at=now - timedelta(hours=2),
+            queued_at=now - timedelta(hours=2),
+            started_at=now - timedelta(hours=2),
+            completed_at=now - timedelta(hours=1),
+            updated_at=now - timedelta(hours=1),
         )
         root = downloads / str(task_id)
         files, total = write_run_artifacts(
-            root, result, slurm_job_id="4800001",
+            root,
+            result,
+            slurm_job_id="4800001",
             extra_metadata={"task_id": str(task_id), "suite": "final"},
         )
         with conn.cursor() as cur:
@@ -374,8 +453,7 @@ def main() -> None:
                                     artifact_bytes=%s WHERE task_id=%s""",
                 (str(root), files, total, task_id),
             )
-        _walk_states(conn, task_id, now - timedelta(hours=2),
-                     now - timedelta(hours=2), now - timedelta(hours=1))
+        _walk_states(conn, task_id, now - timedelta(hours=2), now - timedelta(hours=2), now - timedelta(hours=1))
         _store_result(conn, task_id, result)
     conn.commit()
 
@@ -387,7 +465,13 @@ def main() -> None:
 def seed_states(conn, downloads: Path, researcher, guest, now) -> None:
     """The states with no results: queued, running, failed, rejected."""
     uploaded = _submission(
-        conn, guest, "sign-sgd", "uploaded", None, "gradient", SAMPLE_OPTIMIZER,
+        conn,
+        guest,
+        "sign-sgd",
+        "uploaded",
+        None,
+        "gradient",
+        SAMPLE_OPTIMIZER,
         "PASSED Module and class loaded successfully\n"
         "   └─ Found custom class: SignSgdOptimizer\n"
         "PASSED Protocol compliance check (Duck Typing)\n"
@@ -403,7 +487,12 @@ def seed_states(conn, downloads: Path, researcher, guest, now) -> None:
         "accepted",
     )
     rejected = _submission(
-        conn, guest, "broken-optimizer", "uploaded", None, "gradient",
+        conn,
+        guest,
+        "broken-optimizer",
+        "uploaded",
+        None,
+        "gradient",
         "class Broken:\n    def step(self, evaluator):\n        return 0\n",
         "PASSED Module and class loaded successfully\n"
         "   └─ Found custom class: Broken\n"
@@ -416,66 +505,133 @@ def seed_states(conn, downloads: Path, researcher, guest, now) -> None:
         "rejected",
     )
 
-    common = dict(
-        queue_name="ATHENA_WORKER_QUEUE", executor_name="athena",
-        optimizer_params=Jsonb({}), suite="test", model_name="mlp-3x64",
-        stop_condition=Jsonb({"max_epochs": 12}), artifact_root=None,
-        artifact_bytes=None, artifact_files=None, runner_version=None,
-        gpu_model="NVIDIA A100-SXM4-40GB",
-    )
+    common = {
+        "queue_name": "ATHENA_WORKER_QUEUE",
+        "executor_name": "athena",
+        "optimizer_params": Jsonb({}),
+        "suite": "test",
+        "model_name": "mlp-3x64",
+        "stop_condition": Jsonb({"max_epochs": 12}),
+        "artifact_root": None,
+        "artifact_bytes": None,
+        "artifact_files": None,
+        "runner_version": None,
+        "gpu_model": "NVIDIA A100-SXM4-40GB",
+    }
 
     states = [
-        dict(run_name="sign-sgd-digits-queued", task_status="pending",
-             artifact_status="absent", executor_task_id=None, error_message=None,
-             submitted_by=guest, submission_id=uploaded, seed=11,
-             optimizer_name="sign-sgd", family="gradient", dataset="digits",
-             minutes=3),
-        dict(run_name="sign-sgd-digits-slurm", task_status="pending",
-             artifact_status="absent", executor_task_id="4812004",
-             error_message=None, submitted_by=guest, submission_id=uploaded,
-             seed=23, optimizer_name="sign-sgd", family="gradient",
-             dataset="digits", minutes=26),
-        dict(run_name="sign-sgd-digits-running", task_status="running",
-             artifact_status="absent", executor_task_id="4812005",
-             error_message=None, submitted_by=guest, submission_id=uploaded,
-             seed=42, optimizer_name="sign-sgd", family="gradient",
-             dataset="digits", minutes=64),
-        dict(run_name="cma-es-wine-downloading", task_status="completed",
-             artifact_status="downloading", executor_task_id="4812006",
-             error_message=None, submitted_by=researcher, submission_id=None,
-             seed=57, optimizer_name="cma-es", family="gradient_free",
-             dataset="wine", minutes=90),
-        dict(run_name="de-digits-failed", task_status="failed",
-             artifact_status="ready", executor_task_id="4812007",
-             error_message="RuntimeError: CUDA out of memory. Tried to allocate "
-                           "2.41 GiB (GPU 0; 39.39 GiB total capacity)",
-             submitted_by=researcher, submission_id=None, seed=71,
-             optimizer_name="de", family="gradient_free", dataset="digits",
-             minutes=140),
-        dict(run_name="des-wine-no-artifacts", task_status="failed",
-             artifact_status="empty", executor_task_id="4812008",
-             error_message="No files found under /net/people/plgrid/plggolem/"
-                           "projekt-benchmark/reports/task_...",
-             submitted_by=researcher, submission_id=None, seed=89,
-             optimizer_name="des", family="gradient_free", dataset="wine",
-             minutes=200),
-        dict(run_name="broken-optimizer-rejected", task_status="failed",
-             artifact_status="absent", executor_task_id=None,
-             error_message="Zgłoszenie odrzucone przez walidator protokołu.",
-             submitted_by=guest, submission_id=rejected, seed=11,
-             optimizer_name="broken-optimizer", family="gradient",
-             dataset="digits", minutes=240),
+        {
+            "run_name": "sign-sgd-digits-queued",
+            "task_status": "pending",
+            "artifact_status": "absent",
+            "executor_task_id": None,
+            "error_message": None,
+            "submitted_by": guest,
+            "submission_id": uploaded,
+            "seed": 11,
+            "optimizer_name": "sign-sgd",
+            "family": "gradient",
+            "dataset": "digits",
+            "minutes": 3,
+        },
+        {
+            "run_name": "sign-sgd-digits-slurm",
+            "task_status": "pending",
+            "artifact_status": "absent",
+            "executor_task_id": "4812004",
+            "error_message": None,
+            "submitted_by": guest,
+            "submission_id": uploaded,
+            "seed": 23,
+            "optimizer_name": "sign-sgd",
+            "family": "gradient",
+            "dataset": "digits",
+            "minutes": 26,
+        },
+        {
+            "run_name": "sign-sgd-digits-running",
+            "task_status": "running",
+            "artifact_status": "absent",
+            "executor_task_id": "4812005",
+            "error_message": None,
+            "submitted_by": guest,
+            "submission_id": uploaded,
+            "seed": 42,
+            "optimizer_name": "sign-sgd",
+            "family": "gradient",
+            "dataset": "digits",
+            "minutes": 64,
+        },
+        {
+            "run_name": "cma-es-wine-downloading",
+            "task_status": "completed",
+            "artifact_status": "downloading",
+            "executor_task_id": "4812006",
+            "error_message": None,
+            "submitted_by": researcher,
+            "submission_id": None,
+            "seed": 57,
+            "optimizer_name": "cma-es",
+            "family": "gradient_free",
+            "dataset": "wine",
+            "minutes": 90,
+        },
+        {
+            "run_name": "de-digits-failed",
+            "task_status": "failed",
+            "artifact_status": "ready",
+            "executor_task_id": "4812007",
+            "error_message": "RuntimeError: CUDA out of memory. Tried to allocate "
+            "2.41 GiB (GPU 0; 39.39 GiB total capacity)",
+            "submitted_by": researcher,
+            "submission_id": None,
+            "seed": 71,
+            "optimizer_name": "de",
+            "family": "gradient_free",
+            "dataset": "digits",
+            "minutes": 140,
+        },
+        {
+            "run_name": "des-wine-no-artifacts",
+            "task_status": "failed",
+            "artifact_status": "empty",
+            "executor_task_id": "4812008",
+            "error_message": "No files found under /net/people/plgrid/plggolem/projekt-benchmark/reports/task_...",
+            "submitted_by": researcher,
+            "submission_id": None,
+            "seed": 89,
+            "optimizer_name": "des",
+            "family": "gradient_free",
+            "dataset": "wine",
+            "minutes": 200,
+        },
+        {
+            "run_name": "broken-optimizer-rejected",
+            "task_status": "failed",
+            "artifact_status": "absent",
+            "executor_task_id": None,
+            "error_message": "Zgłoszenie odrzucone przez walidator protokołu.",
+            "submitted_by": guest,
+            "submission_id": rejected,
+            "seed": 11,
+            "optimizer_name": "broken-optimizer",
+            "family": "gradient",
+            "dataset": "digits",
+            "minutes": 240,
+        },
     ]
 
     for state in states:
         minutes = state.pop("minutes")
         created = now - timedelta(minutes=minutes)
         task_id = _insert_task(
-            conn, **common, **state, created_at=created, queued_at=created,
-            started_at=created + timedelta(minutes=8)
-            if state["task_status"] != "pending" else None,
-            completed_at=created + timedelta(minutes=20)
-            if state["task_status"] in ("completed", "failed") else None,
+            conn,
+            **common,
+            **state,
+            created_at=created,
+            queued_at=created,
+            started_at=created + timedelta(minutes=8) if state["task_status"] != "pending" else None,
+            completed_at=created + timedelta(minutes=20) if state["task_status"] in ("completed", "failed") else None,
             updated_at=created + timedelta(minutes=10),
         )
         # The failed run that did produce a log gets one, so the tail of .out
@@ -499,8 +655,7 @@ def seed_states(conn, downloads: Path, researcher, guest, now) -> None:
                 encoding="utf-8",
             )
             (root / "metadata.json").write_text(
-                json.dumps({"task_id": str(task_id), "status": "failed",
-                            "stop_reason": None}, indent=2),
+                json.dumps({"task_id": str(task_id), "status": "failed", "stop_reason": None}, indent=2),
                 encoding="utf-8",
             )
             files = [p for p in root.rglob("*") if p.is_file()]

@@ -25,7 +25,6 @@ class User:
     password_hash: str | None = None
 
 
-
 @dataclass
 class Task:
     task_id: str

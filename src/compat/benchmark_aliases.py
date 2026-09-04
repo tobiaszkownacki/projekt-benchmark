@@ -64,6 +64,7 @@ def _install_cupy_stub() -> None:
         return
     try:
         import cupy  # noqa: F401
+
         return
     except ImportError:
         pass

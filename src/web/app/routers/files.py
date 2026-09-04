@@ -7,7 +7,6 @@ in services/artifacts.py.
 import io
 import os
 import zipfile
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
@@ -22,7 +21,7 @@ from app.settings import settings
 router = APIRouter(prefix="/api/runs", tags=["files"])
 
 
-async def _authorised_run(task_id: UUID, user: Optional[CurrentUser]) -> dict:
+async def _authorised_run(task_id: UUID, user: CurrentUser | None) -> dict:
     row = await runs_service.get(task_id)
     if row is None or not can_read_run(user, row["submitted_by"]):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Run not found")
@@ -36,16 +35,12 @@ def _translate(exc: Exception) -> HTTPException:
     if isinstance(exc, artifacts.ArtifactNotFound):
         return HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
     if isinstance(exc, artifacts.ArtifactTooLarge):
-        return HTTPException(
-            status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, "File is above the preview limit"
-        )
+        return HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, "File is above the preview limit")
     return HTTPException(status.HTTP_400_BAD_REQUEST, "Rejected path")
 
 
 @router.get("/{task_id}/files")
-async def file_tree(
-    task_id: UUID, user: Optional[CurrentUser] = Depends(optional_user)
-) -> dict:
+async def file_tree(task_id: UUID, user: CurrentUser | None = Depends(optional_user)) -> dict:
     run = await _authorised_run(task_id, user)
     try:
         base = artifacts.run_root(task_id)
@@ -60,7 +55,7 @@ async def file_tree(
             "available": False,
         }
     except artifacts.ArtifactError as exc:
-        raise _translate(exc)
+        raise _translate(exc) from exc
 
     entries = list(artifacts.walk(base))
     files = [e for e in entries if not e.is_dir]
@@ -89,7 +84,7 @@ async def file_tree(
 async def raw_file(
     task_id: UUID,
     path: str = Query(..., min_length=1),
-    user: Optional[CurrentUser] = Depends(optional_user),
+    user: CurrentUser | None = Depends(optional_user),
 ) -> Response:
     await _authorised_run(task_id, user)
     try:
@@ -98,7 +93,7 @@ async def raw_file(
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "Path is a directory")
         payload = artifacts.read_preview(target)
     except artifacts.ArtifactError as exc:
-        raise _translate(exc)
+        raise _translate(exc) from exc
 
     content_type, inline = artifacts.content_disposition(target)
     return Response(
@@ -112,7 +107,7 @@ async def raw_file(
 async def file_meta(
     task_id: UUID,
     path: str = Query(..., min_length=1),
-    user: Optional[CurrentUser] = Depends(optional_user),
+    user: CurrentUser | None = Depends(optional_user),
 ) -> dict:
     await _authorised_run(task_id, user)
     try:
@@ -120,7 +115,7 @@ async def file_meta(
         fd, st = artifacts.open_regular_file(target)
         os.close(fd)
     except artifacts.ArtifactError as exc:
-        raise _translate(exc)
+        raise _translate(exc) from exc
 
     content_type, inline = artifacts.content_disposition(target)
     return {
@@ -137,14 +132,12 @@ async def file_meta(
 
 
 @router.get("/{task_id}/archive.zip")
-async def archive(
-    task_id: UUID, user: Optional[CurrentUser] = Depends(optional_user)
-) -> StreamingResponse:
+async def archive(task_id: UUID, user: CurrentUser | None = Depends(optional_user)) -> StreamingResponse:
     await _authorised_run(task_id, user)
     try:
         base = artifacts.run_root(task_id)
     except artifacts.ArtifactError as exc:
-        raise _translate(exc)
+        raise _translate(exc) from exc
 
     # Every entry is re-checked on the way in. That the directory passed once
     # says nothing about the individual files inside it, and a symlink added

@@ -7,8 +7,8 @@ They are not the benchmark's own datasets, which stay out of the repository, and
 they must never be presented as competition problems.
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 import numpy as np
 import torch
@@ -28,9 +28,7 @@ class DatasetSpec:
 PUBLIC_DATASETS = {
     "digits": DatasetSpec("digits", load_digits, "scikit-learn digits, 1797x64, 10 klas"),
     "wine": DatasetSpec("wine", load_wine, "scikit-learn wine, 178x13, 3 klasy"),
-    "breast_cancer": DatasetSpec(
-        "breast_cancer", load_breast_cancer, "scikit-learn breast cancer, 569x30, 2 klasy"
-    ),
+    "breast_cancer": DatasetSpec("breast_cancer", load_breast_cancer, "scikit-learn breast cancer, 569x30, 2 klasy"),
 }
 
 

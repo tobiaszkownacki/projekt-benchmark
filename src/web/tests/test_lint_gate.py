@@ -27,9 +27,7 @@ lint_baseline = _load()
 
 
 def _completed(returncode: int, stdout: str = "", stderr: str = ""):
-    return subprocess.CompletedProcess(
-        args=["flake8"], returncode=returncode, stdout=stdout, stderr=stderr
-    )
+    return subprocess.CompletedProcess(args=["flake8"], returncode=returncode, stdout=stdout, stderr=stderr)
 
 
 def test_clean_run_reports_no_violations(monkeypatch):
@@ -52,7 +50,8 @@ def test_violations_are_counted_per_file_and_code(monkeypatch):
 
 def test_uninstalled_linter_is_not_mistaken_for_a_clean_tree(monkeypatch):
     monkeypatch.setattr(
-        subprocess, "run",
+        subprocess,
+        "run",
         lambda *a, **k: _completed(1, "", "No module named flake8"),
     )
     with pytest.raises(lint_baseline.Flake8Unusable, match="No module named flake8"):
@@ -66,8 +65,6 @@ def test_a_crash_is_not_mistaken_for_a_clean_tree(monkeypatch):
 
 
 def test_the_gate_exits_non_zero_when_the_linter_is_unusable(monkeypatch):
-    monkeypatch.setattr(
-        subprocess, "run", lambda *a, **k: _completed(1, "", "No module named flake8")
-    )
+    monkeypatch.setattr(subprocess, "run", lambda *a, **k: _completed(1, "", "No module named flake8"))
     monkeypatch.setattr("sys.argv", ["lint_baseline.py"])
     assert lint_baseline.main() == 2

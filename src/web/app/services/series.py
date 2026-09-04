@@ -15,8 +15,8 @@ the last value actually observed at or below b. Linear interpolation would
 invent measurements that were never taken.
 """
 
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
-from typing import Iterable, Optional, Sequence
 
 X_AXES = {
     "gradient_count": "gradient_count",
@@ -69,24 +69,18 @@ def lttb(points: Sequence[tuple[float, float]], threshold: int) -> list[tuple[fl
     return sampled
 
 
-def series_points(
-    row: dict, x_axis: str, metric: str
-) -> list[tuple[float, float]]:
+def series_points(row: dict, x_axis: str, metric: str) -> list[tuple[float, float]]:
     """Zip a result_series row into (x, y) pairs, dropping missing values."""
     x_column = X_AXES.get(x_axis, "gradient_count")
     y_column = METRICS.get(metric, "loss")
     xs = row.get(x_column) or []
     ys = row.get(y_column) or []
-    pairs = [
-        (float(x), float(y))
-        for x, y in zip(xs, ys)
-        if x is not None and y is not None
-    ]
+    pairs = [(float(x), float(y)) for x, y in zip(xs, ys, strict=False) if x is not None and y is not None]
     pairs.sort(key=lambda p: p[0])
     return pairs
 
 
-def step_value_at(points: Sequence[tuple[float, float]], budget: float) -> Optional[float]:
+def step_value_at(points: Sequence[tuple[float, float]], budget: float) -> float | None:
     """Last observed value at or below `budget`.
 
     None outside the range the run actually covers -- on both sides. The upper
@@ -123,9 +117,7 @@ def quantile(values: Sequence[float], q: float) -> float:
     return ordered[low] * (1 - weight) + ordered[high] * weight
 
 
-def build_grid(
-    runs: Iterable[Sequence[tuple[float, float]]], points: int, logarithmic: bool
-) -> list[float]:
+def build_grid(runs: Iterable[Sequence[tuple[float, float]]], points: int, logarithmic: bool) -> list[float]:
     """A shared X grid spanning the budgets every run actually covers."""
     starts, ends = [], []
     for run in runs:
@@ -153,12 +145,12 @@ def build_grid(
 @dataclass
 class AggregatedSeries:
     label: str
-    family: Optional[str]
+    family: str | None
     n_runs: int
     x: list[float] = field(default_factory=list)
-    median: list[Optional[float]] = field(default_factory=list)
-    q1: list[Optional[float]] = field(default_factory=list)
-    q3: list[Optional[float]] = field(default_factory=list)
+    median: list[float | None] = field(default_factory=list)
+    q1: list[float | None] = field(default_factory=list)
+    q3: list[float | None] = field(default_factory=list)
     n_at_x: list[int] = field(default_factory=list)
     full_until_index: int = 0
 
@@ -179,7 +171,7 @@ class AggregatedSeries:
 def aggregate(
     label: str,
     runs: Sequence[Sequence[tuple[float, float]]],
-    family: Optional[str] = None,
+    family: str | None = None,
     points: int = 200,
     logarithmic: bool = False,
 ) -> AggregatedSeries:
@@ -200,11 +192,7 @@ def aggregate(
     full_until = -1
 
     for index, budget in enumerate(grid):
-        values = [
-            v
-            for v in (step_value_at(run, budget) for run in usable)
-            if v is not None
-        ]
+        values = [v for v in (step_value_at(run, budget) for run in usable) if v is not None]
         result.x.append(budget)
         result.n_at_x.append(len(values))
         if not values:
@@ -222,9 +210,7 @@ def aggregate(
     return result
 
 
-def downsample_pairs(
-    points: Sequence[tuple[float, float]], target: int
-) -> tuple[list[tuple[float, float]], bool]:
+def downsample_pairs(points: Sequence[tuple[float, float]], target: int) -> tuple[list[tuple[float, float]], bool]:
     if target <= 0 or len(points) <= target:
         return list(points), False
     return lttb(points, target), True

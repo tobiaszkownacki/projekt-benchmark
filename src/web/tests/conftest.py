@@ -12,8 +12,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-os.environ["DATABASE_URL"] = os.environ.get(
-    "TEST_DATABASE_URL", "postgresql://unused@127.0.0.1:1/unused"
-)
+os.environ["DATABASE_URL"] = os.environ.get("TEST_DATABASE_URL", "postgresql://unused@127.0.0.1:1/unused")
 os.environ.setdefault("SESSION_SECRET", "test-secret-not-used-in-production")
 os.environ.setdefault("RUN_MIGRATIONS", "0")

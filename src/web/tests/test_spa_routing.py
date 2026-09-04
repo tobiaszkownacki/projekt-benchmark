@@ -45,6 +45,7 @@ def client(tmp_path_factory):
         del __import__("sys").modules[module]
 
     from app.main import app
+
     with TestClient(app) as test_client:
         yield test_client
 
@@ -85,6 +86,7 @@ def test_inline_theme_script_is_allowed_by_the_policy(client):
         # Every inline script present must have a hash in the policy.
         import base64
         import hashlib
+
         for body in inline:
             digest = base64.b64encode(hashlib.sha256(body.encode()).digest()).decode()
             assert f"'sha256-{digest}'" in _SCRIPT_SRC

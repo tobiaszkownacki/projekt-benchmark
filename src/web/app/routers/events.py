@@ -11,7 +11,6 @@ without anything polling the API.
 import asyncio
 import json
 import logging
-from typing import Optional
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
@@ -27,9 +26,7 @@ HEARTBEAT_SECONDS = 15
 
 
 @router.get("/events")
-async def events(
-    request: Request, user: Optional[CurrentUser] = Depends(optional_user)
-) -> StreamingResponse:
+async def events(request: Request, user: CurrentUser | None = Depends(optional_user)) -> StreamingResponse:
     queue = await db.broker.subscribe()
 
     async def stream():
@@ -40,7 +37,7 @@ async def events(
                     break
                 try:
                     payload = await asyncio.wait_for(queue.get(), timeout=HEARTBEAT_SECONDS)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     # Without a heartbeat an idle connection gets closed by
                     # whatever sits in front of the application.
                     yield b": ping\n\n"

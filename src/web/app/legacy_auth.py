@@ -12,15 +12,15 @@ read paths use the async pool directly.
 import asyncio
 import sys
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 _FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
 if _FRONTEND_DIR.is_dir() and str(_FRONTEND_DIR) not in sys.path:
     sys.path.insert(0, str(_FRONTEND_DIR))
 
-from auth import passwords as _passwords          # noqa: E402
-from auth import repository as _repository        # noqa: E402
+from auth import passwords as _passwords  # noqa: E402
+from auth import repository as _repository  # noqa: E402
 
 User = _repository.User
 
@@ -29,11 +29,11 @@ verify_password = _passwords.verify_password
 validate_password_strength = _passwords.validate_password_strength
 
 
-async def get_by_email(email: str) -> Optional[User]:
+async def get_by_email(email: str) -> User | None:
     return await asyncio.to_thread(_repository.get_by_email, email)
 
 
-async def get_by_id(user_id: UUID) -> Optional[User]:
+async def get_by_id(user_id: UUID) -> User | None:
     return await asyncio.to_thread(_repository.get_by_id, user_id)
 
 
@@ -45,7 +45,7 @@ async def upsert_oauth_user(**kwargs: Any) -> User:
     return await asyncio.to_thread(lambda: _repository.upsert_oauth_user(**kwargs))
 
 
-async def set_join_info(user_id: UUID, **kwargs: Any) -> Optional[User]:
+async def set_join_info(user_id: UUID, **kwargs: Any) -> User | None:
     return await asyncio.to_thread(lambda: _repository.set_join_info(user_id, **kwargs))
 
 

@@ -6,7 +6,6 @@ invisible on the chart itself, so it has to be caught here.
 """
 
 import pytest
-
 from app.services import series
 
 

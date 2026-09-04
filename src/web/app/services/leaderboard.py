@@ -10,8 +10,6 @@ Aggregation is median with quartiles, never the best run: evolutionary methods
 are stochastic, and ranking by best result rewards luck.
 """
 
-from typing import Optional
-
 from app import db
 
 SCORE_FORMULAS = {
@@ -20,8 +18,7 @@ SCORE_FORMULAS = {
         "label": "mediana straty końcowej",
         "direction": "asc",
         "column": "final_loss",
-        "note": "Niższa jest lepsza. Nie normalizuje po budżecie: gradienty "
-                "i próbki nie mają wspólnej waluty.",
+        "note": "Niższa jest lepsza. Nie normalizuje po budżecie: gradienty i próbki nie mają wspólnej waluty.",
     },
     "accuracy_v1": {
         "id": "accuracy_v1",
@@ -61,10 +58,10 @@ WHERE t.task_status = 'completed'
 
 
 async def query(
-    dataset: Optional[str] = None,
-    model: Optional[str] = None,
-    family: Optional[str] = None,
-    suite: Optional[str] = None,
+    dataset: str | None = None,
+    model: str | None = None,
+    family: str | None = None,
+    suite: str | None = None,
     score: str = DEFAULT_FORMULA,
     limit: int = 200,
 ) -> dict:
@@ -90,7 +87,7 @@ async def query(
     """
     rows = await db.fetch_all(sql, params)
 
-    def score_of(row: dict) -> Optional[float]:
+    def score_of(row: dict) -> float | None:
         return row["loss_median"] if formula["column"] == "final_loss" else row["acc_median"]
 
     ranked = [r for r in rows if score_of(r) is not None]

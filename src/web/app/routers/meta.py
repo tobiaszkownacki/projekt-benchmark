@@ -5,7 +5,6 @@ from the engine's own source files rather than copied into the page. If someone
 changes example_gradient_optimizer.py, the documentation changes with it.
 """
 
-
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import PlainTextResponse
 
@@ -28,49 +27,73 @@ EXAMPLES = {
 # the part that decides whether their optimizer is spending budget it did not
 # mean to spend.
 EVALUATOR_API = [
-    {"method": "evaluate()", "returns": "float",
-     "effect": "database_reaches += batch_size",
-     "note": "Przejście w przód. Metody bezgradientowe używają tylko tego."},
-    {"method": "evaluate_with_grad()", "returns": "(float, ndarray)",
-     "effect": "database_reaches += batch_size, gradient_count += 1",
-     "note": "Przejście w przód i w tył."},
-    {"method": "grad()", "returns": "ndarray",
-     "effect": "database_reaches += batch_size, gradient_count += 1",
-     "note": "Sam gradient, bez zwracania straty."},
-    {"method": "get_params()", "returns": "ndarray",
-     "effect": "—", "note": "Spłaszczony wektor parametrów."},
-    {"method": "set_params(params)", "returns": "None",
-     "effect": "—", "note": "Zapisuje parametry z powrotem do modelu."},
-    {"method": "get_predictions()", "returns": "(preds, targets)",
-     "effect": "database_reaches += batch_size", "note": "Predykcje i etykiety."},
-    {"method": "batch_size", "returns": "int",
-     "effect": "—", "note": "Właściwość. Rozmiar bieżącej paczki."},
-    {"method": "param_count", "returns": "int",
-     "effect": "—", "note": "Właściwość. Liczba parametrów modelu."},
+    {
+        "method": "evaluate()",
+        "returns": "float",
+        "effect": "database_reaches += batch_size",
+        "note": "Przejście w przód. Metody bezgradientowe używają tylko tego.",
+    },
+    {
+        "method": "evaluate_with_grad()",
+        "returns": "(float, ndarray)",
+        "effect": "database_reaches += batch_size, gradient_count += 1",
+        "note": "Przejście w przód i w tył.",
+    },
+    {
+        "method": "grad()",
+        "returns": "ndarray",
+        "effect": "database_reaches += batch_size, gradient_count += 1",
+        "note": "Sam gradient, bez zwracania straty.",
+    },
+    {"method": "get_params()", "returns": "ndarray", "effect": "—", "note": "Spłaszczony wektor parametrów."},
+    {
+        "method": "set_params(params)",
+        "returns": "None",
+        "effect": "—",
+        "note": "Zapisuje parametry z powrotem do modelu.",
+    },
+    {
+        "method": "get_predictions()",
+        "returns": "(preds, targets)",
+        "effect": "database_reaches += batch_size",
+        "note": "Predykcje i etykiety.",
+    },
+    {"method": "batch_size", "returns": "int", "effect": "—", "note": "Właściwość. Rozmiar bieżącej paczki."},
+    {"method": "param_count", "returns": "int", "effect": "—", "note": "Właściwość. Liczba parametrów modelu."},
 ]
 
 # Documented rather than hidden. These are limitations of the contract a
 # participant is asked to write against, and finding them by trial and error
 # during a competition would be worse for everyone than reading them here.
 KNOWN_LIMITATIONS = [
-    {"title": "step() nie wie, ile budżetu zostało",
-     "detail": "Pętlę zatrzymuje harness. Optymalizator ewolucyjny, który "
-               "chciałby chłodzić sigmę w funkcji pozostałego budżetu, nie ma "
-               "jak. Standardowe suity (CEC, COCO) wystawiają remaining_budget."},
-    {"title": "Brak evaluate_population()",
-     "detail": "Metoda populacyjna z lambda=20 wykonuje w jednym step() "
-               "dwadzieścia osobnych przejść w przód zamiast jednego wsadowego. "
-               "Podatek płaci dokładnie ta rodzina metod, którą projekt bada."},
-    {"title": "Losowość nie jest kontrolowana",
-     "detail": "Przykłady używają globalnego np.random bez ziarna. Harness "
-               "powinien wstrzykiwać zaziarnowany generator do konstruktora."},
-    {"title": "get_output_type() bez @classmethod",
-     "detail": "W klasie bazowej zadeklarowana bez self i bez dekoratora. "
-               "Wywołanie na instancji rozjedzie się na liczbie argumentów."},
-    {"title": "Dwie różne definicje StopReason",
-     "detail": "runner.py i metrics/stop_metrics.py deklarują enum o tej samej "
-               "nazwie i różnych wartościach. Baza podąża za tym, który trafia "
-               "do wyniku."},
+    {
+        "title": "step() nie wie, ile budżetu zostało",
+        "detail": "Pętlę zatrzymuje harness. Optymalizator ewolucyjny, który "
+        "chciałby chłodzić sigmę w funkcji pozostałego budżetu, nie ma "
+        "jak. Standardowe suity (CEC, COCO) wystawiają remaining_budget.",
+    },
+    {
+        "title": "Brak evaluate_population()",
+        "detail": "Metoda populacyjna z lambda=20 wykonuje w jednym step() "
+        "dwadzieścia osobnych przejść w przód zamiast jednego wsadowego. "
+        "Podatek płaci dokładnie ta rodzina metod, którą projekt bada.",
+    },
+    {
+        "title": "Losowość nie jest kontrolowana",
+        "detail": "Przykłady używają globalnego np.random bez ziarna. Harness "
+        "powinien wstrzykiwać zaziarnowany generator do konstruktora.",
+    },
+    {
+        "title": "get_output_type() bez @classmethod",
+        "detail": "W klasie bazowej zadeklarowana bez self i bez dekoratora. "
+        "Wywołanie na instancji rozjedzie się na liczbie argumentów.",
+    },
+    {
+        "title": "Dwie różne definicje StopReason",
+        "detail": "runner.py i metrics/stop_metrics.py deklarują enum o tej samej "
+        "nazwie i różnych wartościach. Baza podąża za tym, który trafia "
+        "do wyniku.",
+    },
 ]
 
 SANDBOX = {
@@ -95,9 +118,7 @@ async def protocol() -> dict:
         available[key] = {
             "filename": path.name,
             "present": path.is_file(),
-            "repo_path": (
-                str(path.relative_to(REPO_ROOT)) if path.is_file() else None
-            ),
+            "repo_path": (str(path.relative_to(REPO_ROOT)) if path.is_file() else None),
         }
     return {
         "evaluator_api": EVALUATOR_API,

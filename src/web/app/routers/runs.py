@@ -1,6 +1,5 @@
 """Run listing, detail, convergence series and state history."""
 
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -13,7 +12,7 @@ from app.services.authz import can_read_run
 router = APIRouter(prefix="/api/runs", tags=["runs"])
 
 
-async def _load_visible(task_id: UUID, user: Optional[CurrentUser]) -> dict:
+async def _load_visible(task_id: UUID, user: CurrentUser | None) -> dict:
     row = await runs_service.get(task_id)
     # 404 rather than 403 in both branches: a 403 confirms that a run with this
     # identifier exists, which is information the requester has not earned.
@@ -25,16 +24,16 @@ async def _load_visible(task_id: UUID, user: Optional[CurrentUser]) -> dict:
 @router.get("")
 async def list_runs(
     mine: bool = False,
-    status_filter: Optional[str] = Query(None, alias="status"),
-    dataset: Optional[str] = None,
-    model: Optional[str] = None,
-    family: Optional[str] = None,
-    suite: Optional[str] = None,
-    optimizer: Optional[str] = None,
-    search: Optional[str] = None,
+    status_filter: str | None = Query(None, alias="status"),
+    dataset: str | None = None,
+    model: str | None = None,
+    family: str | None = None,
+    suite: str | None = None,
+    optimizer: str | None = None,
+    search: str | None = None,
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
-    user: Optional[CurrentUser] = Depends(optional_user),
+    user: CurrentUser | None = Depends(optional_user),
 ) -> dict:
     if mine and user is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Authentication required")
@@ -67,21 +66,15 @@ async def run_filters() -> dict:
 
 
 @router.get("/{task_id}")
-async def get_run(
-    task_id: UUID, user: Optional[CurrentUser] = Depends(optional_user)
-) -> dict:
+async def get_run(task_id: UUID, user: CurrentUser | None = Depends(optional_user)) -> dict:
     row = await _load_visible(task_id, user)
     payload = runs_service.serialise(row)
-    payload["can_manage"] = bool(
-        user and (user.is_admin or user.id == row["submitted_by"])
-    )
+    payload["can_manage"] = bool(user and (user.is_admin or user.id == row["submitted_by"]))
     return payload
 
 
 @router.get("/{task_id}/transitions")
-async def get_transitions(
-    task_id: UUID, user: Optional[CurrentUser] = Depends(optional_user)
-) -> dict:
+async def get_transitions(task_id: UUID, user: CurrentUser | None = Depends(optional_user)) -> dict:
     await _load_visible(task_id, user)
     return {"transitions": await runs_service.transitions(task_id)}
 
@@ -92,7 +85,7 @@ async def get_series(
     x: str = Query("gradient_count"),
     metric: str = Query("loss"),
     points: int = Query(series_service.DEFAULT_POINTS, ge=10, le=series_service.MAX_POINTS),
-    user: Optional[CurrentUser] = Depends(optional_user),
+    user: CurrentUser | None = Depends(optional_user),
 ) -> dict:
     await _load_visible(task_id, user)
 

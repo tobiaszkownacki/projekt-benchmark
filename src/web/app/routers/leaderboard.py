@@ -1,7 +1,5 @@
 """Leaderboard and overview counters."""
 
-from typing import Optional
-
 from fastapi import APIRouter, Query
 
 from app import db
@@ -12,16 +10,20 @@ router = APIRouter(prefix="/api", tags=["leaderboard"])
 
 @router.get("/leaderboard")
 async def leaderboard(
-    dataset: Optional[str] = None,
-    model: Optional[str] = None,
-    family: Optional[str] = None,
-    suite: Optional[str] = None,
+    dataset: str | None = None,
+    model: str | None = None,
+    family: str | None = None,
+    suite: str | None = None,
     score: str = Query(leaderboard_service.DEFAULT_FORMULA),
     limit: int = Query(200, ge=1, le=500),
 ) -> dict:
     return await leaderboard_service.query(
-        dataset=dataset, model=model, family=family, suite=suite,
-        score=score, limit=limit,
+        dataset=dataset,
+        model=model,
+        family=family,
+        suite=suite,
+        score=score,
+        limit=limit,
     )
 
 

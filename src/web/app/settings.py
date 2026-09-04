@@ -39,28 +39,16 @@ def _int(name: str, default: int) -> int:
 @dataclass(frozen=True)
 class Settings:
     database_url: str = field(default_factory=lambda: os.environ.get("DATABASE_URL", ""))
-    artifact_root: Path = field(
-        default_factory=lambda: Path(os.environ.get("ARTIFACT_ROOT", "/downloads"))
-    )
-    static_root: Path = field(
-        default_factory=lambda: Path(os.environ.get("STATIC_ROOT", "/app/static"))
-    )
-    migrations_dir: Path = field(
-        default_factory=lambda: Path(
-            os.environ.get("MIGRATIONS_DIR", "/app/migrations")
-        )
-    )
-    session_secret: str = field(
-        default_factory=lambda: os.environ.get("SESSION_SECRET", "")
-    )
+    artifact_root: Path = field(default_factory=lambda: Path(os.environ.get("ARTIFACT_ROOT", "/downloads")))
+    static_root: Path = field(default_factory=lambda: Path(os.environ.get("STATIC_ROOT", "/app/static")))
+    migrations_dir: Path = field(default_factory=lambda: Path(os.environ.get("MIGRATIONS_DIR", "/app/migrations")))
+    session_secret: str = field(default_factory=lambda: os.environ.get("SESSION_SECRET", ""))
     run_migrations: bool = field(default_factory=lambda: _bool("RUN_MIGRATIONS", True))
     session_cookie: str = "benchmark_session"
     # Scopes the session cookie to the deployment prefix. At the origin root
     # this is "/" and nothing changes; behind a prefix it stops the cookie from
     # being sent to unrelated applications sharing the same host.
-    session_cookie_path: str = field(
-        default_factory=lambda: "/" + os.environ.get("ROOT_PATH", "").strip("/")
-    )
+    session_cookie_path: str = field(default_factory=lambda: "/" + os.environ.get("ROOT_PATH", "").strip("/"))
     session_max_age: int = field(default_factory=lambda: _int("SESSION_MAX_AGE", 60 * 60 * 12))
     secure_cookies: bool = field(default_factory=lambda: _bool("SECURE_COOKIES", False))
 
@@ -69,51 +57,27 @@ class Settings:
     # than an audit of every endpoint.
     public_results: bool = field(default_factory=lambda: _bool("PUBLIC_RESULTS", True))
 
-    daily_submission_limit: int = field(
-        default_factory=lambda: _int("DAILY_SUBMISSION_LIMIT", 3)
-    )
+    daily_submission_limit: int = field(default_factory=lambda: _int("DAILY_SUBMISSION_LIMIT", 3))
 
-    preview_limit_bytes: int = field(
-        default_factory=lambda: _int("PREVIEW_LIMIT_BYTES", 2 * 1024 * 1024)
-    )
-    archive_limit_bytes: int = field(
-        default_factory=lambda: _int("ARCHIVE_LIMIT_BYTES", 512 * 1024 * 1024)
-    )
+    preview_limit_bytes: int = field(default_factory=lambda: _int("PREVIEW_LIMIT_BYTES", 2 * 1024 * 1024))
+    archive_limit_bytes: int = field(default_factory=lambda: _int("ARCHIVE_LIMIT_BYTES", 512 * 1024 * 1024))
     archive_max_entries: int = field(default_factory=lambda: _int("ARCHIVE_MAX_ENTRIES", 5000))
 
     validator_enabled: bool = field(default_factory=lambda: _bool("VALIDATOR_ENABLED", True))
-    validator_image: str = field(
-        default_factory=lambda: os.environ.get("VALIDATOR_IMAGE", "python:3.12-slim")
-    )
+    validator_image: str = field(default_factory=lambda: os.environ.get("VALIDATOR_IMAGE", "python:3.12-slim"))
     validator_timeout: int = field(default_factory=lambda: _int("VALIDATOR_TIMEOUT", 30))
 
-    rabbitmq_management_url: str = field(
-        default_factory=lambda: os.environ.get("RABBITMQ_MANAGEMENT_URL", "")
-    )
+    rabbitmq_management_url: str = field(default_factory=lambda: os.environ.get("RABBITMQ_MANAGEMENT_URL", ""))
     rabbitmq_user: str = field(default_factory=lambda: os.environ.get("RABBITMQ_USER", ""))
-    rabbitmq_password: str = field(
-        default_factory=lambda: os.environ.get("RABBITMQ_PASSWORD", "")
-    )
-    worker_queue: str = field(
-        default_factory=lambda: os.environ.get("ATHENA_WORKER_QUEUE", "ATHENA_WORKER_QUEUE")
-    )
-    main_exchange: str = field(
-        default_factory=lambda: os.environ.get("MAIN_EXCHANGE", "main-exchange")
-    )
+    rabbitmq_password: str = field(default_factory=lambda: os.environ.get("RABBITMQ_PASSWORD", ""))
+    worker_queue: str = field(default_factory=lambda: os.environ.get("ATHENA_WORKER_QUEUE", "ATHENA_WORKER_QUEUE"))
+    main_exchange: str = field(default_factory=lambda: os.environ.get("MAIN_EXCHANGE", "main-exchange"))
 
     google_client_id: str = field(default_factory=lambda: os.environ.get("GOOGLE_CLIENT_ID", ""))
-    google_client_secret: str = field(
-        default_factory=lambda: os.environ.get("GOOGLE_CLIENT_SECRET", "")
-    )
-    microsoft_client_id: str = field(
-        default_factory=lambda: os.environ.get("MICROSOFT_CLIENT_ID", "")
-    )
-    microsoft_client_secret: str = field(
-        default_factory=lambda: os.environ.get("MICROSOFT_CLIENT_SECRET", "")
-    )
-    public_base_url: str = field(
-        default_factory=lambda: os.environ.get("PUBLIC_BASE_URL", "http://localhost:8000")
-    )
+    google_client_secret: str = field(default_factory=lambda: os.environ.get("GOOGLE_CLIENT_SECRET", ""))
+    microsoft_client_id: str = field(default_factory=lambda: os.environ.get("MICROSOFT_CLIENT_ID", ""))
+    microsoft_client_secret: str = field(default_factory=lambda: os.environ.get("MICROSOFT_CLIENT_SECRET", ""))
+    public_base_url: str = field(default_factory=lambda: os.environ.get("PUBLIC_BASE_URL", "http://localhost:8000"))
 
 
 settings = Settings()

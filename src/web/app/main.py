@@ -67,7 +67,15 @@ app = FastAPI(
 )
 
 for module in (
-    auth, runs, files, leaderboard, compare, submissions, events, admin, meta,
+    auth,
+    runs,
+    files,
+    leaderboard,
+    compare,
+    submissions,
+    events,
+    admin,
+    meta,
 ):
     app.include_router(module.router)
 

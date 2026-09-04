@@ -7,7 +7,6 @@ avoiding a second, parallel permission model that could drift apart.
 import hashlib
 import secrets
 from dataclasses import dataclass
-from typing import Optional
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request, Response, status
@@ -24,7 +23,7 @@ class CurrentUser:
     id: UUID
     email: str
     role: str
-    display_name: Optional[str]
+    display_name: str | None
     is_active: bool
     has_join_info: bool
 
@@ -60,7 +59,7 @@ def clear_session(response: Response) -> None:
     response.delete_cookie(settings.session_cookie, path=settings.session_cookie_path)
 
 
-def _read_session(request: Request) -> Optional[UUID]:
+def _read_session(request: Request) -> UUID | None:
     raw = request.cookies.get(settings.session_cookie)
     if not raw:
         return None
@@ -78,7 +77,7 @@ def generate_api_token() -> tuple[str, str, str]:
     return raw, digest, raw[: len(_TOKEN_PREFIX) + 6]
 
 
-async def _user_from_bearer(request: Request) -> Optional[dict]:
+async def _user_from_bearer(request: Request) -> dict | None:
     header = request.headers.get("authorization", "")
     if not header.lower().startswith("bearer "):
         return None
@@ -105,7 +104,7 @@ async def _user_from_bearer(request: Request) -> Optional[dict]:
     return row
 
 
-async def _user_from_cookie(request: Request) -> Optional[dict]:
+async def _user_from_cookie(request: Request) -> dict | None:
     user_id = _read_session(request)
     if user_id is None:
         return None
@@ -119,7 +118,7 @@ async def _user_from_cookie(request: Request) -> Optional[dict]:
     )
 
 
-async def optional_user(request: Request) -> Optional[CurrentUser]:
+async def optional_user(request: Request) -> CurrentUser | None:
     row = await _user_from_bearer(request) or await _user_from_cookie(request)
     if row is None or not row["is_active"]:
         return None
@@ -134,7 +133,7 @@ async def optional_user(request: Request) -> Optional[CurrentUser]:
 
 
 async def require_user(
-    user: Optional[CurrentUser] = Depends(optional_user),
+    user: CurrentUser | None = Depends(optional_user),
 ) -> CurrentUser:
     if user is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Authentication required")

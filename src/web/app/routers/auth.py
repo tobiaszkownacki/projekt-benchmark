@@ -5,8 +5,6 @@ rather than a second implementation of the same rules -- see legacy_auth for why
 that is deliberate.
 """
 
-from typing import Optional
-
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, EmailStr, Field
 
@@ -31,10 +29,10 @@ class Credentials(BaseModel):
 class Registration(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8)
-    display_name: Optional[str] = None
-    associated_organisation: Optional[str] = None
-    associated_org_email: Optional[str] = None
-    join_reason: Optional[str] = None
+    display_name: str | None = None
+    associated_organisation: str | None = None
+    associated_org_email: str | None = None
+    join_reason: str | None = None
 
 
 class TokenRequest(BaseModel):
@@ -54,7 +52,7 @@ def _public(user: CurrentUser) -> dict:
 
 
 @router.get("/me")
-async def me(user: Optional[CurrentUser] = Depends(optional_user)) -> dict:
+async def me(user: CurrentUser | None = Depends(optional_user)) -> dict:
     return {"user": _public(user) if user else None}
 
 
@@ -129,9 +127,7 @@ async def list_tokens(user: CurrentUser = Depends(require_user)) -> dict:
 
 
 @router.post("/tokens", status_code=status.HTTP_201_CREATED)
-async def create_token(
-    payload: TokenRequest, user: CurrentUser = Depends(require_user)
-) -> dict:
+async def create_token(payload: TokenRequest, user: CurrentUser = Depends(require_user)) -> dict:
     raw, digest, prefix = generate_api_token()
     row = await db.fetch_one(
         """

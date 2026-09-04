@@ -90,3 +90,9 @@ select = [
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
 "src/frontend/home.py" = ["E402"]
+# Depends(), Query() and Path() in a signature default are how FastAPI declares
+# dependencies; B008 flags every one of them.
+"src/web/app/routers/*.py" = ["B008"]
+"src/web/app/security.py" = ["B008"]
+# The Streamlit path bootstrap has to run before the sibling imports.
+"src/web/app/legacy_auth.py" = ["E402"]

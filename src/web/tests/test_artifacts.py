@@ -10,7 +10,6 @@ import uuid
 from pathlib import Path
 
 import pytest
-
 from app.services import artifacts
 
 
@@ -55,13 +54,13 @@ def test_reads_a_normal_file(root, run_id):
 @pytest.mark.parametrize(
     "attack",
     [
-        "../../secret.txt",                 # 1  plain traversal
-        "..%2f..%2fsecret.txt",             # 2  encoded, already decoded by the framework
-        "....//....//secret.txt",           # 3  doubled-up traversal
-        "/etc/passwd",                      # 4  absolute
-        "../datasets/cifar.bin",            # traversal into the dataset directory
-        "reports/../../../secret.txt",      # traversal after a valid prefix
-        "\\..\\..\\secret.txt",             # backslash separators
+        "../../secret.txt",  # 1  plain traversal
+        "..%2f..%2fsecret.txt",  # 2  encoded, already decoded by the framework
+        "....//....//secret.txt",  # 3  doubled-up traversal
+        "/etc/passwd",  # 4  absolute
+        "../datasets/cifar.bin",  # traversal into the dataset directory
+        "reports/../../../secret.txt",  # traversal after a valid prefix
+        "\\..\\..\\secret.txt",  # backslash separators
     ],
 )
 def test_rejects_traversal(root, run_id, attack):
@@ -210,9 +209,7 @@ def test_every_raw_response_is_hardened():
     assert headers["Cache-Control"] == "private, no-store"
     assert headers["Content-Disposition"].startswith("inline;")
 
-    assert artifacts.hardening_headers("x.bin", inline=False)[
-        "Content-Disposition"
-    ].startswith("attachment;")
+    assert artifacts.hardening_headers("x.bin", inline=False)["Content-Disposition"].startswith("attachment;")
 
 
 def test_filename_cannot_break_out_of_the_header():

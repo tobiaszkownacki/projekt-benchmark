@@ -19,16 +19,13 @@ import shutil
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 from app.settings import find_source_root, settings
 
 logger = logging.getLogger(__name__)
 
 REPO_ROOT = find_source_root()
-VALIDATOR_SCRIPT = (
-    "src/benchmark_core/optimization_engine/optimizers/validation/verify_optimizer.py"
-)
+VALIDATOR_SCRIPT = "src/benchmark_core/optimization_engine/optimizers/validation/verify_optimizer.py"
 
 _FAMILY_HINTS = {
     "gradient": ("evaluate_with_grad", ".grad(", "grad()"),
@@ -40,8 +37,8 @@ _FAMILY_HINTS = {
 class ValidationResult:
     ok: bool
     log: str
-    output_type: Optional[str] = None
-    family: Optional[str] = None
+    output_type: str | None = None
+    family: str | None = None
     version: str = "sandbox-1"
 
     def as_dict(self) -> dict:
@@ -77,23 +74,41 @@ def docker_available() -> bool:
 
 def _docker_command(workdir: Path, filename: str) -> list[str]:
     return [
-        "docker", "run", "--rm",
-        "--network", "none",
-        "--memory", "2g",
-        "--cpus", "1.0",
+        "docker",
+        "run",
+        "--rm",
+        "--network",
+        "none",
+        "--memory",
+        "2g",
+        "--cpus",
+        "1.0",
         "--read-only",
-        "--tmpfs", "/tmp:rw,noexec,nosuid,size=64m",
-        "--user", "65534:65534",
-        "--security-opt", "no-new-privileges",
-        "--cap-drop", "ALL",
-        "--pids-limit", "128",
-        "-v", f"{REPO_ROOT}/src:/bench/src:ro",
-        "-v", f"{workdir}:/submission:ro",
-        "-w", "/bench",
-        "-e", "PYTHONPATH=/bench/src",
-        "-e", "HOME=/tmp",
+        "--tmpfs",
+        "/tmp:rw,noexec,nosuid,size=64m",
+        "--user",
+        "65534:65534",
+        "--security-opt",
+        "no-new-privileges",
+        "--cap-drop",
+        "ALL",
+        "--pids-limit",
+        "128",
+        "-v",
+        f"{REPO_ROOT}/src:/bench/src:ro",
+        "-v",
+        f"{workdir}:/submission:ro",
+        "-w",
+        "/bench",
+        "-e",
+        "PYTHONPATH=/bench/src",
+        "-e",
+        "HOME=/tmp",
         settings.validator_image,
-        "python", "-c", _IN_CONTAINER_ENTRY, f"/submission/{filename}",
+        "python",
+        "-c",
+        _IN_CONTAINER_ENTRY,
+        f"/submission/{filename}",
     ]
 
 
@@ -120,8 +135,7 @@ async def validate_source(source: str, filename: str = "optimizer.py") -> Valida
     if not settings.validator_enabled:
         return ValidationResult(
             ok=True,
-            log="Walidator wyłączony konfiguracją (VALIDATOR_ENABLED=0).\n"
-                "Zgłoszenie przyjęte bez kontroli protokołu.",
+            log="Walidator wyłączony konfiguracją (VALIDATOR_ENABLED=0).\nZgłoszenie przyjęte bez kontroli protokołu.",
             family=family,
             version="disabled",
         )
@@ -132,8 +146,8 @@ async def validate_source(source: str, filename: str = "optimizer.py") -> Valida
         return ValidationResult(
             ok=True,
             log="Walidator niedostępny: brak polecenia `docker` na tym hoście.\n"
-                "Zgłoszenie przyjęte BEZ kontroli protokołu — kod nie został "
-                "sprawdzony.",
+            "Zgłoszenie przyjęte BEZ kontroli protokołu — kod nie został "
+            "sprawdzony.",
             family=family,
             version="unavailable",
         )
@@ -150,16 +164,14 @@ async def validate_source(source: str, filename: str = "optimizer.py") -> Valida
             stderr=asyncio.subprocess.STDOUT,
         )
         try:
-            stdout, _ = await asyncio.wait_for(
-                process.communicate(), timeout=settings.validator_timeout + 10
-            )
-        except asyncio.TimeoutError:
+            stdout, _ = await asyncio.wait_for(process.communicate(), timeout=settings.validator_timeout + 10)
+        except TimeoutError:
             process.kill()
             await process.wait()
             return ValidationResult(
                 ok=False,
                 log=f"Walidacja przerwana po {settings.validator_timeout} s.\n"
-                    "Optymalizator nie zakończył pojedynczego kroku w limicie czasu.",
+                "Optymalizator nie zakończył pojedynczego kroku w limicie czasu.",
                 family=family,
             )
 

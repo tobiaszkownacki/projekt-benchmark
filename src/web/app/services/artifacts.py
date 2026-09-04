@@ -17,9 +17,9 @@ Two invariants shape everything below:
 
 import os
 import stat
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterator, Optional
 from uuid import UUID
 
 from app.settings import settings
@@ -82,7 +82,7 @@ class FileEntry:
     is_dir: bool
     size: int
     modified: float
-    preview: Optional[str]
+    preview: str | None
 
 
 def artifact_root() -> Path:
@@ -92,7 +92,7 @@ def artifact_root() -> Path:
     return settings.artifact_root.resolve()
 
 
-def run_root(task_id: UUID | str, root: Optional[Path] = None) -> Path:
+def run_root(task_id: UUID | str, root: Path | None = None) -> Path:
     """Directory for one run, validated to sit directly under the root.
 
     task_id is parsed as a UUID before it ever reaches the filesystem. That
@@ -104,21 +104,21 @@ def run_root(task_id: UUID | str, root: Optional[Path] = None) -> Path:
         try:
             task_id = UUID(str(task_id))
         except (ValueError, AttributeError, TypeError):
-            raise ArtifactRejected("Malformed run identifier")
+            raise ArtifactRejected("Malformed run identifier") from None
 
     candidate = base / str(task_id)
     try:
         resolved = candidate.resolve(strict=True)
     except (FileNotFoundError, RuntimeError):
-        raise ArtifactNotFound("No artifacts for this run")
+        raise ArtifactNotFound("No artifacts for this run") from None
     if not resolved.is_relative_to(base):
         raise ArtifactRejected("Run directory escapes the artifact root")
     if not resolved.is_dir():
-        raise ArtifactNotFound("No artifacts for this run")
+        raise ArtifactNotFound("No artifacts for this run") from None
     return resolved
 
 
-def resolve(task_id: UUID | str, relative: str, root: Optional[Path] = None) -> Path:
+def resolve(task_id: UUID | str, relative: str, root: Path | None = None) -> Path:
     """Resolve a path relative to a run directory, or refuse."""
     if relative is None:
         raise ArtifactRejected("Missing path")
@@ -139,7 +139,7 @@ def resolve(task_id: UUID | str, relative: str, root: Optional[Path] = None) -> 
     try:
         target = (base / relative).resolve(strict=True)
     except (FileNotFoundError, RuntimeError):
-        raise ArtifactNotFound("No such file in this run")
+        raise ArtifactNotFound("No such file in this run") from None
 
     # is_relative_to, not startswith: "/downloads/<uuid>-other" starts with
     # "/downloads/<uuid>" as a string but is a different directory.
@@ -169,7 +169,7 @@ def open_regular_file(path: Path) -> tuple[int, os.stat_result]:
     return fd, st
 
 
-def read_preview(path: Path, limit: Optional[int] = None) -> bytes:
+def read_preview(path: Path, limit: int | None = None) -> bytes:
     limit = settings.preview_limit_bytes if limit is None else limit
     fd, st = open_regular_file(path)
     try:
@@ -196,9 +196,7 @@ def walk(base: Path) -> Iterator[FileEntry]:
     """
     for dirpath, dirnames, filenames in os.walk(base, followlinks=False):
         current = Path(dirpath)
-        dirnames[:] = sorted(
-            d for d in dirnames if not (current / d).is_symlink()
-        )
+        dirnames[:] = sorted(d for d in dirnames if not (current / d).is_symlink())
         for name in dirnames:
             entry = current / name
             try:
@@ -231,7 +229,7 @@ def walk(base: Path) -> Iterator[FileEntry]:
             )
 
 
-def preview_kind(path: Path) -> Optional[str]:
+def preview_kind(path: Path) -> str | None:
     return _PREVIEW_KIND.get(path.suffix.lower())
 
 

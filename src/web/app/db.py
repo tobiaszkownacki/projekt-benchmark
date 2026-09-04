@@ -3,8 +3,9 @@
 import asyncio
 import json
 import logging
+from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Optional, Sequence
+from typing import Any
 
 import psycopg
 from psycopg.rows import dict_row
@@ -14,7 +15,7 @@ from app.settings import settings
 
 logger = logging.getLogger(__name__)
 
-_pool: Optional[AsyncConnectionPool] = None
+_pool: AsyncConnectionPool | None = None
 
 
 async def open_pool() -> AsyncConnectionPool:
@@ -56,7 +57,7 @@ async def fetch_all(sql: str, params: Sequence[Any] = ()) -> list[dict]:
         return await cur.fetchall()
 
 
-async def fetch_one(sql: str, params: Sequence[Any] = ()) -> Optional[dict]:
+async def fetch_one(sql: str, params: Sequence[Any] = ()) -> dict | None:
     async with connection() as conn:
         cur = await conn.execute(sql, params)
         return await cur.fetchone()
@@ -78,7 +79,7 @@ class TaskChangeBroker:
 
     def __init__(self) -> None:
         self._subscribers: set[asyncio.Queue] = set()
-        self._task: Optional[asyncio.Task] = None
+        self._task: asyncio.Task | None = None
         self._lock = asyncio.Lock()
 
     async def start(self) -> None:
@@ -118,9 +119,7 @@ class TaskChangeBroker:
     async def _listen_forever(self) -> None:
         while True:
             try:
-                conn = await psycopg.AsyncConnection.connect(
-                    settings.database_url, autocommit=True
-                )
+                conn = await psycopg.AsyncConnection.connect(settings.database_url, autocommit=True)
             except Exception as exc:
                 logger.warning("LISTEN connection failed (%s); retrying in 5s", exc)
                 await asyncio.sleep(5)

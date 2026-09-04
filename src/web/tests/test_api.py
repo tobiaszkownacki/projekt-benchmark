@@ -24,6 +24,7 @@ def client(tmp_path_factory):
     os.environ.setdefault("STATIC_ROOT", "/nonexistent")
 
     from app.main import app
+
     with TestClient(app) as test_client:
         yield test_client
 
@@ -110,10 +111,17 @@ def test_artifact_traversal_is_refused(client):
 
 
 def test_submission_requires_a_verified_account(client):
-    response = client.post("/api/submissions", json={
-        "display_name": "x", "kind": "builtin", "builtin_name": "adam",
-        "dataset": "wine", "model": "mlp-1x16", "max_epochs": 1,
-    })
+    response = client.post(
+        "/api/submissions",
+        json={
+            "display_name": "x",
+            "kind": "builtin",
+            "builtin_name": "adam",
+            "dataset": "wine",
+            "model": "mlp-1x16",
+            "max_epochs": 1,
+        },
+    )
     assert response.status_code in (401, 403)
 
 
@@ -140,9 +148,17 @@ def test_template_is_downloadable(client):
 
 def test_vocabulary_covers_every_state(client):
     body = client.get("/api/vocabulary").json()
-    for state in ("queued_broker", "queued_slurm", "running", "downloading",
-                  "completed", "completed_no_artifacts", "failed",
-                  "failed_no_artifacts", "rejected"):
+    for state in (
+        "queued_broker",
+        "queued_slurm",
+        "running",
+        "downloading",
+        "completed",
+        "completed_no_artifacts",
+        "failed",
+        "failed_no_artifacts",
+        "rejected",
+    ):
         assert state in body["run_states"], state
         assert body["run_states"][state]["label"]
 

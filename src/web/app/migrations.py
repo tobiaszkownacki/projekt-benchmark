@@ -54,9 +54,7 @@ async def apply_migrations(database_url: str = "", directory: Path | None = None
             logger.info("Applying migration %s", version)
             try:
                 await conn.execute(path.read_text(encoding="utf-8"))
-                await conn.execute(
-                    "INSERT INTO schema_migrations (version) VALUES (%s)", (version,)
-                )
+                await conn.execute("INSERT INTO schema_migrations (version) VALUES (%s)", (version,))
                 await conn.commit()
                 applied.append(version)
             except Exception:

@@ -14,7 +14,7 @@ import sys
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import torch
@@ -66,10 +66,10 @@ LOCAL_OPTIMIZERS: dict[str, tuple[Any, dict, str]] = {
 
 @dataclass
 class StopCondition:
-    max_gradient_count: Optional[int] = None
-    max_database_reaches: Optional[int] = None
-    max_epochs: Optional[int] = None
-    max_steps: Optional[int] = None
+    max_gradient_count: int | None = None
+    max_database_reaches: int | None = None
+    max_epochs: int | None = None
+    max_steps: int | None = None
 
     def as_dict(self) -> dict:
         return {k: v for k, v in asdict(self).items() if v is not None}
@@ -162,8 +162,7 @@ class LocalBenchmarkRunner:
 
         lines: list[str] = [
             f"local-cpu backend {RUNNER_VERSION}",
-            f"optimizer={optimizer_key} dataset={self.dataset_name} "
-            f"model={self.model_name} seed={self.seed}",
+            f"optimizer={optimizer_key} dataset={self.dataset_name} model={self.model_name} seed={self.seed}",
             f"parameters={result.param_count} batch_size={self.batch_size}",
             f"stop_condition={self.stop_condition.as_dict()}",
             "-" * 64,
@@ -171,7 +170,7 @@ class LocalBenchmarkRunner:
 
         steps = 0
         epochs = 0
-        stop_reason: Optional[str] = None
+        stop_reason: str | None = None
         started = time.time()
 
         while stop_reason is None:
@@ -248,9 +247,7 @@ class LocalBenchmarkRunner:
         result.database_reaches = database_reaches
         result.stop_reason = stop_reason or "EPOCH_LIMIT"
         result.final_loss = result.loss_history[-1] if result.loss_history else float("inf")
-        result.final_accuracy = (
-            result.accuracy_history[-1] if result.accuracy_history else 0.0
-        )
+        result.final_accuracy = result.accuracy_history[-1] if result.accuracy_history else 0.0
 
         lines += [
             "-" * 64,

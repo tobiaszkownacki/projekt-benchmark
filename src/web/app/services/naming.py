@@ -11,14 +11,12 @@ METRIC_LABELS = {
     "gradient_count": {
         "label": "wyliczone gradienty",
         "short": "gradienty",
-        "hint": "Liczba obliczeń gradientu. Rośnie o 1 przy każdym "
-                "evaluate_with_grad() i grad().",
+        "hint": "Liczba obliczeń gradientu. Rośnie o 1 przy każdym evaluate_with_grad() i grad().",
     },
     "database_reaches": {
         "label": "przetworzone próbki",
         "short": "próbki",
-        "hint": "Liczba próbek pobranych ze zbioru danych. Rośnie o batch_size "
-                "przy każdym przejściu w przód.",
+        "hint": "Liczba próbek pobranych ze zbioru danych. Rośnie o batch_size przy każdym przejściu w przód.",
     },
     "final_loss": {
         "label": "strata końcowa",
@@ -33,8 +31,7 @@ METRIC_LABELS = {
     "wall_time_seconds": {
         "label": "czas zegarowy",
         "short": "czas",
-        "hint": "Świadomie nieużywany do rankingu — zależy od tego, jaki sprzęt "
-                "akurat przydzielił scheduler.",
+        "hint": "Świadomie nieużywany do rankingu — zależy od tego, jaki sprzęt akurat przydzielił scheduler.",
     },
 }
 

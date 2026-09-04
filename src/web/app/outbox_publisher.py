@@ -51,9 +51,7 @@ def connection_parameters() -> pika.ConnectionParameters:
     return pika.ConnectionParameters(
         host=os.environ.get("RABBITMQ_HOST", "rabbitmq"),
         port=int(os.environ.get("RABBITMQ_PORT", "5672")),
-        credentials=pika.PlainCredentials(
-            os.environ["RABBITMQ_USER"], os.environ["RABBITMQ_PASSWORD"]
-        ),
+        credentials=pika.PlainCredentials(os.environ["RABBITMQ_USER"], os.environ["RABBITMQ_PASSWORD"]),
         heartbeat=30,
         blocked_connection_timeout=30,
     )
@@ -87,7 +85,7 @@ def publish_batch(db: psycopg.Connection, channel) -> int:
                     routing_key=row["routing_key"],
                     body=body.encode(),
                     properties=pika.BasicProperties(
-                        delivery_mode=2,          # persist across broker restart
+                        delivery_mode=2,  # persist across broker restart
                         content_type="application/json",
                         message_id=str(row["id"]),
                     ),

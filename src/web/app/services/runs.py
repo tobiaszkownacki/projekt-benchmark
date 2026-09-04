@@ -1,6 +1,6 @@
 """Reads over tasks joined with their results."""
 
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from app import db
@@ -79,32 +79,28 @@ def serialise(row: dict) -> dict:
             "total_steps": row.get("total_steps"),
             "total_epochs": row.get("total_epochs"),
             "wall_time_seconds": row.get("wall_time_seconds"),
-        } if row.get("gradient_count") is not None else None,
+        }
+        if row.get("gradient_count") is not None
+        else None,
         "stop_reason": stop_reason,
-        "stop_reason_label": (
-            naming.STOP_REASONS.get(stop_reason, {}).get("label") if stop_reason else None
-        ),
-        "converged": (
-            naming.STOP_REASONS.get(stop_reason, {}).get("converged") if stop_reason else None
-        ),
+        "stop_reason_label": (naming.STOP_REASONS.get(stop_reason, {}).get("label") if stop_reason else None),
+        "converged": (naming.STOP_REASONS.get(stop_reason, {}).get("converged") if stop_reason else None),
     }
 
 
-async def get(task_id: UUID) -> Optional[dict]:
-    return await db.fetch_one(
-        f"SELECT {RUN_COLUMNS} {_FROM} WHERE t.task_id = %s", (task_id,)
-    )
+async def get(task_id: UUID) -> dict | None:
+    return await db.fetch_one(f"SELECT {RUN_COLUMNS} {_FROM} WHERE t.task_id = %s", (task_id,))
 
 
 async def listing(
-    mine_for: Optional[UUID] = None,
-    status: Optional[str] = None,
-    dataset: Optional[str] = None,
-    model: Optional[str] = None,
-    family: Optional[str] = None,
-    suite: Optional[str] = None,
-    optimizer: Optional[str] = None,
-    search: Optional[str] = None,
+    mine_for: UUID | None = None,
+    status: str | None = None,
+    dataset: str | None = None,
+    model: str | None = None,
+    family: str | None = None,
+    suite: str | None = None,
+    optimizer: str | None = None,
+    search: str | None = None,
     limit: int = 50,
     offset: int = 0,
 ) -> tuple[list[dict], int]:
@@ -138,9 +134,7 @@ async def listing(
 
     clause = (" WHERE " + " AND ".join(where)) if where else ""
 
-    total_row = await db.fetch_one(
-        f"SELECT COUNT(*) AS n {_FROM}{clause}", params
-    )
+    total_row = await db.fetch_one(f"SELECT COUNT(*) AS n {_FROM}{clause}", params)
     total = int(total_row["n"]) if total_row else 0
 
     rows = await db.fetch_all(
@@ -164,7 +158,7 @@ async def transitions(task_id: UUID) -> list[dict]:
     )
 
 
-async def series_row(task_id: UUID) -> Optional[dict]:
+async def series_row(task_id: UUID) -> dict | None:
     return await db.fetch_one(
         """
         SELECT epochs, loss, accuracy, gradient_count, database_reaches,

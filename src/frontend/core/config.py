@@ -11,10 +11,10 @@ reason: importing this module must not require Streamlit.
 """
 
 import os
-from typing import Any, Optional
+from typing import Any
 
 
-def _secret(section: str, key: str) -> Optional[Any]:
+def _secret(section: str, key: str) -> Any | None:
     """Read ``[section] key`` from Streamlit secrets, or None when unavailable."""
     try:
         import streamlit as st
@@ -26,7 +26,7 @@ def _secret(section: str, key: str) -> Optional[Any]:
         return None
 
 
-def _lookup(env_var: str, section: str, key: str, default: Optional[Any] = None) -> Optional[Any]:
+def _lookup(env_var: str, section: str, key: str, default: Any | None = None) -> Any | None:
     value = os.environ.get(env_var)
     if value not in (None, ""):
         return value
@@ -60,8 +60,7 @@ def get_api_base_url() -> str:
     value = _lookup("API_BASE_URL", "api", "base_url")
     if not value:
         raise RuntimeError(
-            "API base URL is not configured. Set API_BASE_URL in the environment "
-            "or [api] base_url in secrets.toml."
+            "API base URL is not configured. Set API_BASE_URL in the environment or [api] base_url in secrets.toml."
         )
     return str(value).rstrip("/")
 

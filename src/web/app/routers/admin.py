@@ -39,9 +39,12 @@ async def users(_: CurrentUser = Depends(require_admin)) -> dict:
     return {
         "pending": [
             {
-                "id": str(u.id), "email": u.email, "display_name": u.display_name,
+                "id": str(u.id),
+                "email": u.email,
+                "display_name": u.display_name,
                 "associated_organisation": u.associated_organisation,
-                "join_reason": u.join_reason, "created_at": u.created_at,
+                "join_reason": u.join_reason,
+                "created_at": u.created_at,
             }
             for u in pending
         ],
@@ -50,13 +53,11 @@ async def users(_: CurrentUser = Depends(require_admin)) -> dict:
 
 
 @router.post("/users/approve")
-async def approve(
-    payload: ApprovalRequest, _: CurrentUser = Depends(require_admin)
-) -> dict:
+async def approve(payload: ApprovalRequest, _: CurrentUser = Depends(require_admin)) -> dict:
     try:
         account = await legacy_auth.approve_user(payload.user_id)
     except ValueError as exc:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc))
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
     return {"id": str(account.id), "role": account.role}
 
 
@@ -177,9 +178,9 @@ async def queue(_: CurrentUser = Depends(require_admin)) -> dict:
             "cluster_probe": {
                 "available": False,
                 "reason": "sinfo/sacct są dostępne wyłącznie z kontenera pollera "
-                          "(tam są poświadczenia SSH). Do wystawienia przez "
-                          "uzgodniony endpoint pollera, nie przez drugie "
-                          "połączenie z klastrem.",
+                "(tam są poświadczenia SSH). Do wystawienia przez "
+                "uzgodniony endpoint pollera, nie przez drugie "
+                "połączenie z klastrem.",
             },
         },
         "orphans": orphans,
@@ -202,9 +203,7 @@ async def all_submissions(_: CurrentUser = Depends(require_admin)) -> dict:
 
 
 @router.post("/submissions/{submission_id}/revoke")
-async def revoke_submission(
-    submission_id: str, _: CurrentUser = Depends(require_admin)
-) -> dict:
+async def revoke_submission(submission_id: str, _: CurrentUser = Depends(require_admin)) -> dict:
     await db.execute(
         "UPDATE submissions SET status = 'rejected' WHERE submission_id = %s",
         (submission_id,),

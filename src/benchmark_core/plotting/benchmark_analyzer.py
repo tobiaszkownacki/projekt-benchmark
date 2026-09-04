@@ -3,7 +3,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from src.benchmark.runner import BenchmarkResult
 
-
 # Okabe-Ito, the standard colour-blind-safe qualitative set, chosen so figures
 # stay readable in print.
 #
@@ -125,8 +124,9 @@ class BenchmarkAnalyzer:
                     # mean anything; on a few thousand epochs they merge into a
                     # band and hide the curve.
                     marker = "o" if len(x) <= 60 else None
-                    ax.plot(x, y, marker=marker, markersize=4, label=name,
-                            color=color, linestyle=linestyle, linewidth=1.8)
+                    ax.plot(
+                        x, y, marker=marker, markersize=4, label=name, color=color, linestyle=linestyle, linewidth=1.8
+                    )
             ax.legend(frameon=False)
             ax.grid(alpha=0.25, linewidth=0.6)
             for spine in ("top", "right"):

@@ -9,7 +9,6 @@ the submitted optimizer so an artifact can be tied to the code that produced it.
 import csv
 import json
 from pathlib import Path
-from typing import Optional
 
 import matplotlib
 
@@ -19,8 +18,14 @@ import matplotlib.pyplot as plt  # noqa: E402
 # Okabe-Ito: distinguishable under the common forms of colour blindness. Line
 # style repeats the same distinction so nothing is lost in greyscale print.
 OKABE_ITO = [
-    "#000000", "#E69F00", "#56B4E9", "#009E73",
-    "#0072B2", "#D55E00", "#CC79A7", "#F0E442",
+    "#000000",
+    "#E69F00",
+    "#56B4E9",
+    "#009E73",
+    "#0072B2",
+    "#D55E00",
+    "#CC79A7",
+    "#F0E442",
 ]
 LINE_STYLES = ["-", "--", "-.", ":"]
 
@@ -43,9 +48,9 @@ def _plot(path: Path, x, y, title: str, xlabel: str, ylabel: str, colour: str) -
 def write_run_artifacts(
     root: Path,
     result,
-    optimizer_source: Optional[str] = None,
-    slurm_job_id: Optional[str] = None,
-    extra_metadata: Optional[dict] = None,
+    optimizer_source: str | None = None,
+    slurm_job_id: str | None = None,
+    extra_metadata: dict | None = None,
 ) -> tuple[int, int]:
     """Write one run's directory. Returns (file_count, total_bytes)."""
     reports = root / "reports"
@@ -63,41 +68,73 @@ def write_run_artifacts(
     uses_gradients = bool(result.gradient_history) and result.gradient_history[-1] > 0
 
     if result.loss_history:
-        _plot(reports / "loss_vs_epoch.png", epochs, result.loss_history,
-              "Strata wg epok", "Epoka", "Strata", colour)
+        _plot(reports / "loss_vs_epoch.png", epochs, result.loss_history, "Strata wg epok", "Epoka", "Strata", colour)
         # The axis on which a gradient method and a population method can
         # actually be compared.
-        _plot(reports / "loss_vs_db_reaches.png", result.database_reaches_history,
-              result.loss_history, "Strata wg liczby próbek",
-              "Przetworzone próbki", "Strata", colour)
+        _plot(
+            reports / "loss_vs_db_reaches.png",
+            result.database_reaches_history,
+            result.loss_history,
+            "Strata wg liczby próbek",
+            "Przetworzone próbki",
+            "Strata",
+            colour,
+        )
         if uses_gradients:
-            _plot(reports / "loss_vs_grads.png", result.gradient_history,
-                  result.loss_history, "Strata wg liczby gradientów",
-                  "Wyliczone gradienty", "Strata", colour)
+            _plot(
+                reports / "loss_vs_grads.png",
+                result.gradient_history,
+                result.loss_history,
+                "Strata wg liczby gradientów",
+                "Wyliczone gradienty",
+                "Strata",
+                colour,
+            )
     if result.accuracy_history:
-        _plot(reports / "acc_vs_epoch.png", epochs, result.accuracy_history,
-              "Dokładność wg epok", "Epoka", "Dokładność [%]", OKABE_ITO[3])
-        _plot(reports / "acc_vs_db_reaches.png", result.database_reaches_history,
-              result.accuracy_history, "Dokładność wg liczby próbek",
-              "Przetworzone próbki", "Dokładność [%]", OKABE_ITO[3])
+        _plot(
+            reports / "acc_vs_epoch.png",
+            epochs,
+            result.accuracy_history,
+            "Dokładność wg epok",
+            "Epoka",
+            "Dokładność [%]",
+            OKABE_ITO[3],
+        )
+        _plot(
+            reports / "acc_vs_db_reaches.png",
+            result.database_reaches_history,
+            result.accuracy_history,
+            "Dokładność wg liczby próbek",
+            "Przetworzone próbki",
+            "Dokładność [%]",
+            OKABE_ITO[3],
+        )
         if uses_gradients:
-            _plot(reports / "acc_vs_grads.png", result.gradient_history,
-                  result.accuracy_history, "Dokładność wg liczby gradientów",
-                  "Wyliczone gradienty", "Dokładność [%]", OKABE_ITO[3])
+            _plot(
+                reports / "acc_vs_grads.png",
+                result.gradient_history,
+                result.accuracy_history,
+                "Dokładność wg liczby gradientów",
+                "Wyliczone gradienty",
+                "Dokładność [%]",
+                OKABE_ITO[3],
+            )
 
     csv_name = f"benchmark-{result.optimizer_name}-{result.dataset_name}.csv"
     with open(data / csv_name, "w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
         writer.writerow(["epoch", "loss", "accuracy", "gradients", "samples", "seconds"])
         for index in range(len(result.loss_history)):
-            writer.writerow([
-                epochs[index],
-                round(result.loss_history[index], 6),
-                round(result.accuracy_history[index], 4),
-                result.gradient_history[index],
-                result.database_reaches_history[index],
-                round(result.time_history[index], 4),
-            ])
+            writer.writerow(
+                [
+                    epochs[index],
+                    round(result.loss_history[index], 6),
+                    round(result.accuracy_history[index], 4),
+                    result.gradient_history[index],
+                    result.database_reaches_history[index],
+                    round(result.time_history[index], 4),
+                ]
+            )
 
     job_id = slurm_job_id or "local"
     (logs / f"{job_id}.out").write_text(result.stdout, encoding="utf-8")
@@ -117,18 +154,21 @@ def write_run_artifacts(
         "total_epochs": result.total_epochs,
         "wall_time_seconds": result.wall_time_seconds,
         "uses_gradients": uses_gradients,
-        "omitted_plots": [] if uses_gradients else [
-            "loss_vs_grads.png", "acc_vs_grads.png",
+        "omitted_plots": []
+        if uses_gradients
+        else [
+            "loss_vs_grads.png",
+            "acc_vs_grads.png",
         ],
-        "omitted_plots_reason": None if uses_gradients else (
+        "omitted_plots_reason": None
+        if uses_gradients
+        else (
             "Optymalizator bezgradientowy — licznik gradientów pozostaje zerowy, "
             "więc wykres w funkcji gradientów nie niesie informacji."
         ),
         **(extra_metadata or {}),
     }
-    (root / "metadata.json").write_text(
-        json.dumps(metadata, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
+    (root / "metadata.json").write_text(json.dumps(metadata, indent=2, ensure_ascii=False), encoding="utf-8")
 
     if optimizer_source:
         (root / "optimizer.py").write_text(optimizer_source, encoding="utf-8")

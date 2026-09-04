@@ -32,7 +32,9 @@ class Flake8Unusable(RuntimeError):
 def run_flake8() -> collections.Counter:
     result = subprocess.run(
         [sys.executable, "-m", "flake8"],
-        cwd=ROOT, capture_output=True, text=True,
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
     )
     found: collections.Counter = collections.Counter()
     for line in result.stdout.splitlines():
@@ -94,23 +96,17 @@ def main() -> int:
         return 0
 
     known = read_baseline()
-    regressions = {
-        key: (count, known.get(key, 0))
-        for key, count in found.items()
-        if count > known.get(key, 0)
-    }
+    regressions = {key: (count, known.get(key, 0)) for key, count in found.items() if count > known.get(key, 0)}
 
     if regressions:
         print("New flake8 violations:\n")
         for (path, code), (now, before) in sorted(regressions.items()):
             print(f"  {path}: {code} x{now} (baseline {before})")
-        print("\nFix them, or run scripts/lint_baseline.py --update if the "
-              "change is deliberate.")
+        print("\nFix them, or run scripts/lint_baseline.py --update if the change is deliberate.")
         return 1
 
     fixed = sum(known.values()) - sum(found.values())
-    print(f"No new violations. Known debt: {sum(found.values())} "
-          f"across {len({p for p, _ in found})} file(s).")
+    print(f"No new violations. Known debt: {sum(found.values())} across {len({p for p, _ in found})} file(s).")
     if fixed > 0:
         print(f"{fixed} fewer than the baseline -- run --update to lock that in.")
     return 0

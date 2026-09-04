@@ -7,7 +7,6 @@ does, so a figure and the CSV behind it cannot disagree.
 
 import csv
 import io
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -25,7 +24,7 @@ GROUPINGS = {
     "optimizer": lambda r: r["optimizer_name"] or "?",
     "optimizer_dataset": lambda r: f"{r['optimizer_name']} · {r['dataset']}",
     "optimizer_model": lambda r: f"{r['optimizer_name']} · {r['model_name']}",
-    "run": lambda r: (r["run_name"] or str(r["task_id"])[:8]),
+    "run": lambda r: r["run_name"] or str(r["task_id"])[:8],
 }
 
 
@@ -38,7 +37,7 @@ def _parse_ids(raw: str) -> list[UUID]:
         try:
             ids.append(UUID(chunk))
         except ValueError:
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Malformed run identifier")
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Malformed run identifier") from None
     if not ids:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "No runs selected")
     if len(ids) > 60:
@@ -47,7 +46,7 @@ def _parse_ids(raw: str) -> list[UUID]:
 
 
 async def _collect(
-    ids: list[UUID], user: Optional[CurrentUser], x: str, metric: str, group_by: str
+    ids: list[UUID], user: CurrentUser | None, x: str, metric: str, group_by: str
 ) -> tuple[dict, list[dict]]:
     rows = await db.fetch_all(
         f"""
@@ -66,7 +65,7 @@ async def _collect(
     visible = [r for r in rows if can_read_run(user, r["submitted_by"])]
 
     grouped: dict[str, list] = {}
-    families: dict[str, Optional[str]] = {}
+    families: dict[str, str | None] = {}
     key_of = GROUPINGS.get(group_by, GROUPINGS["optimizer"])
 
     for row in visible:
@@ -95,7 +94,7 @@ async def compare(
     group_by: str = Query("optimizer"),
     points: int = Query(200, ge=20, le=1000),
     logx: bool = Query(False),
-    user: Optional[CurrentUser] = Depends(optional_user),
+    user: CurrentUser | None = Depends(optional_user),
 ) -> dict:
     if x not in series_service.X_AXES:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown x axis")
@@ -128,16 +127,21 @@ async def compare(
 
     differences = []
     for i, (label_a, value_a, n_a) in enumerate(finals):
-        for label_b, value_b, n_b in finals[i + 1:]:
+        for label_b, value_b, n_b in finals[i + 1 :]:
             if value_a is None or value_b is None:
                 continue
-            differences.append({
-                "a": label_a, "b": label_b,
-                "median_a": value_a, "median_b": value_b,
-                "delta": value_a - value_b,
-                "relative": ((value_a - value_b) / value_b) if value_b else None,
-                "n_a": n_a, "n_b": n_b,
-            })
+            differences.append(
+                {
+                    "a": label_a,
+                    "b": label_b,
+                    "median_a": value_a,
+                    "median_b": value_b,
+                    "delta": value_a - value_b,
+                    "relative": ((value_a - value_b) / value_b) if value_b else None,
+                    "n_a": n_a,
+                    "n_b": n_b,
+                }
+            )
 
     return {
         "x": x,
@@ -150,9 +154,9 @@ async def compare(
         "statistical_test": {
             "available": False,
             "note": "Test istotności nie jest liczony: bez ustalonej liczby "
-                    "powtórzeń i poprawki na wielokrotne porównania wynik byłby "
-                    "mylący. Ziarno jest zapisywane per run, więc analiza "
-                    "pozostaje możliwa poza serwisem.",
+            "powtórzeń i poprawki na wielokrotne porównania wynik byłby "
+            "mylący. Ziarno jest zapisywane per run, więc analiza "
+            "pozostaje możliwa poza serwisem.",
         },
     }
 
@@ -165,24 +169,40 @@ async def export_csv(
     group_by: str = Query("optimizer"),
     points: int = Query(200, ge=20, le=1000),
     logx: bool = Query(False),
-    user: Optional[CurrentUser] = Depends(optional_user),
+    user: CurrentUser | None = Depends(optional_user),
 ) -> Response:
     payload = await compare(runs, x, metric, group_by, points, logx, user)
 
     buffer = io.StringIO()
     writer = csv.writer(buffer)
-    writer.writerow([
-        "series", "family", "n_runs", x, f"{metric}_median",
-        f"{metric}_q1", f"{metric}_q3", "n_at_x", "within_full_band",
-    ])
+    writer.writerow(
+        [
+            "series",
+            "family",
+            "n_runs",
+            x,
+            f"{metric}_median",
+            f"{metric}_q1",
+            f"{metric}_q3",
+            "n_at_x",
+            "within_full_band",
+        ]
+    )
     for entry in payload["series"]:
         for index, x_value in enumerate(entry["x"]):
-            writer.writerow([
-                entry["label"], entry["family"] or "", entry["n_runs"], x_value,
-                entry["median"][index], entry["q1"][index], entry["q3"][index],
-                entry["n_at_x"][index],
-                "yes" if index <= entry["full_until_index"] else "no",
-            ])
+            writer.writerow(
+                [
+                    entry["label"],
+                    entry["family"] or "",
+                    entry["n_runs"],
+                    x_value,
+                    entry["median"][index],
+                    entry["q1"][index],
+                    entry["q3"][index],
+                    entry["n_at_x"][index],
+                    "yes" if index <= entry["full_until_index"] else "no",
+                ]
+            )
 
     return Response(
         content=buffer.getvalue(),
