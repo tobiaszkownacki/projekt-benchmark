@@ -1,7 +1,7 @@
 import logging
 import time
 
-from pipeline.queue_topology import QueueTopology
+from shared.queue_topology import QueueTopology
 
 logger = logging.getLogger(__name__)
 

@@ -2,8 +2,8 @@ import logging
 
 from pipeline.consumer import run_consumer
 from pipeline.executor import ExecutorAdapter
-from pipeline.queue_topology import QueueTopology
 from pipeline.task_repository import TaskRepository
+from shared.queue_topology import QueueTopology
 
 logger = logging.getLogger(__name__)
 
