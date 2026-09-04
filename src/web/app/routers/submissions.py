@@ -9,7 +9,7 @@ broker outage cannot lose a submission and the API needs no broker credentials.
 """
 
 from datetime import date
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from psycopg.types.json import Jsonb
@@ -24,24 +24,30 @@ from app.settings import settings
 router = APIRouter(prefix="/api/submissions", tags=["submissions"])
 
 BUILTIN_FAMILIES = {
-    "adam": "gradient", "adamw": "gradient", "lion": "gradient",
-    "rmsprop": "gradient", "sgd": "gradient", "sgd_momentum": "gradient",
-    "cma-es": "gradient_free", "de": "gradient_free", "des": "gradient_free",
+    "adam": "gradient",
+    "adamw": "gradient",
+    "lion": "gradient",
+    "rmsprop": "gradient",
+    "sgd": "gradient",
+    "sgd_momentum": "gradient",
+    "cma-es": "gradient_free",
+    "de": "gradient_free",
+    "des": "gradient_free",
 }
 
 
 class SubmissionRequest(BaseModel):
     display_name: str = Field(min_length=1, max_length=120)
     kind: str = Field(pattern="^(builtin|uploaded)$")
-    builtin_name: Optional[str] = None
-    source_code: Optional[str] = None
+    builtin_name: str | None = None
+    source_code: str | None = None
     dataset: str = Field(min_length=1)
     model: str = Field(min_length=1)
     suite: str = Field(default="test", pattern="^(test|final)$")
     seeds: list[int] = Field(default_factory=lambda: [2137])
-    max_gradient_count: Optional[int] = Field(default=None, ge=1)
-    max_database_reaches: Optional[int] = Field(default=None, ge=1)
-    max_epochs: Optional[int] = Field(default=None, ge=1)
+    max_gradient_count: int | None = Field(default=None, ge=1)
+    max_database_reaches: int | None = Field(default=None, ge=1)
+    max_epochs: int | None = Field(default=None, ge=1)
 
 
 async def _remaining_quota(user_id) -> int:
@@ -68,20 +74,20 @@ async def quota(user: CurrentUser = Depends(require_verified)) -> dict:
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
-async def submit(
-    payload: SubmissionRequest, user: CurrentUser = Depends(require_verified)
-) -> dict:
+async def submit(payload: SubmissionRequest, user: CurrentUser = Depends(require_verified)) -> dict:
     if payload.kind == "builtin" and not payload.builtin_name:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Brak nazwy optymalizatora")
     if payload.kind == "uploaded" and not payload.source_code:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Brak kodu optymalizatora")
 
     stop_condition: dict[str, Any] = {
-        k: v for k, v in {
+        k: v
+        for k, v in {
             "max_gradient_count": payload.max_gradient_count,
             "max_database_reaches": payload.max_database_reaches,
             "max_epochs": payload.max_epochs,
-        }.items() if v is not None
+        }.items()
+        if v is not None
     }
     if not stop_condition:
         raise HTTPException(
@@ -94,8 +100,7 @@ async def submit(
     if len(seeds) > remaining:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
-            f"Dzienny limit zgłoszeń wyczerpany. Pozostało {remaining} "
-            f"z {settings.daily_submission_limit}.",
+            f"Dzienny limit zgłoszeń wyczerpany. Pozostało {remaining} z {settings.daily_submission_limit}.",
             headers={"Retry-After": "3600"},
         )
 
@@ -107,7 +112,7 @@ async def submit(
         outcome = validator.ValidationResult(
             ok=True,
             log=f"Optymalizator wbudowany '{payload.builtin_name}' — "
-                f"walidacja protokołu pominięta, kod pochodzi z repozytorium.",
+            f"walidacja protokołu pominięta, kod pochodzi z repozytorium.",
             family=BUILTIN_FAMILIES.get(payload.builtin_name or "", "gradient"),
             version="builtin",
         )
@@ -115,8 +120,9 @@ async def submit(
         digest = None
 
     async with db.connection() as conn:
-        row = await (await conn.execute(
-            """
+        row = await (
+            await conn.execute(
+                """
             INSERT INTO submissions (
                 submitted_by, display_name, kind, builtin_name, source_code,
                 source_sha256, family, status, validator_log, validator_version,
@@ -125,13 +131,20 @@ async def submit(
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
             RETURNING submission_id, status::text AS status
             """,
-            (
-                user.id, payload.display_name, payload.kind, payload.builtin_name,
-                payload.source_code, digest, family,
-                "accepted" if outcome.ok else "rejected",
-                outcome.log, outcome.version,
-            ),
-        )).fetchone()
+                (
+                    user.id,
+                    payload.display_name,
+                    payload.kind,
+                    payload.builtin_name,
+                    payload.source_code,
+                    digest,
+                    family,
+                    "accepted" if outcome.ok else "rejected",
+                    outcome.log,
+                    outcome.version,
+                ),
+            )
+        ).fetchone()
 
         submission_id = row["submission_id"]
 
@@ -151,8 +164,10 @@ async def submit(
         optimizer_name = payload.builtin_name or payload.display_name
         created: list[str] = []
         for seed in seeds:
-            task = await (await conn.execute(
-                """
+            run_name = f"{optimizer_name}-{payload.dataset}-s{seed}"
+            task = await (
+                await conn.execute(
+                    """
                 INSERT INTO tasks (
                     queue_name, executor_name, submitted_by, dataset, run_name,
                     optimizer_params, submission_id, seed, suite, model_name,
@@ -161,17 +176,35 @@ async def submit(
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
                 RETURNING task_id
                 """,
-                (
-                    settings.worker_queue, "athena", user.id, payload.dataset,
-                    f"{optimizer_name}-{payload.dataset}-s{seed}",
-                    Jsonb({"optimizer": optimizer_name, "seed": seed}),
-                    submission_id, seed, payload.suite, payload.model,
-                    optimizer_name, family, Jsonb(stop_condition),
-                ),
-            )).fetchone()
+                    (
+                        settings.worker_queue,
+                        "athena",
+                        user.id,
+                        payload.dataset,
+                        run_name,
+                        Jsonb({"optimizer": optimizer_name, "seed": seed}),
+                        submission_id,
+                        seed,
+                        payload.suite,
+                        payload.model,
+                        optimizer_name,
+                        family,
+                        Jsonb(stop_condition),
+                    ),
+                )
+            ).fetchone()
 
             task_id = task["task_id"]
-            await outbox.enqueue(conn, outbox.task_message(task_id, settings.worker_queue))
+            await outbox.enqueue(
+                conn,
+                outbox.task_message(
+                    task_id,
+                    settings.worker_queue,
+                    run_name=run_name,
+                    dataset=payload.dataset,
+                    optimizer=optimizer_name,
+                ),
+            )
             created.append(str(task_id))
 
         await conn.commit()
@@ -188,9 +221,7 @@ async def submit(
 
 
 @router.get("/{submission_id}")
-async def get_submission(
-    submission_id: str, user: Optional[CurrentUser] = Depends(optional_user)
-) -> dict:
+async def get_submission(submission_id: str, user: CurrentUser | None = Depends(optional_user)) -> dict:
     row = await db.fetch_one(
         """
         SELECT s.*, s.status::text AS status_text, s.family::text AS family_text

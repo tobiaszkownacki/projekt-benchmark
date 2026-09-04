@@ -15,7 +15,7 @@ typical submission rates.
 """
 
 import json
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 import psycopg
@@ -27,8 +27,8 @@ from app.settings import settings
 async def enqueue(
     conn: psycopg.AsyncConnection,
     payload: dict[str, Any],
-    routing_key: Optional[str] = None,
-    exchange: Optional[str] = None,
+    routing_key: str | None = None,
+    exchange: str | None = None,
 ) -> None:
     """Add a message to the outbox inside the caller's transaction."""
     await conn.execute(
@@ -44,17 +44,33 @@ async def enqueue(
     )
 
 
-def task_message(task_id: UUID, queue_name: str) -> dict[str, Any]:
-    """The message shape the existing Athena worker already consumes."""
-    return {"task_id": str(task_id), "queue_name": queue_name}
+def task_message(
+    task_id: UUID,
+    queue_name: str,
+    *,
+    run_name: str,
+    dataset: str,
+    optimizer: str,
+) -> dict[str, Any]:
+    """The message shape AthenaWorker.start_job consumes.
+
+    start_job subscripts dataset and optimizer directly, so a message missing
+    either raises KeyError and the worker nacks it to the dead-letter queue.
+    optimizer is comma-separated when a task runs more than one.
+    """
+    return {
+        "task_id": str(task_id),
+        "queue_name": queue_name,
+        "run_name": run_name,
+        "dataset": dataset,
+        "optimizer": optimizer,
+    }
 
 
 async def pending_count() -> int:
     from app import db
 
-    row = await db.fetch_one(
-        "SELECT COUNT(*) AS n FROM queue_outbox WHERE published_at IS NULL"
-    )
+    row = await db.fetch_one("SELECT COUNT(*) AS n FROM queue_outbox WHERE published_at IS NULL")
     return int(row["n"]) if row else 0
 
 
