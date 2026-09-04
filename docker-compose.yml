@@ -41,7 +41,11 @@ services:
       retries: 10
       start_period: 20s
 
+  # The Streamlit site and the task API it posts to. Both are superseded by
+  # `web`, which serves the same functions behind session auth and a
+  # transactional outbox. Start them with `--profile legacy`.
   frontend:
+    profiles: ["legacy"]
     build:
       context: .
       dockerfile: src/frontend/Dockerfile
@@ -59,6 +63,7 @@ services:
       - ./src/frontend/.streamlit:/app/.streamlit:ro
 
   api:
+    profiles: ["legacy"]
     build:
       context: .
       dockerfile: src/task_queue/services/api/fastapi/Dockerfile

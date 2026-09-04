@@ -46,11 +46,15 @@ secret-shaped value in a tracked file:
 docker compose up -d --build postgres rabbitmq web outbox_publisher
 ```
 
-Four services, not nine, and the omission is intentional: `athena_worker`,
-`athena_poller` and `athena_downloader` need PLGrid credentials, and `frontend`
-(the Streamlit app) needs `secrets.toml`. Neither is required for the control
-plane. Starting them without credentials produces a restart loop and nothing
-else.
+Four services, not seven, and the omission is intentional: `athena_worker`,
+`athena_poller` and `athena_downloader` need PLGrid credentials, and starting
+them without produces a restart loop and nothing else.
+
+`frontend` (the Streamlit site) and `api` (the task-submission endpoint it
+posts to) are behind the `legacy` profile, so a plain `docker compose up`
+leaves them out and starts one frontend and one API. Bring them back with
+`docker compose --profile legacy up -d`; `frontend` then needs
+`src/frontend/.streamlit/secrets.toml`.
 
 Database migrations run automatically at boot (`RUN_MIGRATIONS` defaults to
 true), so there is no separate migrate step.
