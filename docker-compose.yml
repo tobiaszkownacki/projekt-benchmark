@@ -41,7 +41,11 @@ services:
       retries: 10
       start_period: 20s
 
+  # The Streamlit site and the task API it posts to. Both are superseded by
+  # `web`, which serves the same functions behind session auth and a
+  # transactional outbox. Start them with `--profile legacy`.
   frontend:
+    profiles: ["legacy"]
     build:
       context: .
       dockerfile: src/frontend/Dockerfile
@@ -59,6 +63,7 @@ services:
       - ./src/frontend/.streamlit:/app/.streamlit:ro
 
   api:
+    profiles: ["legacy"]
     build:
       context: .
       dockerfile: src/task_queue/services/api/fastapi/Dockerfile
@@ -113,6 +118,70 @@ services:
       - .env
     volumes:
       - ./downloads:/downloads
+
+  web:
+    build:
+      context: .
+      dockerfile: src/web/Dockerfile
+    container_name: benchmark_web
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      SESSION_SECRET: ${SESSION_SECRET}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_MANAGEMENT_URL: http://rabbitmq:15672
+      PUBLIC_RESULTS: ${PUBLIC_RESULTS:-1}
+      DAILY_SUBMISSION_LIMIT: ${DAILY_SUBMISSION_LIMIT:-3}
+      # The validator needs a Docker socket to start its sandbox. Off by default
+      # so the web container does not require one; submissions are then accepted
+      # with an explicit note that nothing was checked, rather than silently.
+      VALIDATOR_ENABLED: ${VALIDATOR_ENABLED:-0}
+    ports:
+      # 8080, not 8000: main's task API claims ${API_PORT:-8000} and the two
+      # would refuse to bind together on a default `docker compose up`.
+      - "${WEB_PORT:-8080}:8000"
+    volumes:
+      # Read-only on purpose. The downloader owns this directory; the web layer
+      # only reads it, and defence in depth means a bug here cannot write into
+      # the artifact tree.
+      - ./downloads:/downloads:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3).status==200 else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+
+  outbox_publisher:
+    build:
+      context: .
+      dockerfile: src/web/Dockerfile
+    container_name: benchmark_outbox_publisher
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      RABBITMQ_HOST: rabbitmq
+    command: ["python", "-m", "app.outbox_publisher"]
+    # Both services share one image whose healthcheck probes the HTTP endpoint.
+    # This one serves nothing, so it checks that the process is alive instead.
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,sys,time; p='/tmp/outbox-heartbeat'; sys.exit(0 if os.path.exists(p) and time.time()-os.path.getmtime(p) < 60 else 1)"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 volumes:
   postgres_data:

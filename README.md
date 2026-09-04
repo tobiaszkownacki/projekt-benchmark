@@ -6,6 +6,11 @@ This repository contains a benchmark suite for testing, comparing, and analyzing
 
 ## 2. Installation & Setup
 
+> **Running the web control plane?** See **[docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md)**.
+> It covers generating your own `.env` (no secret needs to be sent to you),
+> starting the stack, seeding real measured runs, and what does not work
+> without cluster access. The steps below cover the benchmark CLI only.
+
 To get started with this project, follow these steps:
 
 1. **Clone the repository**
