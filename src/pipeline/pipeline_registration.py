@@ -13,8 +13,8 @@ class InfrastructureRegistration:
 
     # broker,db
     task_repository_path: str = "pipeline.sql_task_repository.SqlTaskRepository"
-    db_connector_path: str = "shared.connectors.postgres_connector.PostGresConnector"
-    message_broker_path: str = "shared.connectors.rabbitmq_connector.RabbitMQConnector"
+    db_connector_path: str = "shared.connectors.postgres.PostGresConnector"
+    message_broker_path: str = "shared.connectors.rabbitmq.RabbitMQConnector"
 
 
 INFRASTRUCTURES: dict[str, InfrastructureRegistration] = {}

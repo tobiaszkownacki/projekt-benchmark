@@ -1,5 +1,5 @@
-from pipeline.connectors.base_connector import DatabaseConnector
 from pipeline.task_repository import TaskRepository, TaskStatus
+from shared.connectors.base import DatabaseConnector
 
 
 class SqlTaskRepository(TaskRepository):
