@@ -14,6 +14,15 @@ class JobDescription:
     optimizers: list[str] #TODO list of literals
     run_name: str
 
+    @classmethod
+    def from_message(cls, msg: dict) -> "JobDescription":
+        return cls(
+            task_id=msg["task_id"],
+            dataset=msg["dataset"],
+            optimizers=[o.strip() for o in msg["optimizer"].split(",") if o.strip()],
+            run_name=msg["run_name"],
+        )
+
 @dataclass
 class FetchResult:
     files: list[str]

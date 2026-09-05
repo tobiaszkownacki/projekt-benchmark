@@ -1,0 +1,67 @@
+{
+  "vhosts": [
+    {"name": "/"}
+  ],
+  "users": [
+    {"name": "[USER]", "password": "[PASSWORD]", "tags": "administrator"}
+  ],
+  "permissions": [
+    {"user": "[USER]", "vhost": "/", "configure": ".*", "write": ".*", "read": ".*"}
+  ],
+  "exchanges": [
+    {"name": "dlx_exchange", "vhost": "/", "type": "direct", "durable": true, "auto_delete": false},
+    {"name": "main_exchange", "vhost": "/", "type": "direct", "durable": true, "auto_delete": false}
+  ],
+  "queues": [
+    {"name": "dlq_athena_worker_queue", "vhost": "/", "durable": true},
+    {"name": "dlq_athena_downloader_queue", "vhost": "/", "durable": true},
+    {
+      "name": "athena_worker_queue",
+      "vhost": "/",
+      "durable": true,
+      "arguments": {
+        "x-dead-letter-exchange": "dlx_exchange",
+        "x-dead-letter-routing-key": "failed_athena_worker_task"
+      }
+    },
+    {
+      "name": "athena_downloader_queue",
+      "vhost": "/",
+      "durable": true,
+      "arguments": {
+        "x-dead-letter-exchange": "dlx_exchange",
+        "x-dead-letter-routing-key": "failed_athena_downloader_task"
+      }
+    }
+  ],
+  "bindings": [
+    {
+      "source": "dlx_exchange",
+      "vhost": "/",
+      "destination": "dlq_athena_worker_queue",
+      "destination_type": "queue",
+      "routing_key": "failed_athena_worker_task"
+    },
+    {
+      "source": "dlx_exchange",
+      "vhost": "/",
+      "destination": "dlq_athena_downloader_queue",
+      "destination_type": "queue",
+      "routing_key": "failed_athena_downloader_task"
+    },
+    {
+      "source": "main_exchange",
+      "vhost": "/",
+      "destination": "athena_downloader_queue",
+      "destination_type": "queue",
+      "routing_key": "athena_downloader_queue"
+    },
+    {
+      "source": "main_exchange",
+      "vhost": "/",
+      "destination": "athena_worker_queue",
+      "destination_type": "queue",
+      "routing_key": "athena_worker_queue"
+    }
+  ]
+}
