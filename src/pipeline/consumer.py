@@ -2,8 +2,8 @@ import json
 import logging
 from collections.abc import Callable
 
-from pipeline.connectors.base_connector import MessageBrokerConnector
-from pipeline.connectors.rabbitmq import RabbitMQConnector
+from shared.connectors.base import MessageBrokerConnector
+from shared.connectors.rabbitmq import RabbitMQConnector
 
 logger = logging.getLogger(__name__)
 
