@@ -1,4 +1,4 @@
-"""Reads over tasks joined with their results."""
+"""Reads over the tasks table."""
 
 from typing import Any
 from uuid import UUID
@@ -17,16 +17,12 @@ RUN_COLUMNS = """
     t.error_message, t.submitted_by, t.artifact_bytes, t.artifact_files,
     t.runner_version, t.gpu_model, t.submission_id,
     u.display_name AS submitter_name,
-    u.email        AS submitter_email,
-    r.final_loss, r.final_accuracy, r.gradient_count, r.database_reaches,
-    r.total_steps, r.total_epochs, r.wall_time_seconds,
-    r.stop_reason::text AS stop_reason
+    u.email        AS submitter_email
 """
 
 _FROM = """
   FROM tasks t
   JOIN users u ON u.id = t.submitted_by
-  LEFT JOIN results r ON r.task_id = t.task_id
 """
 
 
@@ -38,7 +34,6 @@ def serialise(row: dict) -> dict:
     differently.
     """
     state = naming.derive_state(row)
-    stop_reason = row.get("stop_reason")
     return {
         "task_id": str(row["task_id"]),
         "run_name": row.get("run_name"),
@@ -71,20 +66,6 @@ def serialise(row: dict) -> dict:
         "error_message": row.get("error_message"),
         "runner_version": row.get("runner_version"),
         "gpu_model": row.get("gpu_model"),
-        "metrics": {
-            "final_loss": row.get("final_loss"),
-            "final_accuracy": row.get("final_accuracy"),
-            "gradient_count": row.get("gradient_count"),
-            "database_reaches": row.get("database_reaches"),
-            "total_steps": row.get("total_steps"),
-            "total_epochs": row.get("total_epochs"),
-            "wall_time_seconds": row.get("wall_time_seconds"),
-        }
-        if row.get("gradient_count") is not None
-        else None,
-        "stop_reason": stop_reason,
-        "stop_reason_label": (naming.STOP_REASONS.get(stop_reason, {}).get("label") if stop_reason else None),
-        "converged": (naming.STOP_REASONS.get(stop_reason, {}).get("converged") if stop_reason else None),
     }
 
 
@@ -153,17 +134,6 @@ async def transitions(task_id: UUID) -> list[dict]:
           FROM task_state_transitions
          WHERE task_id = %s
          ORDER BY occurred_at ASC, id ASC
-        """,
-        (task_id,),
-    )
-
-
-async def series_row(task_id: UUID) -> dict | None:
-    return await db.fetch_one(
-        """
-        SELECT epochs, loss, accuracy, gradient_count, database_reaches,
-               wall_time_seconds
-          FROM result_series WHERE task_id = %s
         """,
         (task_id,),
     )

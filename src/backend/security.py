@@ -1,11 +1,5 @@
-"""Session cookies for the browser, bearer tokens for CLI and CI.
+"""Session cookies for the browser. One user object, one set of auth checks."""
 
-Both paths resolve to the same user object and the same authorisation checks,
-avoiding a second, parallel permission model that could drift apart.
-"""
-
-import hashlib
-import secrets
 from dataclasses import dataclass
 from uuid import UUID
 
@@ -14,8 +8,6 @@ from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
 from backend import db
 from backend.settings import settings
-
-_TOKEN_PREFIX = "bmk_"
 
 
 @dataclass(frozen=True)
@@ -70,40 +62,6 @@ def _read_session(request: Request) -> UUID | None:
         return None
 
 
-def generate_api_token() -> tuple[str, str, str]:
-    """Return (plaintext, sha256, prefix). Only the digest is ever stored."""
-    raw = _TOKEN_PREFIX + secrets.token_urlsafe(32)
-    digest = hashlib.sha256(raw.encode()).hexdigest()
-    return raw, digest, raw[: len(_TOKEN_PREFIX) + 6]
-
-
-async def _user_from_bearer(request: Request) -> dict | None:
-    header = request.headers.get("authorization", "")
-    if not header.lower().startswith("bearer "):
-        return None
-    presented = header.split(" ", 1)[1].strip()
-    if not presented:
-        return None
-    digest = hashlib.sha256(presented.encode()).hexdigest()
-    row = await db.fetch_one(
-        """
-        SELECT u.id, u.email, u.role, u.display_name, u.is_active,
-               u.join_reason, u.associated_organisation, t.token_id
-          FROM api_tokens t
-          JOIN users u ON u.id = t.user_id
-         WHERE t.token_sha256 = %s AND t.revoked_at IS NULL
-        """,
-        (digest,),
-    )
-    if row is None:
-        return None
-    await db.execute(
-        "UPDATE api_tokens SET last_used_at = NOW() WHERE token_id = %s",
-        (row["token_id"],),
-    )
-    return row
-
-
 async def _user_from_cookie(request: Request) -> dict | None:
     user_id = _read_session(request)
     if user_id is None:
@@ -119,7 +77,7 @@ async def _user_from_cookie(request: Request) -> dict | None:
 
 
 async def optional_user(request: Request) -> CurrentUser | None:
-    row = await _user_from_bearer(request) or await _user_from_cookie(request)
+    row = await _user_from_cookie(request)
     if row is None or not row["is_active"]:
         return None
     return CurrentUser(

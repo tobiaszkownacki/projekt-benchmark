@@ -1,21 +1,18 @@
-"""Sessions, registration and API tokens.
+"""Sessions and registration.
 
-Every user mutation goes through the frontend's existing repository module
-rather than a second implementation of the same rules -- see legacy_auth for why
-that is deliberate.
+User mutations go through legacy_auth (password hashing, the approval flow),
+not a second copy of those rules.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, EmailStr, Field
 
-from backend import db, legacy_auth
+from backend import legacy_auth
 from backend.security import (
     CurrentUser,
     clear_session,
-    generate_api_token,
     issue_session,
     optional_user,
-    require_user,
 )
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -33,10 +30,6 @@ class Registration(BaseModel):
     associated_organisation: str | None = None
     associated_org_email: str | None = None
     join_reason: str | None = None
-
-
-class TokenRequest(BaseModel):
-    name: str = Field(min_length=1, max_length=80)
 
 
 def _public(user: CurrentUser) -> dict:
@@ -111,43 +104,4 @@ async def register(payload: Registration) -> dict:
 @router.post("/logout")
 async def logout(response: Response) -> dict:
     clear_session(response)
-    return {"ok": True}
-
-
-@router.get("/tokens")
-async def list_tokens(user: CurrentUser = Depends(require_user)) -> dict:
-    rows = await db.fetch_all(
-        """
-        SELECT token_id, name, prefix, created_at, last_used_at, revoked_at
-          FROM api_tokens WHERE user_id = %s ORDER BY created_at DESC
-        """,
-        (user.id,),
-    )
-    return {"tokens": rows}
-
-
-@router.post("/tokens", status_code=status.HTTP_201_CREATED)
-async def create_token(payload: TokenRequest, user: CurrentUser = Depends(require_user)) -> dict:
-    raw, digest, prefix = generate_api_token()
-    row = await db.fetch_one(
-        """
-        INSERT INTO api_tokens (user_id, name, token_sha256, prefix)
-        VALUES (%s, %s, %s, %s)
-        RETURNING token_id, name, prefix, created_at
-        """,
-        (user.id, payload.name, digest, prefix),
-    )
-    # Returned once and never stored in plaintext.
-    return {**dict(row or {}), "token": raw}
-
-
-@router.delete("/tokens/{token_id}")
-async def revoke_token(token_id: str, user: CurrentUser = Depends(require_user)) -> dict:
-    await db.execute(
-        """
-        UPDATE api_tokens SET revoked_at = NOW()
-         WHERE token_id = %s AND user_id = %s AND revoked_at IS NULL
-        """,
-        (token_id, user.id),
-    )
     return {"ok": True}

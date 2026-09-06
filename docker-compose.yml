@@ -41,8 +41,6 @@ services:
       retries: 10
       start_period: 20s
 
-  # The single FastAPI backend: REST/SSE API under /api plus the built React SPA
-  # (src/frontend). Applies the src/db/migrations at startup.
   backend:
     build:
       context: .
@@ -62,14 +60,10 @@ services:
       RABBITMQ_MANAGEMENT_URL: http://rabbitmq:15672
       PUBLIC_RESULTS: ${PUBLIC_RESULTS:-1}
       DAILY_SUBMISSION_LIMIT: ${DAILY_SUBMISSION_LIMIT:-3}
-      # The validator needs a Docker socket to start its sandbox. Off by default
-      # so this container does not require one; uploaded submissions are then
-      # accepted with an explicit note that nothing was checked.
       VALIDATOR_ENABLED: ${VALIDATOR_ENABLED:-0}
     ports:
       - "${WEB_PORT:-8080}:8000"
     volumes:
-      # Read-only: the downloader owns this directory, the API only reads it.
       - ./downloads:/downloads:ro
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3).status==200 else 1)"]
@@ -78,33 +72,7 @@ services:
       retries: 5
       start_period: 25s
 
-  # Drains the queue_outbox table into RabbitMQ. Separate process on purpose:
-  # pika blocks, and this keeps broker credentials out of the API process.
-  outbox_publisher:
-    build:
-      context: .
-      dockerfile: src/backend/Dockerfile
-    container_name: benchmark_outbox_publisher
-    restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    env_file: .env
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      RABBITMQ_HOST: rabbitmq
-    command: ["python", "-m", "backend.outbox_publisher"]
-    healthcheck:
-      test: ["CMD", "python", "-c", "import os,sys,time; p='/tmp/outbox-heartbeat'; sys.exit(0 if os.path.exists(p) and time.time()-os.path.getmtime(p) < 60 else 1)"]
-      interval: 20s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
 
-  # src/pipeline, one image, three roles (worker | poller | downloader),
-  # executor selected by EXECUTOR. Consumes what outbox_publisher publishes.
   athena_worker:
     build:
       context: .

@@ -1,4 +1,4 @@
-"""Run listing, detail, convergence series and state history."""
+"""Run listing, detail and state history."""
 
 from uuid import UUID
 
@@ -6,7 +6,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from backend.security import CurrentUser, optional_user
 from backend.services import runs as runs_service
-from backend.services import series as series_service
 from backend.services.authz import can_read_run
 
 router = APIRouter(prefix="/api/runs", tags=["runs"])
@@ -77,43 +76,3 @@ async def get_run(task_id: UUID, user: CurrentUser | None = Depends(optional_use
 async def get_transitions(task_id: UUID, user: CurrentUser | None = Depends(optional_user)) -> dict:
     await _load_visible(task_id, user)
     return {"transitions": await runs_service.transitions(task_id)}
-
-
-@router.get("/{task_id}/series")
-async def get_series(
-    task_id: UUID,
-    x: str = Query("gradient_count"),
-    metric: str = Query("loss"),
-    points: int = Query(series_service.DEFAULT_POINTS, ge=10, le=series_service.MAX_POINTS),
-    user: CurrentUser | None = Depends(optional_user),
-) -> dict:
-    await _load_visible(task_id, user)
-
-    if x not in series_service.X_AXES:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown x axis")
-    if metric not in series_service.METRICS:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown metric")
-
-    row = await runs_service.series_row(task_id)
-    if row is None:
-        return {
-            "task_id": str(task_id),
-            "x": x,
-            "metric": metric,
-            "points": [],
-            "truncated": False,
-            "original_points": 0,
-        }
-
-    pairs = series_service.series_points(row, x, metric)
-    sampled, truncated = series_service.downsample_pairs(pairs, points)
-    return {
-        "task_id": str(task_id),
-        "x": x,
-        "metric": metric,
-        "points": [[p[0], p[1]] for p in sampled],
-        # Reported so the reader can tell they are looking at an approximation.
-        "truncated": truncated,
-        "downsample": "lttb" if truncated else "none",
-        "original_points": len(pairs),
-    }

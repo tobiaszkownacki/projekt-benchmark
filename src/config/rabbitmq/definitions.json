@@ -3,10 +3,10 @@
     {"name": "/"}
   ],
   "users": [
-    {"name": "[USER]", "password": "[PASSWORD]", "tags": "administrator"}
+    {"name": "USER", "password": "PASSWORD", "tags": "administrator"}
   ],
   "permissions": [
-    {"user": "[USER]", "vhost": "/", "configure": ".*", "write": ".*", "read": ".*"}
+    {"user": "USER", "vhost": "/", "configure": ".*", "write": ".*", "read": ".*"}
   ],
   "exchanges": [
     {"name": "dlx_exchange", "vhost": "/", "type": "direct", "durable": true, "auto_delete": false},

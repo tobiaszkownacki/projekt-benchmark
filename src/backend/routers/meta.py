@@ -8,6 +8,7 @@ changes example_gradient_optimizer.py, the documentation changes with it.
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import PlainTextResponse
 
+from backend import db
 from backend.services import naming
 from backend.settings import find_source_root, settings
 
@@ -109,6 +110,27 @@ SANDBOX = {
 @router.get("/vocabulary")
 async def vocabulary() -> dict:
     return naming.vocabulary()
+
+
+@router.get("/overview")
+async def overview() -> dict:
+    """Counters for the landing page."""
+    row = await db.fetch_one(
+        """
+        SELECT
+            (SELECT COUNT(*) FROM submissions)                                    AS submissions,
+            (SELECT COUNT(*) FROM tasks)                                          AS runs,
+            (SELECT COUNT(*) FROM tasks WHERE task_status = 'completed')          AS completed,
+            (SELECT COUNT(*) FROM tasks WHERE task_status = 'failed')             AS failed,
+            (SELECT COUNT(*) FROM tasks
+              WHERE task_status IN ('pending', 'running'))                        AS active,
+            (SELECT COUNT(DISTINCT submitted_by) FROM tasks)                      AS participants,
+            (SELECT COUNT(DISTINCT dataset) FROM tasks WHERE dataset IS NOT NULL) AS datasets,
+            (SELECT COUNT(DISTINCT optimizer_name) FROM tasks
+              WHERE optimizer_name IS NOT NULL)                                   AS optimizers
+        """
+    )
+    return dict(row or {})
 
 
 @router.get("/protocol")
