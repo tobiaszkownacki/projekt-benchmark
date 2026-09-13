@@ -49,8 +49,8 @@ SEEDS = [11, 23, 42, 57, 71, 89, 101, 113]
 
 SAMPLE_OPTIMIZER = '''import numpy as np
 
-from benchmark.evaluator import ModelEvaluator
-from benchmark.optimizer_protocols import NumpyBenchmarkOptimizer
+from benchmark_core.optimization_engine.evaluator import ModelEvaluator
+from benchmark_core.optimization_engine.optimizer_protocols import NumpyBenchmarkOptimizer
 
 
 class SignSgdOptimizer(NumpyBenchmarkOptimizer):

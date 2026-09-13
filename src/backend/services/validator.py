@@ -112,13 +112,10 @@ def _docker_command(workdir: Path, filename: str) -> list[str]:
     ]
 
 
-# Executed inside the container. Installs the import aliases first, because the
-# validator and the evaluator it imports still use the pre-refactor module names.
+# Executed inside the container.
 _IN_CONTAINER_ENTRY = """
 import runpy, sys
 sys.path.insert(0, "/bench/src")
-from compat.benchmark_aliases import install
-install()
 sys.argv = ["verify_optimizer", sys.argv[1]]
 runpy.run_path(
     "/bench/" + "src/benchmark_core/optimization_engine/optimizers/validation/"
