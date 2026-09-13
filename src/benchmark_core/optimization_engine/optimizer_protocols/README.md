@@ -30,12 +30,12 @@ There are two main ways to add a new optimizer.
 This is the easiest approach, especially for NumPy/CuPy based optimizers.
 
 1.  **Create your optimizer file**:
-    For example, `src/benchmark/optimizers/my_cool_optimizer.py`.
+    For example, `src/benchmark_core/optimization_engine/optimizers/my_cool_optimizer.py`.
 
 2.  **Inherit and Implement**:
     Choose the appropriate base class and implement the `step` method.
     ```python
-    # src/benchmark/optimizers/my_cool_optimizer.py
+    # src/benchmark_core/optimization_engine/optimizers/my_cool_optimizer.py
     from benchmark_core.optimization_engine.optimizer_protocols import NumpyBenchmarkOptimizer
     from benchmark_core.optimization_engine.evaluator import ModelEvaluator
 
@@ -94,14 +94,14 @@ class MyStandaloneOptimizer:
 If you are creating a new family of optimizers that use a different data backend (e.g., JAX), you can create a new base class for convenience.
 
 1.  **Ensure the DTO Exists**:
-    First, follow the guide in `src/benchmark/evaluator_dtos/README.md` to create your `JaxArrayDto` and register its converters.
+    First, follow the guide in `src/benchmark_core/optimization_engine/evaluator_dtos/README.md` to create your `JaxArrayDto` and register its converters.
 
 2.  **Create the Base Class File**:
-    Create `src/benchmark/optimizer_protocols/jax_benchmark_optimizer.py`.
+    Create `src/benchmark_core/optimization_engine/optimizer_protocols/jax_benchmark_optimizer.py`.
 
 3.  **Define the Base Class**:
     ```python
-    # src/benchmark/optimizer_protocols/jax_benchmark_optimizer.py
+    # src/benchmark_core/optimization_engine/optimizer_protocols/jax_benchmark_optimizer.py
     from typing import Type
     from .benchmark_optimizer import BenchmarkOptimizer
     from benchmark_core.optimization_engine.evaluator_dtos import JaxArrayDto, EvaluatorDto
@@ -117,4 +117,4 @@ If you are creating a new family of optimizers that use a different data backend
     Note: You only need to implement `get_output_type`. The `step` method is intentionally left unimplemented to force the final optimizer to provide its own logic.
 
 4.  **Update `__init__.py`**:
-    Add your new `JaxBenchmarkOptimizer` to the `__all__` list in `src/benchmark/optimizer_protocols/__init__.py` to make it easily importable.
+    Add your new `JaxBenchmarkOptimizer` to the `__all__` list in `src/benchmark_core/optimization_engine/optimizer_protocols/__init__.py` to make it easily importable.
