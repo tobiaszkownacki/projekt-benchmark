@@ -21,15 +21,6 @@ PROJECT_DIR = f"{ATHENA_REMOTE_PATH}/projekt-benchmark"
 LOCAL_DOWNLOAD_DIR = os.environ.get("LOCAL_DOWNLOAD_DIR", "/downloads")
 
 
-def _optimizer_args(optimizers: list[str]) -> str:
-    names = [o.strip() for o in optimizers if o.strip()]
-    if not names:
-        raise ValueError("task has no optimizer selection")
-    if len(names) == 1:
-        return f"--optimizer {names[0]}"
-    return "--compare " + " ".join(names)
-
-
 def _parse_sacct(raw: str) -> list[dict]:
     lines = [ln for ln in raw.strip().splitlines() if ln]
     if not lines:
@@ -71,7 +62,7 @@ class AthenaExecutor(ExecutorAdapter):
             "workdir": PROJECT_DIR,
             "run_command": (
                 f"uv run -m src.benchmark.run_benchmark "
-                f"--dataset {job.dataset} {_optimizer_args(job.optimizers)} "
+                f"--dataset {job.dataset} --optimizer {job.optimizer} "
                 f"--max-epochs {MAX_EPOCHS} --max-gradients {MAX_GRADIENTS} "
                 f"--task-id {job.task_id} --plot"
             ),

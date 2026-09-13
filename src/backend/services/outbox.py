@@ -52,11 +52,11 @@ def task_message(
     dataset: str,
     optimizer: str,
 ) -> dict[str, Any]:
-    """The message shape AthenaWorker.start_job consumes.
+    """The message shape JobDescription.from_message consumes.
 
-    start_job subscripts dataset and optimizer directly, so a message missing
+    from_message subscripts dataset and optimizer directly, so a message missing
     either raises KeyError and the worker nacks it to the dead-letter queue.
-    optimizer is comma-separated when a task runs more than one.
+    optimizer is one name: a task runs exactly one optimizer on one seed.
     """
     return {
         "task_id": str(task_id),

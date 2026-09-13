@@ -12,15 +12,18 @@ class SubmitResult:
 class JobDescription:
     task_id: str
     dataset: str  # TODO use literal
-    optimizers: list[str]  # TODO list of literals
+    optimizer: str
     run_name: str
 
     @classmethod
     def from_message(cls, msg: dict) -> "JobDescription":
+        optimizer = msg["optimizer"].strip()
+        if not optimizer:
+            raise ValueError(f"task_id={msg['task_id']} carries no optimizer name")
         return cls(
             task_id=msg["task_id"],
             dataset=msg["dataset"],
-            optimizers=[o.strip() for o in msg["optimizer"].split(",") if o.strip()],
+            optimizer=optimizer,
             run_name=msg["run_name"],
         )
 

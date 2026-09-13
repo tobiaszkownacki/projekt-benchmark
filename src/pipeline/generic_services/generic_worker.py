@@ -18,7 +18,7 @@ class GenericWorker:
     def handle(self, message: dict):
         job = JobDescription.from_message(message)
         logger.info(
-            f"Received task_id={job.task_id} dataset={job.dataset} optimizers={job.optimizers} run_name={job.run_name}"
+            f"Received task_id={job.task_id} dataset={job.dataset} optimizer={job.optimizer} run_name={job.run_name}"
         )
         try:
             submit_result = self.adapter.submit_job(job)
