@@ -1,7 +1,6 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: benchmark_frontend_db
     restart: unless-stopped
     env_file: .env
     ports:
@@ -21,7 +20,6 @@ services:
 
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
-    container_name: benchmark_frontend_rabbitmq
     restart: unless-stopped
     env_file: .env
     ports:
@@ -45,7 +43,6 @@ services:
     build:
       context: .
       dockerfile: src/backend/Dockerfile
-    container_name: benchmark_backend
     restart: unless-stopped
     depends_on:
       postgres:
@@ -76,7 +73,6 @@ services:
     build:
       context: .
       dockerfile: src/backend/Dockerfile
-    container_name: benchmark_outbox_publisher
     restart: unless-stopped
     depends_on:
       postgres:
@@ -87,6 +83,9 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       RABBITMQ_HOST: rabbitmq
+      # .env carries the port published on the host; inside the network the
+      # broker is always on 5672. Inheriting the published one dials nothing.
+      RABBITMQ_PORT: 5672
     command: ["python", "-m", "backend.outbox_publisher"]
     # Both services share one image whose healthcheck probes the HTTP endpoint.
     # This one serves nothing, so it checks that the process is alive instead.
@@ -112,6 +111,9 @@ services:
       - .env
     environment:
       EXECUTOR: athena
+      # As above: in-network ports, not the ones published on the host.
+      POSTGRES_PORT: 5432
+      RABBITMQ_PORT: 5672
 
   athena_poller:
     build:
@@ -128,6 +130,9 @@ services:
       - .env
     environment:
       EXECUTOR: athena
+      # As above: in-network ports, not the ones published on the host.
+      POSTGRES_PORT: 5432
+      RABBITMQ_PORT: 5672
 
   athena_downloader:
     build:
@@ -144,6 +149,9 @@ services:
       - .env
     environment:
       EXECUTOR: athena
+      # As above: in-network ports, not the ones published on the host.
+      POSTGRES_PORT: 5432
+      RABBITMQ_PORT: 5672
     volumes:
       - ./downloads:/downloads
 
