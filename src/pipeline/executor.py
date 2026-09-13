@@ -18,7 +18,7 @@ class JobDescription:
     """
 
     task_id: str
-    dataset: str
+    dataset: str  # TODO use literal
     model: str
     optimizer: str
     seed: int
