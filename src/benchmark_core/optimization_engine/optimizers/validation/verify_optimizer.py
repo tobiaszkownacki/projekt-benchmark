@@ -10,7 +10,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from src.benchmark_core.optimization_engine.evaluator import ModelEvaluator
+from benchmark_core.optimization_engine.evaluator import ModelEvaluator
 
 
 class DummyModel(nn.Module):

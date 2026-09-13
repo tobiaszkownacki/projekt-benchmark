@@ -1,7 +1,8 @@
 import numpy as np
 import scipy.special
-from benchmark.evaluator import ModelEvaluator
-from benchmark.optimizer_protocols.numpy_benchmark_optimizer import NumpyBenchmarkOptimizer
+
+from benchmark_core.optimization_engine.evaluator import ModelEvaluator
+from benchmark_core.optimization_engine.optimizer_protocols.numpy_benchmark_optimizer import NumpyBenchmarkOptimizer
 
 
 class NumpyDES(NumpyBenchmarkOptimizer):
