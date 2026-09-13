@@ -29,12 +29,12 @@ The key feature is a centralized conversion registry that allows for seamless, e
 Let's say you want to add support for JAX arrays.
 
 1.  **Create the DTO file**:
-    Create a new file `src/benchmark/evaluator_dtos/jax_array_dto.py`.
+    Create a new file `src/benchmark_core/optimization_engine/evaluator_dtos/jax_array_dto.py`.
 
 2.  **Define the DTO Class**:
     Inside the new file, define your class. It should be a simple data container.
     ```python
-    # src/benchmark/evaluator_dtos/jax_array_dto.py
+    # src/benchmark_core/optimization_engine/evaluator_dtos/jax_array_dto.py
     import jax.numpy as jnp
     from .evaluator_dto import EvaluatorDto
 
@@ -48,7 +48,7 @@ Let's say you want to add support for JAX arrays.
     ```
 
 3.  **Add Conversion Logic**:
-    Open `src/benchmark/evaluator_dtos/converters.py`.
+    Open `src/benchmark_core/optimization_engine/evaluator_dtos/converters.py`.
 
 4.  **Import New DTO**:
     Import your new `JaxArrayDto` at the top of `converters.py`:
@@ -87,7 +87,7 @@ Let's say you want to add support for JAX arrays.
     ```
 
 7.  **Update `__init__.py`**:
-    Finally, open `src/benchmark/evaluator_dtos/__init__.py` and add your new DTO class to the import list and the `__all__` list to make it easily accessible from other parts of the application.
+    Finally, open `src/benchmark_core/optimization_engine/evaluator_dtos/__init__.py` and add your new DTO class to the import list and the `__all__` list to make it easily accessible from other parts of the application.
     ```python
     # In __init__.py
     from .jax_array_dto import JaxArrayDto
