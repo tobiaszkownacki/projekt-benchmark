@@ -221,4 +221,4 @@ egg-info/
 
 # Carries the broker password; rendered from the template by
 # scripts/render_rabbitmq_definitions.sh.
-src/config/rabbitmq/definitions.json
+config/rabbitmq/definitions.json

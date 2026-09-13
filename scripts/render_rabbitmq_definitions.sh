@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Render src/config/rabbitmq/definitions.json from its template.
+# Render config/rabbitmq/definitions.json from its template.
 #
 # docker-compose.yml mounts definitions.json, but that file is gitignored
 # (correctly -- it carries the broker password) and only the template is in the
@@ -11,8 +11,8 @@
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-template="$root/src/config/rabbitmq/definitions.template.json"
-output="$root/src/config/rabbitmq/definitions.json"
+template="$root/config/rabbitmq/definitions.template.json"
+output="$root/config/rabbitmq/definitions.json"
 env_file="$root/.env"
 
 if [[ ! -f "$env_file" ]]; then
