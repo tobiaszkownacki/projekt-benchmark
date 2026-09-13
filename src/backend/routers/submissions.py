@@ -202,7 +202,10 @@ async def submit(payload: SubmissionRequest, user: CurrentUser = Depends(require
                     settings.worker_queue,
                     run_name=run_name,
                     dataset=payload.dataset,
+                    model=payload.model,
                     optimizer=optimizer_name,
+                    seed=seed,
+                    stop_condition=stop_condition,
                 ),
             )
             created.append(str(task_id))

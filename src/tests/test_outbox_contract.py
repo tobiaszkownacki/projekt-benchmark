@@ -38,7 +38,10 @@ def _message(optimizer: str = "adam") -> dict:
         "athena_worker_queue",
         run_name="adam-wine-s7",
         dataset="wine",
+        model="mlp-1x16",
         optimizer=optimizer,
+        seed=7,
+        stop_condition={"max_epochs": 3},
     )
 
 

@@ -50,20 +50,27 @@ def task_message(
     *,
     run_name: str,
     dataset: str,
+    model: str,
     optimizer: str,
+    seed: int,
+    stop_condition: dict[str, int],
 ) -> dict[str, Any]:
     """The message shape JobDescription.from_message consumes.
 
-    from_message subscripts dataset and optimizer directly, so a message missing
-    either raises KeyError and the worker nacks it to the dead-letter queue.
-    optimizer is one name: a task runs exactly one optimizer on one seed.
+    from_message subscripts these keys directly, so a message missing one raises
+    KeyError and the worker nacks it to the dead-letter queue. The message is
+    the whole job description: an executor reads no row to build a command, so
+    the same message runs unchanged on a cluster that cannot reach the database.
     """
     return {
         "task_id": str(task_id),
         "queue_name": queue_name,
         "run_name": run_name,
         "dataset": dataset,
+        "model": model,
         "optimizer": optimizer,
+        "seed": seed,
+        "stop_condition": stop_condition,
     }
 
 

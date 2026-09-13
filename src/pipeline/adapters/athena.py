@@ -1,5 +1,6 @@
 import logging
 import os
+import shlex
 
 from pipeline.adapters.athena_connector import AthenaConnector
 from pipeline.completion import CompletionSignal, CompletionSource
@@ -10,8 +11,6 @@ logger = logging.getLogger(__name__)
 
 SLURM_TIME_LIMIT = "00:30:00"
 SLURM_PARTITION = "plgrid-gpu-a100"
-MAX_EPOCHS = 10
-MAX_GRADIENTS = 100000
 FAILURE_STATES = {"FAILED", "CANCELLED", "TIMEOUT", "OUT_OF_MEMORY", "NODE_FAIL"}
 
 SACCT_CMD = "sacct --parsable2 --allocations --format=JobID,JobName,Partition,AllocCPUS,State,ExitCode,Elapsed,End"
@@ -19,6 +18,19 @@ SACCT_CMD = "sacct --parsable2 --allocations --format=JobID,JobName,Partition,Al
 ATHENA_REMOTE_PATH = os.environ.get("ATHENA_REMOTE_PATH")
 PROJECT_DIR = f"{ATHENA_REMOTE_PATH}/projekt-benchmark"
 LOCAL_DOWNLOAD_DIR = os.environ.get("LOCAL_DOWNLOAD_DIR", "/downloads")
+
+
+# stop_condition keys as the submission stores them, mapped onto the flags
+# run_benchmark actually accepts.
+BUDGET_FLAGS = {
+    "max_gradient_count": "--max-gradients",
+    "max_database_reaches": "--max-db-reaches",
+    "max_epochs": "--max-epochs",
+}
+
+
+def _budget_args(stop_condition: dict[str, int]) -> str:
+    return " ".join(f"{flag} {stop_condition[key]}" for key, flag in BUDGET_FLAGS.items() if key in stop_condition)
 
 
 def _parse_sacct(raw: str) -> list[dict]:
@@ -65,9 +77,10 @@ class AthenaExecutor(ExecutorAdapter):
             "env_vars": {"PYTHONPATH": f"{PROJECT_DIR}/src"},
             "run_command": (
                 f"uv run -m benchmark_core.optimization_engine.run_benchmark "
-                f"--dataset {job.dataset} --optimizer {job.optimizer} "
-                f"--max-epochs {MAX_EPOCHS} --max-gradients {MAX_GRADIENTS} "
-                f"--task-id {job.task_id} --plot"
+                f"--dataset {shlex.quote(job.dataset)} --model {shlex.quote(job.model)} "
+                f"--optimizer {shlex.quote(job.optimizer)} --seed {job.seed} "
+                f"{_budget_args(job.stop_condition)} "
+                f"--task-id {shlex.quote(job.task_id)} --plot"
             ),
         }
         with AthenaConnector() as athena:

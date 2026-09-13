@@ -10,10 +10,20 @@ class SubmitResult:
 
 @dataclass
 class JobDescription:
+    """Everything an executor needs to build a run, and nothing it has to look up.
+
+    An executor reads no database row: the cluster side of the system cannot
+    reach Postgres, so a job that is not fully described by its message is a job
+    that only the local half can start.
+    """
+
     task_id: str
-    dataset: str  # TODO use literal
+    dataset: str
+    model: str
     optimizer: str
+    seed: int
     run_name: str
+    stop_condition: dict[str, int]
 
     @classmethod
     def from_message(cls, msg: dict) -> "JobDescription":
@@ -23,8 +33,11 @@ class JobDescription:
         return cls(
             task_id=msg["task_id"],
             dataset=msg["dataset"],
+            model=msg["model"],
             optimizer=optimizer,
+            seed=int(msg["seed"]),
             run_name=msg["run_name"],
+            stop_condition={key: int(value) for key, value in dict(msg["stop_condition"]).items()},
         )
 
 
