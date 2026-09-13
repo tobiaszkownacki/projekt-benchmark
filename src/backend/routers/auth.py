@@ -1,14 +1,13 @@
 """Sessions, registration and API tokens.
 
-Every user mutation goes through the frontend's existing repository module
-rather than a second implementation of the same rules -- see legacy_auth for why
-that is deliberate.
+User mutations go through legacy_auth and password handling through
+backend.passwords, so neither is reimplemented here.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, EmailStr, Field
 
-from backend import db, legacy_auth
+from backend import db, legacy_auth, passwords
 from backend.security import (
     CurrentUser,
     clear_session,
@@ -64,7 +63,7 @@ async def login(payload: Credentials, response: Response) -> dict:
     invalid = HTTPException(status.HTTP_401_UNAUTHORIZED, "Nieprawidłowy e-mail lub hasło")
     if account is None or not account.password_hash:
         raise invalid
-    if not legacy_auth.verify_password(payload.password, account.password_hash):
+    if not passwords.verify_password(payload.password, account.password_hash):
         raise invalid
     if not account.is_active:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Konto jest nieaktywne")
@@ -86,7 +85,7 @@ async def login(payload: Credentials, response: Response) -> dict:
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(payload: Registration) -> dict:
-    problem = legacy_auth.validate_password_strength(payload.password)
+    problem = passwords.validate_password_strength(payload.password)
     if problem:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, problem)
     if await legacy_auth.get_by_email(payload.email):

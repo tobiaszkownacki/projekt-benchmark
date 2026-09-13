@@ -1,35 +1,17 @@
-"""User accounts: password hashing and the `users` table.
+"""User accounts: the `users` table.
 
 Previously a bridge to ``src/frontend/auth`` (the Streamlit app). That code is
 gone, so the handful of operations the auth and admin routers need are
 implemented here directly against the async pool, in the same raw-SQL style as
-the rest of the package.
+the rest of the package. Password hashing lives in ``backend.passwords``.
 """
 
 from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
 
-import bcrypt
-
 from backend import db
-
-# --- passwords (was src/frontend/auth/passwords.py) -------------------------
-
-
-def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=12)).decode()
-
-
-def verify_password(password: str, password_hash: str) -> bool:
-    return bcrypt.checkpw(password.encode(), password_hash.encode())
-
-
-def validate_password_strength(password: str) -> str | None:
-    if len(password) < 8:
-        return "Hasło musi mieć co najmniej 8 znaków."
-    return None
-
+from backend.passwords import hash_password
 
 # --- users -----------------------------------------------------------------
 
