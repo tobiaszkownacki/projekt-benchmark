@@ -19,7 +19,15 @@ class NumpyCMAES(NumpyBenchmarkOptimizer):
 
         opts = config.get("cma_options", {}).copy()
 
-        opts["seed"] = config.get("seed", 42)
+        # CMA-ES samples from its own RNG. Pinning it to a constant made every
+        # run over the same model identical however the caller seeded NumPy, so
+        # a sweep over eight seeds measured one sample eight times. Deriving the
+        # default from the global NumPy RNG keeps a seeded caller reproducible
+        # and gives an unseeded one a different draw each time.
+        seed = config.get("seed")
+        if seed is None:
+            seed = int(np.random.randint(1, 2**31 - 1))
+        opts["seed"] = seed
         if population_size:
             opts["popsize"] = population_size
 
