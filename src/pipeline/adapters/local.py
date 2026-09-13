@@ -18,6 +18,10 @@ JOB_FILE = "job.json"
 STATUS_FILE = "status.json"
 LOG_FILE = "run.out"
 
+# The executor's own bookkeeping. It stays on this side of the download, because
+# everything that crosses it is served to the participant who owns the run.
+PRIVATE_FILES = {JOB_FILE, STATUS_FILE}
+
 SUCCESS_STATE = "COMPLETED"
 FAILURE_STATE = "FAILED"
 
@@ -95,7 +99,7 @@ class LocalExecutor(PollableExecutor):
 
         files: list[str] = []
         for source in sorted(job_dir.rglob("*")):
-            if not source.is_file():
+            if not source.is_file() or source.name in PRIVATE_FILES:
                 continue
             target = local_dir / source.relative_to(job_dir)
             target.parent.mkdir(parents=True, exist_ok=True)
