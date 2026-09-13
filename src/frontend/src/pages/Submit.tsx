@@ -31,8 +31,8 @@ export function Submit({ user }: { user: User | null }) {
   const [builtin, setBuiltin] = useState('adam');
   const [source, setSource] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [dataset, setDataset] = useState('wine');
-  const [model, setModel] = useState('mlp-1x16');
+  const [datasetChoice, setDataset] = useState('wine');
+  const [modelChoice, setModel] = useState('mlp-1x16');
   const [suite, setSuite] = useState('test');
   const [seeds, setSeeds] = useState('11,23,42');
   const [maxEpochs, setMaxEpochs] = useState('12');
@@ -42,6 +42,14 @@ export function Submit({ user }: { user: User | null }) {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<Accepted | null>(null);
   const [rejection, setRejection] = useState<{ log: string; message: string } | null>(null);
+
+  // The vocabulary comes from the runs that exist, so a value chosen before it
+  // arrives may be absent from it. A select whose value is not among its
+  // options paints the first one and submits the other.
+  const datasets = filters.data?.datasets?.length ? filters.data.datasets : ['wine'];
+  const models = filters.data?.models?.length ? filters.data.models : ['mlp-1x16'];
+  const dataset = datasets.includes(datasetChoice) ? datasetChoice : datasets[0];
+  const model = models.includes(modelChoice) ? modelChoice : models[0];
 
   if (!user) {
     return (
@@ -181,7 +189,7 @@ export function Submit({ user }: { user: User | null }) {
               <div>
                 <label htmlFor="s-dataset">Zbiór danych</label>
                 <select id="s-dataset" value={dataset} onChange={(e) => setDataset(e.target.value)}>
-                  {(filters.data?.datasets ?? ['wine']).map((d) => (
+                  {datasets.map((d) => (
                     <option key={d} value={d}>{d}</option>
                   ))}
                 </select>
@@ -189,7 +197,7 @@ export function Submit({ user }: { user: User | null }) {
               <div>
                 <label htmlFor="s-model">Model</label>
                 <select id="s-model" value={model} onChange={(e) => setModel(e.target.value)}>
-                  {(filters.data?.models ?? ['mlp-1x16']).map((m) => (
+                  {models.map((m) => (
                     <option key={m} value={m}>{m}</option>
                   ))}
                 </select>
