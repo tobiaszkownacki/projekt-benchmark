@@ -10,6 +10,7 @@ import uuid
 from pathlib import Path
 
 import pytest
+
 from backend.services import outbox
 
 DECODER = Path(__file__).resolve().parents[1] / "pipeline/executor.py"

@@ -37,7 +37,6 @@ from benchmark_core.optimization_engine.optimizers.numpy.numpy_differential_evol
 from benchmark_core.optimization_engine.optimizers.numpy.numpy_lion import NumpyLion  # noqa: E402
 from benchmark_core.optimization_engine.optimizers.numpy.numpy_rmsprop import NumpyRMSProp  # noqa: E402
 from benchmark_core.optimization_engine.optimizers.numpy.numpy_sgd import NumpySGD  # noqa: E402
-
 from tools.local_backend.datasets import (  # noqa: E402
     build_dataset,
     build_model,
