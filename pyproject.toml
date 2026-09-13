@@ -93,3 +93,4 @@ select = [
 "src/backend/security.py" = ["B008"]
 # The sys.path bootstrap has to run before the engine imports.
 "tools/local_backend/runner.py" = ["E402"]
+"tools/local_backend/run_job.py" = ["E402"]
