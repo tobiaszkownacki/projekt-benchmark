@@ -3,12 +3,11 @@
 Submissions are validated locally before they are queued, so a broken optimizer
 costs thirty seconds of CPU here instead of grant hours on the cluster.
 
-The task rows are inserted, the queue messages published, and only then the
-transaction is committed. A publish failure raises before the commit, so the
-rows roll back and the submission fails cleanly rather than sitting unqueued.
+Nothing in this module publishes to the broker. The task row and the queue
+message are written in one transaction and drained by a separate process, so a
+broker outage cannot lose a submission and the API needs no broker credentials.
 """
 
-import asyncio
 from datetime import date
 from typing import Any
 
@@ -18,7 +17,7 @@ from pydantic import BaseModel, Field
 
 from backend import db
 from backend.security import CurrentUser, optional_user, require_verified
-from backend.services import publish, validator
+from backend.services import outbox, validator
 from backend.services.authz import can_read_run
 from backend.settings import settings
 
@@ -164,7 +163,6 @@ async def submit(payload: SubmissionRequest, user: CurrentUser = Depends(require
 
         optimizer_name = payload.builtin_name or payload.display_name
         created: list[str] = []
-        messages: list[dict] = []
         for seed in seeds:
             run_name = f"{optimizer_name}-{payload.dataset}-s{seed}"
             task = await (
@@ -197,25 +195,17 @@ async def submit(payload: SubmissionRequest, user: CurrentUser = Depends(require
             ).fetchone()
 
             task_id = task["task_id"]
-            messages.append(
-                {
-                    "task_id": str(task_id),
-                    "queue_name": settings.worker_queue,
-                    "run_name": run_name,
-                    "dataset": payload.dataset,
-                    "optimizer": optimizer_name,
-                }
+            await outbox.enqueue(
+                conn,
+                outbox.task_message(
+                    task_id,
+                    settings.worker_queue,
+                    run_name=run_name,
+                    dataset=payload.dataset,
+                    optimizer=optimizer_name,
+                ),
             )
             created.append(str(task_id))
-
-        # Before the commit: a broker failure here rolls the rows back.
-        try:
-            await asyncio.to_thread(publish.publish, settings.main_exchange, settings.worker_queue, messages)
-        except Exception as exc:
-            raise HTTPException(
-                status.HTTP_502_BAD_GATEWAY,
-                "Nie udało się skolejkować zadania. Spróbuj ponownie.",
-            ) from exc
 
         await conn.commit()
 

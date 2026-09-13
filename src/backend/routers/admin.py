@@ -14,6 +14,7 @@ from pydantic import BaseModel
 
 from backend import db, legacy_auth
 from backend.security import CurrentUser, require_admin
+from backend.services import outbox
 from backend.settings import settings
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -74,12 +75,16 @@ async def budget(_: CurrentUser = Depends(require_admin)) -> dict:
                COUNT(t.task_id)                                  AS runs,
                COUNT(*) FILTER (WHERE t.task_status = 'failed')  AS failed,
                COUNT(*) FILTER (WHERE t.task_status IN ('pending','running')) AS active,
-               COUNT(*) FILTER (WHERE t.created_at::date = CURRENT_DATE)      AS today
+               COUNT(*) FILTER (WHERE t.created_at::date = CURRENT_DATE)      AS today,
+               COALESCE(SUM(r.gradient_count), 0)                AS gradients,
+               COALESCE(SUM(r.database_reaches), 0)              AS samples,
+               COALESCE(SUM(r.wall_time_seconds), 0)             AS compute_seconds
           FROM users u
-          LEFT JOIN tasks t ON t.submitted_by = u.id
+          LEFT JOIN tasks t   ON t.submitted_by = u.id
+          LEFT JOIN results r ON r.task_id = t.task_id
          GROUP BY u.id, u.email, u.display_name, u.role
          HAVING COUNT(t.task_id) > 0
-         ORDER BY COUNT(t.task_id) DESC
+         ORDER BY COALESCE(SUM(r.database_reaches), 0) DESC
         """
     )
     return {"rows": rows, "daily_limit": settings.daily_submission_limit}
@@ -138,7 +143,9 @@ async def _orphans() -> list[dict]:
 
 @router.get("/queue")
 async def queue(_: CurrentUser = Depends(require_admin)) -> dict:
-    broker, orphans = await asyncio.gather(_rabbitmq(), _orphans())
+    broker, orphans, pending_outbox, recent_outbox = await asyncio.gather(
+        _rabbitmq(), _orphans(), outbox.pending_count(), outbox.recent(25)
+    )
 
     slurm = await db.fetch_all(
         """
@@ -162,6 +169,7 @@ async def queue(_: CurrentUser = Depends(require_admin)) -> dict:
 
     return {
         "rabbitmq": broker,
+        "outbox": {"pending": pending_outbox, "recent": recent_outbox},
         "slurm": {
             "jobs": slurm,
             # sinfo/sacct run inside the poller's container, which holds the

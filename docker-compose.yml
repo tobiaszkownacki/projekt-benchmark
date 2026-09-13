@@ -72,6 +72,30 @@ services:
       retries: 5
       start_period: 25s
 
+  outbox_publisher:
+    build:
+      context: .
+      dockerfile: src/backend/Dockerfile
+    container_name: benchmark_outbox_publisher
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      RABBITMQ_HOST: rabbitmq
+    command: ["python", "-m", "backend.outbox_publisher"]
+    # Both services share one image whose healthcheck probes the HTTP endpoint.
+    # This one serves nothing, so it checks that the process is alive instead.
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,sys,time; p='/tmp/outbox-heartbeat'; sys.exit(0 if os.path.exists(p) and time.time()-os.path.getmtime(p) < 60 else 1)"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   athena_worker:
     build:
