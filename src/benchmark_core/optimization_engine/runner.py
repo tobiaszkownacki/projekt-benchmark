@@ -11,7 +11,6 @@ TODO: 5. Plotting
 
 import time
 from dataclasses import dataclass, field
-from enum import Enum, auto
 from typing import Any
 
 import numpy as np
@@ -22,17 +21,10 @@ from torch.utils.data import DataLoader
 
 from benchmark_core.custom_logging import Log
 from benchmark_core.datasets import DATA_SETS, MODELS
+from benchmark_core.metrics.stop_metrics import StopReason
 from benchmark_core.optimization_engine.evaluator import ModelEvaluator
 from benchmark_core.optimization_engine.evaluator_dtos import PyTorchTensorEvaluatorDto
 from benchmark_core.optimization_engine.optimizer_protocols import BenchmarkableOptimizer
-
-
-class StopReason(Enum):
-    GRADIENT_LIMIT = auto()
-    DATABASE_LIMIT = auto()
-    EPOCH_LIMIT = auto()
-    OPTIMIZER_CONVERGED = auto()
-    MAX_STEPS = auto()
 
 
 @dataclass
