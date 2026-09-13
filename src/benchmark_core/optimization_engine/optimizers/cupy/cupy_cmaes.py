@@ -1,7 +1,8 @@
 import cma
 import cupy as np
-from benchmark.evaluator import ModelEvaluator
-from benchmark.optimizer_protocols import NumpyBenchmarkOptimizer
+
+from benchmark_core.optimization_engine.evaluator import ModelEvaluator
+from benchmark_core.optimization_engine.optimizer_protocols import NumpyBenchmarkOptimizer
 
 
 class CupyCMAES(NumpyBenchmarkOptimizer):

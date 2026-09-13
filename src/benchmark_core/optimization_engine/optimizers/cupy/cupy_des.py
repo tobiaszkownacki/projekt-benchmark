@@ -1,7 +1,8 @@
 import cupy as np
 import scipy.special
-from benchmark.evaluator import ModelEvaluator
-from benchmark.optimizer_protocols import CupyBenchmarkOptimizer
+
+from benchmark_core.optimization_engine.evaluator import ModelEvaluator
+from benchmark_core.optimization_engine.optimizer_protocols import CupyBenchmarkOptimizer
 
 
 class CupyDES(CupyBenchmarkOptimizer):

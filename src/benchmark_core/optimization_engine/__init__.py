@@ -1,4 +1,4 @@
-from src.benchmark_core.optimization_engine.runner import (
+from benchmark_core.optimization_engine.runner import (
     BenchmarkResult,
     BenchmarkRunner,
     StopCondition,
