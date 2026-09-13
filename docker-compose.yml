@@ -96,10 +96,10 @@ services:
       retries: 3
       start_period: 10s
 
-  athena_worker:
+  worker:
     build:
       context: .
-      dockerfile: src/pipeline/Dockerfile
+      dockerfile: ${PIPELINE_DOCKERFILE:-src/pipeline/Dockerfile}
     command: ["worker"]
     restart: unless-stopped
     depends_on:
@@ -110,15 +110,17 @@ services:
     env_file:
       - .env
     environment:
-      EXECUTOR: athena
+      EXECUTOR: ${EXECUTOR:-athena}
       # As above: in-network ports, not the ones published on the host.
       POSTGRES_PORT: 5432
       RABBITMQ_PORT: 5672
+    volumes:
+      - executor_workspace:/var/lib/executor-workspace
 
-  athena_poller:
+  poller:
     build:
       context: .
-      dockerfile: src/pipeline/Dockerfile
+      dockerfile: ${PIPELINE_DOCKERFILE:-src/pipeline/Dockerfile}
     command: ["poller"]
     restart: unless-stopped
     depends_on:
@@ -129,15 +131,16 @@ services:
     env_file:
       - .env
     environment:
-      EXECUTOR: athena
-      # As above: in-network ports, not the ones published on the host.
+      EXECUTOR: ${EXECUTOR:-athena}
       POSTGRES_PORT: 5432
       RABBITMQ_PORT: 5672
+    volumes:
+      - executor_workspace:/var/lib/executor-workspace
 
-  athena_downloader:
+  downloader:
     build:
       context: .
-      dockerfile: src/pipeline/Dockerfile
+      dockerfile: ${PIPELINE_DOCKERFILE:-src/pipeline/Dockerfile}
     command: ["downloader"]
     restart: unless-stopped
     depends_on:
@@ -148,13 +151,17 @@ services:
     env_file:
       - .env
     environment:
-      EXECUTOR: athena
-      # As above: in-network ports, not the ones published on the host.
+      EXECUTOR: ${EXECUTOR:-athena}
       POSTGRES_PORT: 5432
       RABBITMQ_PORT: 5672
     volumes:
       - ./downloads:/downloads
+      - executor_workspace:/var/lib/executor-workspace
 
 volumes:
   postgres_data:
   rabbitmq_data:
+  # Where an executor stages a job before it runs. One that submits to a cluster
+  # stages there and leaves this empty; one that runs here needs worker, poller
+  # and downloader to see the same directory.
+  executor_workspace:

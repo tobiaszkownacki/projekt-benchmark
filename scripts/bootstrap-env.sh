@@ -45,6 +45,12 @@ RABBITMQ_MANAGEMENT_PORT=15672
 API_PORT=8000
 FRONTEND_PORT=8501
 
+# Which executor the pipeline runs on. Every queue name is derived from it, so
+# render_rabbitmq_definitions.sh has to run again after a change.
+EXECUTOR=athena
+PIPELINE_DOCKERFILE=
+POLL_INTERVAL_S=60
+
 # Athena (PLGrid). Personal credentials -- never shared, never committed.
 # Leave empty: the worker, poller and downloader will not reach the cluster,
 # which is expected locally. Everything else runs.
@@ -53,7 +59,6 @@ ATHENA_USER=
 ATHENA_PASSWORD=
 ATHENA_ACCOUNT=
 ATHENA_REMOTE_PATH=
-POLL_EVERY=60
 
 # Signs session cookies. Rotating it logs everyone out; it is not shared with
 # any other service and has no value outside this machine.

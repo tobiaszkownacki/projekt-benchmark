@@ -1414,24 +1414,14 @@ api-fastapi = [
     { name = "pydantic" },
     { name = "uvicorn", extra = ["standard"] },
 ]
-athena-downloader = [
-    { name = "paramiko" },
-    { name = "pika" },
-    { name = "psycopg", extra = ["binary"] },
-]
-athena-poller = [
-    { name = "paramiko" },
-    { name = "pika" },
-    { name = "psycopg", extra = ["binary"] },
-]
-athena-worker = [
-    { name = "paramiko" },
-    { name = "pika" },
-    { name = "psycopg", extra = ["binary"] },
-]
 ci = [
     { name = "flake8" },
     { name = "pytest" },
+]
+pipeline = [
+    { name = "paramiko" },
+    { name = "pika" },
+    { name = "psycopg", extra = ["binary"] },
 ]
 seed = [
     { name = "bcrypt" },
@@ -1464,24 +1454,14 @@ api-fastapi = [
     { name = "pydantic", specifier = ">=2.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.32" },
 ]
-athena-downloader = [
-    { name = "paramiko", specifier = ">=5.0.0" },
-    { name = "pika", specifier = ">=1.4.4" },
-    { name = "psycopg", extras = ["binary"], specifier = ">=3.3.4" },
-]
-athena-poller = [
-    { name = "paramiko", specifier = ">=5.0.0" },
-    { name = "pika", specifier = ">=1.4.4" },
-    { name = "psycopg", extras = ["binary"], specifier = ">=3.3.4" },
-]
-athena-worker = [
-    { name = "paramiko", specifier = ">=5.0.0" },
-    { name = "pika", specifier = ">=1.4.4" },
-    { name = "psycopg", extras = ["binary"], specifier = ">=3.3.4" },
-]
 ci = [
     { name = "flake8", specifier = ">=7" },
     { name = "pytest", specifier = ">=8" },
+]
+pipeline = [
+    { name = "paramiko", specifier = ">=5.0.0" },
+    { name = "pika", specifier = ">=1.4.4" },
+    { name = "psycopg", extras = ["binary"], specifier = ">=3.3.4" },
 ]
 seed = [
     { name = "bcrypt", specifier = ">=4.1" },

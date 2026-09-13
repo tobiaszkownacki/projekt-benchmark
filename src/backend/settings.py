@@ -4,6 +4,8 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from shared.queue_topology import QueueTopology
+
 
 def find_source_root() -> Path:
     """Locate the directory that contains ``src/benchmark_core``.
@@ -34,6 +36,14 @@ def _int(name: str, default: int) -> int:
         return int(os.environ.get(name, default))
     except (TypeError, ValueError):
         return default
+
+
+def _executor_name() -> str:
+    return os.environ.get("EXECUTOR", "athena")
+
+
+def _topology() -> QueueTopology:
+    return QueueTopology(_executor_name())
 
 
 @dataclass(frozen=True)
@@ -70,10 +80,13 @@ class Settings:
     rabbitmq_management_url: str = field(default_factory=lambda: os.environ.get("RABBITMQ_MANAGEMENT_URL", ""))
     rabbitmq_user: str = field(default_factory=lambda: os.environ.get("RABBITMQ_USER", ""))
     rabbitmq_password: str = field(default_factory=lambda: os.environ.get("RABBITMQ_PASSWORD", ""))
-    # Must match src/config/rabbitmq/definitions.json (and QueueTopology("athena")
-    # in src/shared), which is the exchange/queue src/pipeline consumes.
-    worker_queue: str = field(default_factory=lambda: os.environ.get("ATHENA_WORKER_QUEUE", "athena_worker_queue"))
-    main_exchange: str = field(default_factory=lambda: os.environ.get("MAIN_EXCHANGE", "main_exchange"))
+
+    # The API and the pipeline have to agree on where a task goes, so both derive
+    # it from EXECUTOR through the same QueueTopology rather than from a pair of
+    # queue-name variables that can drift apart.
+    executor: str = field(default_factory=_executor_name)
+    worker_queue: str = field(default_factory=lambda: _topology().worker_queue)
+    main_exchange: str = field(default_factory=lambda: _topology().main_exchange)
 
     google_client_id: str = field(default_factory=lambda: os.environ.get("GOOGLE_CLIENT_ID", ""))
     google_client_secret: str = field(default_factory=lambda: os.environ.get("GOOGLE_CLIENT_SECRET", ""))

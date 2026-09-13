@@ -32,6 +32,10 @@ RUN pip install --no-cache-dir \
 
 COPY src/backend       /app/backend
 COPY src/db/migrations /app/migrations
+# The queue names the API publishes to are derived from EXECUTOR by the same
+# QueueTopology the pipeline uses; a second copy here would be a second thing
+# to keep in step.
+COPY src/shared        /app/shared
 # Read at runtime by /docs, so the protocol page shows the live contract rather
 # than a copy that drifts.
 COPY src/benchmark_core /app/src/benchmark_core

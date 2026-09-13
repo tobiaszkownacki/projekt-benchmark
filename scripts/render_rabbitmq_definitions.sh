@@ -27,6 +27,10 @@ set +a
 
 : "${RABBITMQ_USER:?RABBITMQ_USER is not set in .env}"
 : "${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD is not set in .env}"
+# The queues are named after the executor, exactly as QueueTopology derives them,
+# so switching EXECUTOR without re-rendering leaves the consumers with nothing to
+# consume from.
+export EXECUTOR="${EXECUTOR:-athena}"
 
 python3 - "$template" "$output" <<'PY'
 import json
@@ -37,6 +41,7 @@ template_path, output_path = sys.argv[1], sys.argv[2]
 raw = open(template_path, encoding="utf-8").read()
 raw = raw.replace("[USER]", os.environ["RABBITMQ_USER"])
 raw = raw.replace("[PASSWORD]", os.environ["RABBITMQ_PASSWORD"])
+raw = raw.replace("[EXECUTOR]", os.environ["EXECUTOR"])
 
 json.loads(raw)  # fail loudly here rather than inside the broker at boot
 open(output_path, "w", encoding="utf-8").write(raw)

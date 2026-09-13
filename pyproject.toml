@@ -33,17 +33,10 @@ api-fastapi = [
     "pika>=1.4.4",
     "psycopg[binary]>=3.3.4",
 ]
-athena-downloader = [
-    "paramiko>=5.0.0",
-    "pika>=1.4.4",
-    "psycopg[binary]>=3.3.4",
-]
-athena-poller = [
-    "paramiko>=5.0.0",
-    "pika>=1.4.4",
-    "psycopg[binary]>=3.3.4",
-]
-athena-worker = [
+# Worker, poller and downloader share one image, so they share one group. The
+# SSH client is here because every executor that submits to a computing centre
+# reaches it that way.
+pipeline = [
     "paramiko>=5.0.0",
     "pika>=1.4.4",
     "psycopg[binary]>=3.3.4",

@@ -21,3 +21,14 @@ register_new_infrastructure(
         completion_path="pipeline.completion.PolledCompletionSource",
     )
 )
+
+# A test and CI backend, not a product option. It is registered so the suite can
+# drive submit -> poll -> download end to end; production selects athena and no
+# interface offers this name.
+register_new_infrastructure(
+    InfrastructureRegistration(
+        name="local",
+        executor_path="pipeline.adapters.local.LocalExecutor",
+        completion_path="pipeline.completion.PolledCompletionSource",
+    )
+)
