@@ -77,7 +77,15 @@ EOF
 chmod 600 .env .seed-credentials
 
 echo "wrote .env and .seed-credentials (mode 600, both gitignored)"
+
+# The broker definitions carry RABBITMQ_PASSWORD, so they are gitignored too
+# and have to be rendered from the template. Done here rather than left as a
+# separate step: compose bind-mounts that path, and if the file is missing
+# Docker creates a directory in its place and RabbitMQ dies complaining about
+# something else entirely.
+"$(dirname "${BASH_SOURCE[0]}")/render_rabbitmq_definitions.sh"
+
 echo
 echo "next:"
-echo "  docker compose up -d --build postgres rabbitmq web outbox_publisher"
+echo "  docker compose up -d --build postgres rabbitmq backend outbox_publisher"
 echo "  see docs/LOCAL_SETUP.md for seeding and the walk-through"

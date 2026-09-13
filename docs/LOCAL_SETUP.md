@@ -6,7 +6,7 @@ sent to you: everything you need is generated on your own machine.
 
 ## 1. Why there is no `.env` in your clone
 
-`.env`, `.seed-credentials` and `src/frontend/.streamlit/secrets.toml` are all
+`.env`, `.seed-credentials` and `config/rabbitmq/definitions.json` are all
 gitignored, so a fresh clone does not contain them. That is deliberate, and it
 is also why nobody needs to send you theirs.
 
@@ -30,8 +30,9 @@ blast radius.
 ./scripts/bootstrap-env.sh
 ```
 
-Writes `.env` and `.seed-credentials`, both mode 600, both already gitignored.
-It refuses to overwrite an existing `.env` unless you pass `--force`.
+Writes `.env` and `.seed-credentials`, both mode 600, both already gitignored,
+and renders `config/rabbitmq/definitions.json` from its template. It refuses to
+overwrite an existing `.env` unless you pass `--force`.
 
 Optionally install the commit guard, which blocks a commit that would place a
 secret-shaped value in a tracked file:
@@ -43,18 +44,12 @@ secret-shaped value in a tracked file:
 ## 3. Start the stack
 
 ```bash
-docker compose up -d --build postgres rabbitmq web outbox_publisher
+docker compose up -d --build postgres rabbitmq backend outbox_publisher
 ```
 
 Four services, not seven, and the omission is intentional: `athena_worker`,
 `athena_poller` and `athena_downloader` need PLGrid credentials, and starting
 them without produces a restart loop and nothing else.
-
-`frontend` (the Streamlit site) and `api` (the task-submission endpoint it
-posts to) are behind the `legacy` profile, so a plain `docker compose up`
-leaves them out and starts one frontend and one API. Bring them back with
-`docker compose --profile legacy up -d`; `frontend` then needs
-`src/frontend/.streamlit/secrets.toml`.
 
 Database migrations run automatically at boot (`RUN_MIGRATIONS` defaults to
 true), so there is no separate migrate step.
@@ -148,15 +143,13 @@ because the validator needs a Docker socket to start its sandbox. Submissions
 carry an explicit note saying nothing was verified, rather than silently
 appearing to have passed. Set it to `1` if you have a socket to spare.
 
-**OAuth and reCAPTCHA are absent.** The control plane never reads
-`secrets.toml`; it has no Streamlit dependency at all, and the OAuth client ids
-default to empty. Email and password login is unaffected. Only the Streamlit
-`frontend` service needs those values, and it is not part of this stack.
+**OAuth and reCAPTCHA are absent.** The OAuth client ids default to empty and
+nothing in the stack needs them. Email and password login is unaffected.
 
 ## 7. Tests
 
 ```bash
-cd src/web && uv run pytest
+cd src && uv run pytest tests
 ```
 
 Currently **44 passed, 30 skipped**. The skips are not failures: `test_api.py`
@@ -170,7 +163,7 @@ TEST_DATABASE_URL="$DATABASE_URL" uv run pytest    # runs the other 30 too
 Frontend:
 
 ```bash
-cd src/web/frontend && npm ci
+cd src/frontend && npm ci
 npm run lint
 npm run lint:css                         # rejects gradients, glow and heavy shadows
 npm run build
@@ -181,7 +174,7 @@ npm run build
 ```bash
 docker compose down -v                   # -v also drops the database volume
 ./scripts/bootstrap-env.sh --force
-docker compose up -d --build postgres rabbitmq web outbox_publisher
+docker compose up -d --build postgres rabbitmq backend outbox_publisher
 # then seed again
 ```
 
