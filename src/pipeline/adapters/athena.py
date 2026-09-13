@@ -14,10 +14,7 @@ MAX_EPOCHS = 10
 MAX_GRADIENTS = 100000
 FAILURE_STATES = {"FAILED", "CANCELLED", "TIMEOUT", "OUT_OF_MEMORY", "NODE_FAIL"}
 
-SACCT_CMD = (
-    "sacct --parsable2 --allocations "
-    "--format=JobID,JobName,Partition,AllocCPUS,State,ExitCode,Elapsed,End"
-)
+SACCT_CMD = "sacct --parsable2 --allocations --format=JobID,JobName,Partition,AllocCPUS,State,ExitCode,Elapsed,End"
 
 ATHENA_REMOTE_PATH = os.environ.get("ATHENA_REMOTE_PATH")
 PROJECT_DIR = f"{ATHENA_REMOTE_PATH}/projekt-benchmark"
@@ -106,7 +103,6 @@ class AthenaExecutor(ExecutorAdapter):
 
 
 class AthenaCompletionSource(CompletionSource):
-
     def __init__(self, adapter: AthenaExecutor, task_repo: TaskRepository):
         self.adapter = adapter
         self.task_repo = task_repo

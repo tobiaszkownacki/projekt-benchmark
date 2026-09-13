@@ -1,7 +1,9 @@
 import importlib
 import os
 
-import pipeline.registered_pipelines
+# Imported for its side effect: the module body registers every known
+# infrastructure, so dropping it leaves the registry empty.
+import pipeline.registered_pipelines  # noqa: F401
 from pipeline.pipeline_registration import get_infrastructure_registration
 from pipeline.task_repository import TaskRepository
 from shared.queue_topology import QueueTopology
@@ -13,12 +15,11 @@ def _load_from_class_path(path: str):
 
 
 class PipelineBuilder:
-
     def __init__(self):
         try:
             executor_name = os.environ["EXECUTOR"]
         except KeyError:
-            raise Exception("EXECUTOR environment variable not set")
+            raise Exception("EXECUTOR environment variable not set") from None
 
         self.registration = get_infrastructure_registration(executor_name)
         self.topology = QueueTopology(executor_name)

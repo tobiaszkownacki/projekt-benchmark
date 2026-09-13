@@ -8,12 +8,13 @@ from shared.connectors.rabbitmq import RabbitMQConnector
 logger = logging.getLogger(__name__)
 
 
-def run_consumer(exchange: str,
-                 queue: str,
-                 handler: Callable[[dict], None],
-                 message_broker: type[MessageBrokerConnector] = RabbitMQConnector,
-                 prefetch: int = 1,
-                 ) -> None:
+def run_consumer(
+    exchange: str,
+    queue: str,
+    handler: Callable[[dict], None],
+    message_broker: type[MessageBrokerConnector] = RabbitMQConnector,
+    prefetch: int = 1,
+) -> None:
 
     def _callback(channel, method, _properties, body):
         try:

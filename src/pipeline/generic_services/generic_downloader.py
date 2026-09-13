@@ -7,9 +7,11 @@ from shared.queue_topology import QueueTopology
 
 logger = logging.getLogger(__name__)
 
+
 class Downloader:
-    def __init__(self,adapter: ExecutorAdapter,topology: QueueTopology,task_repo: TaskRepository,
-                 message_broker) -> None:
+    def __init__(
+        self, adapter: ExecutorAdapter, topology: QueueTopology, task_repo: TaskRepository, message_broker
+    ) -> None:
         self.adapter = adapter
         self.topology = topology
         self.task_repo = task_repo
@@ -18,7 +20,6 @@ class Downloader:
     def handle(self, message: dict) -> None:
         task_id = message["task_id"]
         logger.info(f"Request for downloading task_id={task_id}")
-
 
         try:
             self.adapter.fetch_results(task_id, delete_after_download=False)
@@ -29,10 +30,10 @@ class Downloader:
 
         logger.info(f"Downloaded results for task_id={task_id}")
 
-
-    def run(self) ->None:
-        run_consumer(exchange=self.topology.main_exchange,
-                    queue=self.topology.downloader_queue,
-                     handler=self.handle,
-                     message_broker=self.message_broker
-                     )
+    def run(self) -> None:
+        run_consumer(
+            exchange=self.topology.main_exchange,
+            queue=self.topology.downloader_queue,
+            handler=self.handle,
+            message_broker=self.message_broker,
+        )
