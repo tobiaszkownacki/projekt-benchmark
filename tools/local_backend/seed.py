@@ -24,7 +24,7 @@ from psycopg.types.json import Jsonb
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
-sys.path.insert(0, str(REPO_ROOT / "src" / "frontend"))
+sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from tools.local_backend.artifacts import write_run_artifacts  # noqa: E402
 from tools.local_backend.runner import (  # noqa: E402
@@ -79,7 +79,7 @@ def ensure_users(conn) -> dict[str, uuid.UUID]:
     No password is written into this file. A default baked into a seeding script
     is a default that reaches a server eventually.
     """
-    from auth.passwords import hash_password
+    from backend.passwords import hash_password
 
     people = [
         (

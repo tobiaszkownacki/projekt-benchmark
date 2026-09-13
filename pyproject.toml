@@ -55,15 +55,13 @@ ci = [
     "flake8>=7",
     "pytest>=8",
 ]
-frontend = [
-    "authlib>=1.7.2",
+# What `tools/local_backend/seed.py` needs on top of the root dependencies: it
+# drives the real evaluator and the real NumPy optimizers, then writes straight
+# to Postgres with SQL. It used to borrow the Streamlit group for these two,
+# which stopped making sense when Streamlit was removed.
+seed = [
     "bcrypt>=4.1",
-    "email-validator>=2.1",
-    "httpx>=0.27",
-    "pika>=1.4.2",
-    "psycopg-pool>=3.2",
     "psycopg[binary]>=3.1",
-    "streamlit[auth]>=1.59",
 ]
 
 [tool.ruff]

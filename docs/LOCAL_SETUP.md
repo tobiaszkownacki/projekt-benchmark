@@ -78,7 +78,7 @@ running, downloading, failed with a log, failed with no artifacts, rejected by
 the validator -- because otherwise half the interface never renders.
 
 ```bash
-uv sync --group frontend               # torch, scikit-learn, psycopg
+uv sync --group seed                   # torch, scikit-learn, psycopg, bcrypt
 ```
 
 One warning about that step: `cupy-cuda12x` is a hard dependency of the root
