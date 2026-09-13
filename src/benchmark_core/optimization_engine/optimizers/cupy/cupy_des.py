@@ -16,6 +16,8 @@ class CupyDES(CupyBenchmarkOptimizer):
         initial_params: np.ndarray,
         Ft: float = 1.0,
         Lamarckism: bool = False,
+        pop_size: int | None = None,
+        sigma: float | None = None,
         **config,
     ):
         super().__init__(initial_params, **config)
@@ -24,7 +26,7 @@ class CupyDES(CupyBenchmarkOptimizer):
         self.Lamarckism = Lamarckism
 
         # defaults
-        self.lambda_ = config.get("lambda", 4 * self.dim)
+        self.lambda_ = pop_size if pop_size is not None else 4 * self.dim
         self.mu = config.get("mu", self.lambda_ // 2)
 
         # Bounding boxes
@@ -64,7 +66,14 @@ class CupyDES(CupyBenchmarkOptimizer):
         self.newMean = initial_params.copy()
 
         # (potential) TODO original code used 0.8 of original boundries
-        self.population = np.random.uniform(self.lower, self.upper, (self.lambda_, self.dim)).T
+        if sigma is None:
+            self.population = np.random.uniform(self.lower, self.upper, (self.lambda_, self.dim)).T
+        else:
+            # sigma spreads the first generation around the initial guess. The
+            # uniform draw above covers the whole bounding box, which for
+            # network weights means every individual but the guess starts far
+            # outside the region where the loss varies.
+            self.population = initial_params[:, None] + sigma * np.random.randn(self.dim, self.lambda_)
         # Insert initial guess
         self.population[:, 0] = initial_params
 
