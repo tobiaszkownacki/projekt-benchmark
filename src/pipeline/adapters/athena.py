@@ -60,8 +60,11 @@ class AthenaExecutor(ExecutorAdapter):
             "cpus": 1,
             "gpus": 1,
             "workdir": PROJECT_DIR,
+            # The engine lives under src/ and is not installed into the project
+            # environment, so the module only resolves with src/ on the path.
+            "env_vars": {"PYTHONPATH": f"{PROJECT_DIR}/src"},
             "run_command": (
-                f"uv run -m src.benchmark.run_benchmark "
+                f"uv run -m benchmark_core.optimization_engine.run_benchmark "
                 f"--dataset {job.dataset} --optimizer {job.optimizer} "
                 f"--max-epochs {MAX_EPOCHS} --max-gradients {MAX_GRADIENTS} "
                 f"--task-id {job.task_id} --plot"
