@@ -28,4 +28,6 @@ dev = [
     "pytest>=8",
     "pytest-asyncio>=0.24",
     "flake8>=7",
+    # The adapter contract tests import src/pipeline, whose SLURM half talks SSH.
+    "paramiko>=5.0.0",
 ]

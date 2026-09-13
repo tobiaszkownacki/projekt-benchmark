@@ -45,7 +45,7 @@ class PipelineBuilder:
 
     def _build_executor(self):
         executor_cls = _load_from_class_path(self.registration.executor_path)
-        return executor_cls()
+        return executor_cls(**self.registration.executor_config)
 
     def _get_worker(self):
         worker_cls = _load_from_class_path(self.registration.worker_path)
