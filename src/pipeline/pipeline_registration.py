@@ -5,7 +5,7 @@ from dataclasses import dataclass
 class InfrastructureRegistration:
     name: str
     executor_path: str
-    #services
+    # services
     worker_path: str = "pipeline.generic_services.generic_worker.GenericWorker"
     downloader_path: str = "pipeline.generic_services.generic_downloader.Downloader"
     poller_path: str = "pipeline.generic_services.generic_poller.GenericPoller"

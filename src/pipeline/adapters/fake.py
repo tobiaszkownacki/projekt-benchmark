@@ -6,14 +6,12 @@ from pipeline.executor import ExecutorAdapter, FetchResult, JobDescription, Subm
 logger = logging.getLogger(__name__)
 
 
-
-
 class FakeExecutor(ExecutorAdapter):
     def check_ready(self) -> bool:
         return True
 
     def submit_job(self, job: JobDescription) -> SubmitResult:
-        return SubmitResult(executor_task_id=f"123", std_out="")
+        return SubmitResult(executor_task_id="123", std_out="")
 
     def fetch_results(self, task_id: str, delete_after_download: bool = False) -> FetchResult:
         return FetchResult(files=[])

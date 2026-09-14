@@ -7,9 +7,9 @@ from shared.queue_topology import QueueTopology
 
 logger = logging.getLogger(__name__)
 
-class GenericWorker:
 
-    def __init__(self,adapter,queue_topology: QueueTopology,task_repo: TaskRepository,message_broker):
+class GenericWorker:
+    def __init__(self, adapter, queue_topology: QueueTopology, task_repo: TaskRepository, message_broker):
         self.adapter = adapter
         self.queue_topology = queue_topology
         self.task_repo = task_repo
@@ -18,8 +18,7 @@ class GenericWorker:
     def handle(self, message: dict):
         job = JobDescription.from_message(message)
         logger.info(
-            f"Received task_id={job.task_id} dataset={job.dataset} "
-            f"optimizers={job.optimizers} run_name={job.run_name}"
+            f"Received task_id={job.task_id} dataset={job.dataset} optimizers={job.optimizers} run_name={job.run_name}"
         )
         try:
             submit_result = self.adapter.submit_job(job)
@@ -36,7 +35,5 @@ class GenericWorker:
             exchange=self.queue_topology.main_exchange,
             queue=self.queue_topology.worker_queue,
             handler=self.handle,
-            message_broker=self.message_broker
+            message_broker=self.message_broker,
         )
-
-

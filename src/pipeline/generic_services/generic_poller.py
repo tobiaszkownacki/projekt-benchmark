@@ -5,10 +5,9 @@ from shared.queue_topology import QueueTopology
 
 logger = logging.getLogger(__name__)
 
-class GenericPoller:
 
-    def __init__(self,completion_rule,topology: QueueTopology,message_broker,
-                 interval_s: int):
+class GenericPoller:
+    def __init__(self, completion_rule, topology: QueueTopology, message_broker, interval_s: int):
         self.completion_rule = completion_rule
         self.topology = topology
         self.message_broker = message_broker

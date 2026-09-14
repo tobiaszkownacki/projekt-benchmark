@@ -19,8 +19,9 @@ from pathlib import Path
 
 from src.benchmark import BenchmarkRunner, StopCondition
 from src.benchmark.optimizers import BUILTIN_OPTIMIZERS
-from src.config import ALLOWED_DATASETS
 from src.plotting.benchmark_analyzer import BenchmarkAnalyzer
+
+from src.config import ALLOWED_DATASETS
 
 
 def load_custom_optimizer(path: str):

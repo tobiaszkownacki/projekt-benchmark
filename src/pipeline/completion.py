@@ -10,5 +10,4 @@ class CompletionSignal:
 
 class CompletionSource(ABC):
     @abstractmethod
-    def on_poll(self) -> CompletionSignal:
-        ...
+    def on_poll(self) -> CompletionSignal: ...

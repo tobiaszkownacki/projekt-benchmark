@@ -1,7 +1,6 @@
 import importlib
 import os
 
-import pipeline.registered_pipelines
 from pipeline.pipeline_registration import get_infrastructure_registration
 from pipeline.task_repository import TaskRepository
 from shared.queue_topology import QueueTopology
@@ -13,11 +12,9 @@ def _load_from_class_path(path: str):
 
 
 class PipelineBuilder:
-
     def __init__(self):
-        try:
-            executor_name = os.environ["EXECUTOR"]
-        except KeyError:
+        executor_name = os.environ.get("EXECUTOR")
+        if executor_name is None:
             raise Exception("EXECUTOR environment variable not set")
 
         self.registration = get_infrastructure_registration(executor_name)

@@ -5,10 +5,11 @@ from pipeline.pipeline_builder import PipelineBuilder
 
 logger = logging.getLogger(__name__)
 
+
 def main(argv: list[str]) -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
-    if len(argv) !=1 or argv[0] not in ("worker","downloader","poller"):
+    if len(argv) != 1 or argv[0] not in ("worker", "downloader", "poller"):
         raise SystemExit("entrypoint needs to follow this pattern: python -m pipeline.run <worker|downloader|poller>")
 
     service_to_run = argv[0]

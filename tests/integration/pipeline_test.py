@@ -1,13 +1,14 @@
 import time
 import uuid
+
 import pytest
+
 from shared.connectors.rabbitmq import RabbitMQConnector
 from shared.queue_topology import QueueTopology
 
+
 @pytest.mark.integration
 def test_task_has_status_running_after_sending_to_db(db_connector, test_user_id):
-
-
 
     topology = QueueTopology("fake")
 
@@ -19,7 +20,6 @@ def test_task_has_status_running_after_sending_to_db(db_connector, test_user_id)
         (task_id, topology.worker_queue, test_user_id),
     )
 
-
     with RabbitMQConnector(exchange=topology.main_exchange, routing_key=topology.worker_queue) as publisher:
         publisher.publish(
             {
@@ -30,12 +30,12 @@ def test_task_has_status_running_after_sending_to_db(db_connector, test_user_id)
             }
         )
 
-    max_time = time.monotonic()+5
-    row=None
-    while time.monotonic()<max_time:
+    max_time = time.monotonic() + 5
+    row = None
+    while time.monotonic() < max_time:
         row = db_connector.execute(
-              "SELECT task_status, executor_task_id FROM tasks WHERE task_id = %s", (task_id,)
-          ).fetchone()
+            "SELECT task_status, executor_task_id FROM tasks WHERE task_id = %s", (task_id,)
+        ).fetchone()
         if row and row[0] == "SUBMITTED":
             break
         time.sleep(0.2)
@@ -43,4 +43,3 @@ def test_task_has_status_running_after_sending_to_db(db_connector, test_user_id)
     assert row is not None
     assert row[0] == "SUBMITTED"
     assert row[1] is not None
-

@@ -1,10 +1,10 @@
 import os
 
-from shared.connectors.postgres import PostGresConnector
-import pytest
 import httpx
-from shared.connectors.rabbitmq import RabbitMQConnector
+import pytest
 
+from shared.connectors.postgres import PostGresConnector
+from shared.connectors.rabbitmq import RabbitMQConnector
 
 TEST_USER_ID = "00000000-0000-0000-0000-000000000001"
 
@@ -30,13 +30,19 @@ def test_user_id():
 @pytest.fixture
 def rabbitmq_connector():
 
-    with RabbitMQConnector(exchange="",routing_key="") as publisher:
-        queues2clean = ["fake_downloader_queue","fake_worker_queue","dlq_fake_downloader_queue","dlq_fake_worker_queue"]
+    with RabbitMQConnector(exchange="", routing_key="") as publisher:
+        queues2clean = [
+            "fake_downloader_queue",
+            "fake_worker_queue",
+            "dlq_fake_downloader_queue",
+            "dlq_fake_worker_queue",
+        ]
 
         for q in queues2clean:
             publisher.channel.queue_purge(queue=q)
 
         yield publisher
+
 
 @pytest.fixture
 def api_client():
