@@ -1,11 +1,11 @@
-CREATE TYPE task_status AS ENUM ('pending', 'running', 'completed', 'failed');
+CREATE TYPE task_status AS ENUM ('PENDING', 'SUBMITTED', 'RUNNING', 'COMPLETED', 'FAILED');
 
 CREATE TABLE tasks (
     task_id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     queue_name          VARCHAR(255) NOT NULL,
     executor_name         TEXT NOT NULL,
     submitted_by        UUID NOT NULL REFERENCES users (id),
-    task_status         task_status NOT NULL DEFAULT 'pending',
+    task_status         task_status NOT NULL DEFAULT 'PENDING',
     created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     dataset             TEXT,

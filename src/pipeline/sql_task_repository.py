@@ -8,14 +8,14 @@ class SqlTaskRepository(TaskRepository):
     def mark_submitted(self, task_id: str, executor_task_id: str) -> None:
         with self._db_cls() as db:
             db.execute(
-                "UPDATE tasks SET executor_task_id = %s, task_status = 'running', updated_at = NOW() "
+                "UPDATE tasks SET executor_task_id = %s, task_status = 'SUBMITTED', updated_at = NOW() "
                 "WHERE task_id = %s",
                 (executor_task_id, task_id),
             )
     def mark_failed(self, task_id: str, error_message: str) -> None:
         with self._db_cls() as db:
             db.execute(
-                "UPDATE tasks SET task_status = 'failed', updated_at = NOW(), error_message = %s WHERE task_id = %s",
+                "UPDATE tasks SET task_status = 'FAILED', updated_at = NOW(), error_message = %s WHERE task_id = %s",
                 (error_message, task_id),
             )
     def set_error(self, task_id: str, error_message: str) -> None:
@@ -27,8 +27,8 @@ class SqlTaskRepository(TaskRepository):
     def mark_completed_by_executor_id(self, executor_task_id: str) -> bool:
         with self._db_cls() as db:
             cursor = db.execute(
-                "UPDATE tasks SET task_status = 'completed', updated_at = NOW(), completed_at = NOW() "
-                "WHERE executor_task_id = %s AND task_status != 'completed'",
+                "UPDATE tasks SET task_status = 'COMPLETED', updated_at = NOW(), completed_at = NOW() "
+                "WHERE executor_task_id = %s AND task_status != 'COMPLETED'",
                 (executor_task_id,),
             )
             return cursor.rowcount > 0
