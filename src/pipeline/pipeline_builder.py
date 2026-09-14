@@ -1,6 +1,7 @@
 import importlib
 import os
 
+import pipeline.registered_pipelines
 from pipeline.pipeline_registration import get_infrastructure_registration
 from pipeline.task_repository import TaskRepository
 from shared.queue_topology import QueueTopology
