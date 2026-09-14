@@ -7,3 +7,12 @@ register_new_infrastructure(
         completion_path="pipeline.adapters.athena.AthenaCompletionSource",
     )
 )
+
+
+register_new_infrastructure(
+    InfrastructureRegistration(
+        name="fake",
+        executor_path="pipeline.adapters.fake.FakeExecutor",
+        completion_path="pipeline.adapters.fake.FakeCompletionSource",
+    )
+)

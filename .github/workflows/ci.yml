@@ -30,6 +30,16 @@ jobs:
           version: "0.16.4"
           args: "format --check ."
 
+  test:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check repository
+        uses: actions/checkout@v4
+      - name: Run tests
+        run: docker compose up --build --abort-on-container-exit --exit-code-from-tests
+
+
   frontend:
     runs-on: ubuntu-latest
     steps:
@@ -49,7 +59,6 @@ jobs:
         working-directory: src/frontend
         run: npm run lint
 
-      # Enforced in CI so the rule does not erode over time.
       - name: Check visual constraints
         working-directory: src/frontend
         run: npm run lint:css

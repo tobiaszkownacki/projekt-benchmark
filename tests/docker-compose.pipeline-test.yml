@@ -1,0 +1,94 @@
+
+
+x-pipeline-env: &pipeline-env
+  EXECUTOR: fake
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: pipeline_test
+  POSTGRES_USER: test
+  POSTGRES_PASSWORD: test
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_USER: USER
+  RABBITMQ_PASSWORD: PASSWORD
+  POLL_INTERVAL_S: "2"
+  LOCAL_DOWNLOAD_DIR: /downloads
+  ATHENA_HOST: ""
+  ATHENA_USER: ""
+  ATHENA_PASSWORD: ""
+  ATHENA_ACCOUNT: ""
+  ATHENA_REMOTE_PATH: /tmp
+
+x-pipeline-service: &pipeline-service
+  build:
+    context: ..
+    dockerfile: src/pipeline/Dockerfile
+  restart: "no"
+  environment: *pipeline-env
+  depends_on:
+    postgres:
+      condition: service_healthy
+    rabbitmq:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: pipeline_test
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    volumes:
+      - ../src/db/db_schemas:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d pipeline_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    tmpfs:
+      - /var/lib/rabbitmq
+    volumes:
+      - ../src/config/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./rabbitmq/definitions.test.json:/etc/rabbitmq/definitions.json:ro
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+
+  worker:
+    <<: *pipeline-service
+    command: ["worker"]
+
+  poller:
+    <<: *pipeline-service
+    command: ["poller"]
+
+  downloader:
+    <<: *pipeline-service
+    command: ["downloader"]
+    tmpfs:
+      - /downloads
+  tests:
+    build:
+      context: ..
+      dockerfile: tests/Dockerfile
+    restart: "no"
+    environment: *pipeline-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
