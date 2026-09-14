@@ -2,8 +2,6 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
@@ -37,7 +35,9 @@ jobs:
       - name: Check repository
         uses: actions/checkout@v4
       - name: Run tests
-        run: docker compose up --build --abort-on-container-exit --exit-code-from-tests
+        run: >
+          docker compose -f tests/docker-compose.pipeline-test.yml
+          up --build --abort-on-container-exit --exit-code-from tests
 
 
   frontend:
