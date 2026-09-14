@@ -94,3 +94,4 @@ select = [
 "__init__.py" = ["F401"]
 "src/backend/routers/*.py" = ["B008"]
 "src/backend/security.py" = ["B008"]
+"src/pipeline/pipeline_builder.py" = ["F401"]
