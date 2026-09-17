@@ -153,7 +153,6 @@ cd {workdir}
         job_dir = f"{scratch}/{job_name}"
         job_sh = f"{job_dir}/job.sh"
 
-
         self.ssh(f"mkdir -p {workdir}/reports/{job_name}")
 
         escaped = script_content.replace("'", "'\\''")
