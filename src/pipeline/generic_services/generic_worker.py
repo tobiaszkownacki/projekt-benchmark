@@ -35,5 +35,6 @@ class GenericWorker:
             exchange=self.queue_topology.main_exchange,
             queue=self.queue_topology.worker_queue,
             handler=self.handle,
+            topology=self.queue_topology,
             message_broker=self.message_broker,
         )

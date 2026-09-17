@@ -14,7 +14,7 @@ from contextlib import contextmanager
 import psycopg
 from psycopg_pool import ConnectionPool
 
-from core.config import get_database_url
+from .config import get_database_url
 
 _pool: ConnectionPool | None = None
 _pool_lock = threading.Lock()

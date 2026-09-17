@@ -1,26 +1,21 @@
-"""Bridge to the authentication code in ``src/frontend``.
+"""Synchronous auth implementation, reused rather than reimplemented.
 
-Reuses ``auth/repository.py`` rather than reimplementing password hashing, the
-OAuth upsert rules and the approval flow.
+Password hashing, the OAuth upsert rules and the approval flow used to live in
+the Streamlit frontend; this package is that same code, now owned by the
+control plane.
 
-Those modules are synchronous. FastAPI runs plain ``def`` dependencies in a
-worker thread anyway, so the calls here go through ``asyncio.to_thread`` and the
-blocking pool never touches the event loop. User mutations are rare; the hot
-read paths use the async pool directly.
+The modules underneath are synchronous. FastAPI runs plain ``def`` dependencies
+in a worker thread anyway, so the calls here go through ``asyncio.to_thread``
+and the blocking pool never touches the event loop. User mutations are rare;
+the hot read paths use the async pool directly.
 """
 
 import asyncio
-import sys
-from pathlib import Path
 from typing import Any
 from uuid import UUID
 
-_FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
-if _FRONTEND_DIR.is_dir() and str(_FRONTEND_DIR) not in sys.path:
-    sys.path.insert(0, str(_FRONTEND_DIR))
-
-from auth import passwords as _passwords  # noqa: E402
-from auth import repository as _repository  # noqa: E402
+from . import passwords as _passwords
+from . import repository as _repository
 
 User = _repository.User
 

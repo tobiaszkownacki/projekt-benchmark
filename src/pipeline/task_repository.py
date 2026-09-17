@@ -6,7 +6,6 @@ from dataclasses import dataclass
 class TaskStatus:
     task_id: str
     task_status: str
-    webhook_token: str | None = None
 
 
 class TaskRepository(ABC):

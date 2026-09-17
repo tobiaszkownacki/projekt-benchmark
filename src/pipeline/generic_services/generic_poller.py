@@ -1,6 +1,7 @@
 import logging
 import time
 
+from shared.connectors.rabbitmq import declare_topology
 from shared.queue_topology import QueueTopology
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,11 @@ class GenericPoller:
                 logger.info(f"Published task_id={task_id} to downloader queue")
 
     def run(self) -> None:
+        with self.message_broker(
+            exchange=self.topology.main_exchange, routing_key=self.topology.downloader_queue
+        ) as mb:
+            declare_topology(mb.channel, self.topology)
+
         logger.info(f"Starting poller with interval {self.interval_s} seconds")
         while True:
             started = time.monotonic()

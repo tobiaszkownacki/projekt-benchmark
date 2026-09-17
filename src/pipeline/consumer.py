@@ -3,7 +3,8 @@ import logging
 from collections.abc import Callable
 
 from shared.connectors.base import MessageBrokerConnector
-from shared.connectors.rabbitmq import RabbitMQConnector
+from shared.connectors.rabbitmq import RabbitMQConnector, declare_topology
+from shared.queue_topology import QueueTopology
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +13,7 @@ def run_consumer(
     exchange: str,
     queue: str,
     handler: Callable[[dict], None],
+    topology: QueueTopology,
     message_broker: type[MessageBrokerConnector] = RabbitMQConnector,
     prefetch: int = 1,
 ) -> None:
@@ -34,6 +36,7 @@ def run_consumer(
         channel.basic_ack(delivery_tag=method.delivery_tag)
 
     with message_broker(exchange=exchange, routing_key=queue) as mb:
+        declare_topology(mb.channel, topology)
         mb.channel.basic_qos(prefetch_count=prefetch)
         mb.channel.basic_consume(queue=queue, on_message_callback=_callback)
         logger.info(f"consuming {queue}")

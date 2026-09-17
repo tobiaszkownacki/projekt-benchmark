@@ -2,7 +2,7 @@ import os
 
 import psycopg
 
-from shared.interfaces.database_connector import DatabaseConnector
+from shared.connectors.base import DatabaseConnector
 
 
 class PostGresConnector(DatabaseConnector):

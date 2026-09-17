@@ -119,7 +119,7 @@ class AthenaCompletionSource(CompletionSource):
 
     def _reconcile_completed(self, job_id: str) -> str | None:
         record = self.task_repo.get_by_executor_id(job_id)
-        if record is None or record.task_status == "COMPLETED":
+        if record is None or record.task_status == "completed":
             return None
         if not self.task_repo.mark_completed_by_executor_id(job_id):
             return None
@@ -131,7 +131,7 @@ class AthenaCompletionSource(CompletionSource):
         if record is None:
             logger.warning(f"job_id={job_id} is {state} but has no matching task")
             return None
-        if record.task_status == "FAILED":
+        if record.task_status == "failed":
             return None
         error_tail = self.adapter.fetch_error_tail(job_name, job_id)
         self.task_repo.mark_failed(record.task_id, error_tail)

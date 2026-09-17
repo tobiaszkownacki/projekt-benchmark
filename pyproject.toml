@@ -26,24 +26,7 @@ dependencies = [
 ]
 
 [dependency-groups]
-api-fastapi = [
-    "fastapi>=0.115",
-    "uvicorn[standard]>=0.32",
-    "pydantic>=2.0",
-    "pika>=1.4.4",
-    "psycopg[binary]>=3.3.4",
-]
-athena-downloader = [
-    "paramiko>=5.0.0",
-    "pika>=1.4.4",
-    "psycopg[binary]>=3.3.4",
-]
-athena-poller = [
-    "paramiko>=5.0.0",
-    "pika>=1.4.4",
-    "psycopg[binary]>=3.3.4",
-]
-athena-worker = [
+task-queue = [
     "paramiko>=5.0.0",
     "pika>=1.4.4",
     "psycopg[binary]>=3.3.4",
@@ -55,15 +38,11 @@ ci = [
     "flake8>=7",
     "pytest>=8",
 ]
-frontend = [
-    "authlib>=1.7.2",
+# What tools/local_backend/seed.py needs beyond the root ML stack: a database
+# driver and password hashing for the dev accounts it creates.
+local-seed = [
     "bcrypt>=4.1",
-    "email-validator>=2.1",
-    "httpx>=0.27",
-    "pika>=1.4.2",
-    "psycopg-pool>=3.2",
-    "psycopg[binary]>=3.1",
-    "streamlit[auth]>=1.59",
+    "psycopg[binary]>=3.3.4",
 ]
 
 [tool.ruff]
@@ -89,10 +68,7 @@ select = [
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
-"src/frontend/home.py" = ["E402"]
 # Depends(), Query() and Path() in a signature default are how FastAPI declares
 # dependencies; B008 flags every one of them.
 "src/web/app/routers/*.py" = ["B008"]
 "src/web/app/security.py" = ["B008"]
-# The Streamlit path bootstrap has to run before the sibling imports.
-"src/web/app/legacy_auth.py" = ["E402"]

@@ -2,11 +2,11 @@ from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
 
-from core.database import get_connection
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
-from auth.passwords import hash_password
+from .database import get_connection
+from .passwords import hash_password
 
 
 @dataclass

@@ -139,18 +139,6 @@ cd {workdir}
         return remote_path
 
     def submit_job(self, job: dict, local_script: str | None = None) -> tuple[str, str]:
-        """
-        Submit a job to Athena. Returns (job_id, stderr).
-
-        stderr is whatever the sbatch command wrote to stderr -- it may be
-        non-empty even on a successful submission (e.g. warnings), so callers
-        should inspect it even when no exception is raised.
-
-        If local_script is provided it is uploaded first and
-        script_remote_path is set automatically.
-
-        job dict: see generate_job_script() docstring.
-        """
         job = dict(job)
 
         if local_script:
@@ -165,7 +153,7 @@ cd {workdir}
         job_dir = f"{scratch}/{job_name}"
         job_sh = f"{job_dir}/job.sh"
 
-        # the output dir must exist before sbatch starts, since Slurm won't create it for --output
+
         self.ssh(f"mkdir -p {workdir}/reports/{job_name}")
 
         escaped = script_content.replace("'", "'\\''")
@@ -182,16 +170,12 @@ cd {workdir}
         return match.group(1), stderr
 
     def get_job_status(self, job_id: str) -> str:
-        """Return the live Slurm queue state for job_id, or '' once it has left the queue."""
         try:
             return self.ssh(f"squeue -j {job_id} -h -o '%T'")
         except RuntimeError:
             return ""
 
     def wait_for_job(self, job_id: str, poll_every: int = POLL_EVERY) -> str:
-        """
-        Block until the job leaves the queue. Returns the final Slurm state string.
-        """
         while True:
             state = self.get_job_status(job_id)
 
@@ -207,10 +191,6 @@ cd {workdir}
             time.sleep(poll_every)
 
     def fetch_log(self, job_id: str, local_dir: str = "./results") -> Path:
-        """
-        Download the Slurm .out log for job_id to local_dir.
-        Returns the local Path of the downloaded file.
-        """
         scratch = self.get_scratch()
         remote_out = self.ssh(f"find {scratch} -name '{job_id}.out' | head -1")
         if not remote_out:

@@ -32,10 +32,6 @@ RUN pip install --no-cache-dir \
         "httpx>=0.27" "authlib>=1.3" "pika>=1.3" "email-validator>=2.1"
 
 COPY src/web/app       /app/app
-# The existing authentication code, reused rather than reimplemented, copied
-# here so it can be imported without Streamlit.
-COPY src/frontend/auth /app/auth
-COPY src/frontend/core /app/core
 COPY src/db/migrations /app/migrations
 # Read at runtime by /docs, so the protocol page shows the live contract rather
 # than a copy that drifts.

@@ -35,5 +35,6 @@ class Downloader:
             exchange=self.topology.main_exchange,
             queue=self.topology.downloader_queue,
             handler=self.handle,
+            topology=self.topology,
             message_broker=self.message_broker,
         )

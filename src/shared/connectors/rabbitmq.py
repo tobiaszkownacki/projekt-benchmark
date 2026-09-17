@@ -3,7 +3,8 @@ import os
 
 import pika
 
-from shared.interfaces.message_broker import MessageBrokerConnector
+from shared.connectors.base import MessageBrokerConnector
+from shared.queue_topology import QueueTopology
 
 
 class RabbitMQConnector(MessageBrokerConnector):
@@ -12,18 +13,14 @@ class RabbitMQConnector(MessageBrokerConnector):
         exchange: str,
         routing_key: str,
         exchange_type: str = "direct",
-        user: str | None = None,
-        password: str | None = None,
-        host: str | None = None,
-        port: int | None = None,
     ) -> None:
         self.exchange = exchange
         self.routing_key = routing_key
         self.exchange_type = exchange_type
-        self.user = user or os.environ.get("RABBITMQ_USER")
-        self.password = password or os.environ.get("RABBITMQ_PASSWORD")
-        self.host = host or os.environ.get("RABBITMQ_HOST", "rabbitmq")
-        self.port = port or os.environ.get("RABBITMQ_PORT", 5672)
+        self.user = os.environ.get("RABBITMQ_USER")
+        self.password = os.environ.get("RABBITMQ_PASSWORD")
+        self.host = os.environ.get("RABBITMQ_HOST", "rabbitmq")
+        self.port = os.environ.get("RABBITMQ_PORT", 5672)
         self.connection = None
         self.channel = None
 
@@ -50,3 +47,25 @@ class RabbitMQConnector(MessageBrokerConnector):
                 content_type="application/json",
             ),
         )
+
+
+def declare_topology(channel, topology: QueueTopology) -> None:
+
+    channel.exchange_declare(exchange=topology.main_exchange, exchange_type="direct", durable=True)
+    channel.exchange_declare(exchange=topology.dlx_exchange, exchange_type="direct", durable=True)
+
+    for queue, dlq_queue, dlq_routing_key in (
+        (topology.worker_queue, topology.worker_dlq_queue, topology.worker_dlq_routing_key),
+        (topology.downloader_queue, topology.downloader_dlq_queue, topology.downloader_dlq_routing_key),
+    ):
+        channel.queue_declare(queue=dlq_queue, durable=True)
+        channel.queue_bind(queue=dlq_queue, exchange=topology.dlx_exchange, routing_key=dlq_routing_key)
+        channel.queue_declare(
+            queue=queue,
+            durable=True,
+            arguments={
+                "x-dead-letter-exchange": topology.dlx_exchange,
+                "x-dead-letter-routing-key": dlq_routing_key,
+            },
+        )
+        channel.queue_bind(queue=queue, exchange=topology.main_exchange, routing_key=queue)
