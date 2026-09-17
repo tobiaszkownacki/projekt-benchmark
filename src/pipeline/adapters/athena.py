@@ -23,10 +23,12 @@ ATHENA_LOGIN_NODE = os.environ.get("ATHENA_LOGIN_NODE", "athena.cyfronet.pl")
 
 
 def _webhook_trap(webhook_token: str) -> str:
+    callback_url = f"{ATHENA_WEBHOOK_URL}?job_id=$SLURM_JOB_ID&status=$FINAL_STATE&exit_code=$EXIT_CODE"
+    curl_cmd = f'curl -s -H \\"Authorization: Bearer {webhook_token}\\" \\"{callback_url}\\"'
     return f'''trap '
   EXIT_CODE=$?
   if [ $EXIT_CODE -eq 0 ]; then FINAL_STATE="COMPLETED"; else FINAL_STATE="FAILED"; fi
-  ssh -o StrictHostKeyChecking=no {ATHENA_LOGIN_NODE} "curl -s -H \\"Authorization: Bearer {webhook_token}\\" \\"{ATHENA_WEBHOOK_URL}?job_id=$SLURM_JOB_ID&status=$FINAL_STATE&exit_code=$EXIT_CODE\\""
+  ssh -o StrictHostKeyChecking=no {ATHENA_LOGIN_NODE} "{curl_cmd}"
 ' EXIT SIGTERM'''
 
 

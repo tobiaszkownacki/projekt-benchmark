@@ -35,7 +35,6 @@ task-queue = [
 # optional extra: these are development dependencies, not an opt-in feature of
 # the package, and the repository already uses groups for the Athena services.
 ci = [
-    "flake8>=7",
     "pytest>=8",
 ]
 # What tools/local_backend/seed.py needs beyond the root ML stack: a database
@@ -72,3 +71,5 @@ select = [
 # dependencies; B008 flags every one of them.
 "src/web/app/routers/*.py" = ["B008"]
 "src/web/app/security.py" = ["B008"]
+# Imported for its side effect: populates the INFRASTRUCTURES registry.
+"src/pipeline/pipeline_builder.py" = ["F401"]
