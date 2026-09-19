@@ -21,6 +21,7 @@ from benchmark_core.datasets import DATA_SETS
 from benchmark_core.optimization_engine import BenchmarkRunner, StopCondition
 from benchmark_core.optimization_engine.optimizers import BUILTIN_OPTIMIZERS
 from benchmark_core.plotting.benchmark_analyzer import BenchmarkAnalyzer
+from shared.run_result import RunResult
 
 
 def load_custom_optimizer(path: str):
@@ -116,6 +117,13 @@ def main():
     if args.plot:
         analyzer = BenchmarkAnalyzer(output_dir=report_dir)
         analyzer.plot_results(all_results)
+
+    # The numbers have to leave the node as a file: nothing on the cluster can
+    # reach the database, and the download phase is what writes the row.
+    if args.task_id and len(all_results) == 1:
+        result = next(iter(all_results.values()))
+        Path(report_dir).mkdir(parents=True, exist_ok=True)
+        RunResult.from_benchmark_result(result).write_manifest(Path(report_dir))
 
 
 if __name__ == "__main__":

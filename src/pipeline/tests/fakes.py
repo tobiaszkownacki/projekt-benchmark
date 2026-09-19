@@ -2,6 +2,7 @@
 
 from pipeline.executor import ExecutorAdapter, FetchResult, JobDescription, SubmitResult
 from pipeline.task_repository import TaskRepository, TaskStatus
+from shared.run_result import RunResult
 
 
 class RecordingRepository(TaskRepository):
@@ -10,6 +11,9 @@ class RecordingRepository(TaskRepository):
         self.submitted: list[tuple[str, str]] = []
         self.failed: list[tuple[str, str]] = []
         self.errors: list[tuple[str, str]] = []
+        self.running: list[str] = []
+        self.results: dict[str, RunResult] = {}
+        self.artifacts: dict[str, tuple[int, int]] = {}
 
     def mark_submitted(self, task_id: str, executor_task_id: str) -> bool:
         record = self.tasks.get(task_id)
@@ -36,6 +40,16 @@ class RecordingRepository(TaskRepository):
 
     def get_by_task_id(self, task_id: str) -> TaskStatus | None:
         return self.tasks.get(task_id)
+
+    def mark_running_by_executor_id(self, executor_task_id: str) -> bool:
+        self.running.append(executor_task_id)
+        return True
+
+    def store_result(self, task_id: str, result: RunResult) -> None:
+        self.results[task_id] = result
+
+    def mark_artifacts(self, task_id: str, files: int, total_bytes: int) -> None:
+        self.artifacts[task_id] = (files, total_bytes)
 
 
 class RecordingExecutor(ExecutorAdapter):
