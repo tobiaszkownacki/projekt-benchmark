@@ -28,6 +28,7 @@ from app.routers import (
     meta,
     runs,
     submissions,
+    webhooks,
 )
 from app.settings import settings
 
@@ -76,6 +77,7 @@ for module in (
     events,
     admin,
     meta,
+    webhooks,
 ):
     app.include_router(module.router)
 
