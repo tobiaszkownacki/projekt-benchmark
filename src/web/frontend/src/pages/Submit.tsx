@@ -31,7 +31,7 @@ export function Submit({ user }: { user: User | null }) {
   const [builtin, setBuiltin] = useState('adam');
   const [source, setSource] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [dataset, setDataset] = useState('wine');
+  const [dataset, setDataset] = useState('wine_quality');
   const [model, setModel] = useState('mlp-1x16');
   const [suite, setSuite] = useState('test');
   const [seeds, setSeeds] = useState('11,23,42');
@@ -181,7 +181,7 @@ export function Submit({ user }: { user: User | null }) {
               <div>
                 <label htmlFor="s-dataset">Zbiór danych</label>
                 <select id="s-dataset" value={dataset} onChange={(e) => setDataset(e.target.value)}>
-                  {(filters.data?.datasets ?? ['wine']).map((d) => (
+                  {(filters.data?.datasets ?? ['wine_quality']).map((d) => (
                     <option key={d} value={d}>{d}</option>
                   ))}
                 </select>

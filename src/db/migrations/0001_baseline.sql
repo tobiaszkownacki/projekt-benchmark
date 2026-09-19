@@ -1,9 +1,9 @@
--- Baseline: the schema as it exists in src/db/db_schemas/.
+-- Baseline: users and tasks, as originally created by the (now removed)
+-- docker-entrypoint-initdb.d bootstrap.
 --
--- Written idempotently on purpose. A fresh volume gets these objects from
--- docker-entrypoint-initdb.d; an existing volume never runs that directory at
--- all. Making the baseline a no-op when the objects are already present lets the
--- migration runner be the single source of truth in both cases.
+-- Written idempotently so this migration runner is the single source of truth
+-- for the schema, whether it is applied to a brand new database or one that
+-- predates this file.
 
 DO $$ BEGIN
     CREATE TYPE user_role AS ENUM ('unverified', 'verified', 'admin');

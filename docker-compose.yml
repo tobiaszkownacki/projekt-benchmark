@@ -12,7 +12,6 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./src/db/db_schemas:/docker-entrypoint-initdb.d:ro 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
@@ -32,8 +31,6 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
-      - ./src/task_queue/config/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
-      - ./src/task_queue/config/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
       interval: 5s
@@ -41,60 +38,27 @@ services:
       retries: 10
       start_period: 20s
 
-  # The Streamlit site and the task API it posts to. Both are superseded by
-  # `web`, which serves the same functions behind session auth and a
-  # transactional outbox. Start them with `--profile legacy`.
-  frontend:
-    profiles: ["legacy"]
-    build:
-      context: .
-      dockerfile: src/frontend/Dockerfile
-    restart: unless-stopped
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-    env_file:
-      - .env
-    ports:
-      - "${FRONTEND_PORT:-8501}:8501"
-    volumes:
-      - ./src/frontend/.streamlit:/app/.streamlit:ro
-
-  api:
-    profiles: ["legacy"]
-    build:
-      context: .
-      dockerfile: src/task_queue/services/api/fastapi/Dockerfile
-    restart: unless-stopped
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-    env_file:
-      - .env
-    ports:
-      - "${API_PORT:-8000}:8000"
-
   athena_worker:
-      build:
-        context: .
-        dockerfile: src/task_queue/services/workers/athena/Dockerfile
-      restart: unless-stopped
-      depends_on:
-        rabbitmq:
-          condition: service_healthy
-        postgres:
-          condition: service_healthy
-      env_file:
-        - .env
+    build:
+      context: .
+      dockerfile: src/pipeline/Dockerfile
+    command: ["worker"]
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      EXECUTOR: athena
 
   athena_poller:
     build:
       context: .
-      dockerfile: src/task_queue/services/pollers/athena/Dockerfile
+      dockerfile: src/pipeline/Dockerfile
+    command: ["poller"]
     restart: unless-stopped
     depends_on:
       rabbitmq:
@@ -103,11 +67,14 @@ services:
         condition: service_healthy
     env_file:
       - .env
+    environment:
+      EXECUTOR: athena
 
   athena_downloader:
     build:
       context: .
-      dockerfile: src/task_queue/services/downloaders/athena/Dockerfile
+      dockerfile: src/pipeline/Dockerfile
+    command: ["downloader"]
     restart: unless-stopped
     depends_on:
       rabbitmq:
@@ -116,6 +83,8 @@ services:
         condition: service_healthy
     env_file:
       - .env
+    environment:
+      EXECUTOR: athena
     volumes:
       - ./downloads:/downloads
 

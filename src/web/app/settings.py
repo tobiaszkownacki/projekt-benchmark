@@ -70,7 +70,7 @@ class Settings:
     rabbitmq_management_url: str = field(default_factory=lambda: os.environ.get("RABBITMQ_MANAGEMENT_URL", ""))
     rabbitmq_user: str = field(default_factory=lambda: os.environ.get("RABBITMQ_USER", ""))
     rabbitmq_password: str = field(default_factory=lambda: os.environ.get("RABBITMQ_PASSWORD", ""))
-    worker_queue: str = field(default_factory=lambda: os.environ.get("ATHENA_WORKER_QUEUE", "ATHENA_WORKER_QUEUE"))
+    worker_queue: str = field(default_factory=lambda: os.environ.get("ATHENA_WORKER_QUEUE", "athena_worker_queue"))
     main_exchange: str = field(default_factory=lambda: os.environ.get("MAIN_EXCHANGE", "main-exchange"))
 
     google_client_id: str = field(default_factory=lambda: os.environ.get("GOOGLE_CLIENT_ID", ""))
