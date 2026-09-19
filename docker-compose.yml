@@ -142,6 +142,9 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       RABBITMQ_HOST: rabbitmq
+      # Decides which queues this process declares and drains, and has to match
+      # the pipeline services above.
+      EXECUTOR: athena
     command: ["python", "-m", "app.outbox_publisher"]
     # Both services share one image whose healthcheck probes the HTTP endpoint.
     # This one serves nothing, so it checks that the process is alive instead.
