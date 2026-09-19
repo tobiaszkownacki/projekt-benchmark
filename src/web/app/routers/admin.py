@@ -73,8 +73,8 @@ async def budget(_: CurrentUser = Depends(require_admin)) -> dict:
         """
         SELECT u.id, u.email, u.display_name, u.role::text AS role,
                COUNT(t.task_id)                                  AS runs,
-               COUNT(*) FILTER (WHERE t.task_status = 'failed')  AS failed,
-               COUNT(*) FILTER (WHERE t.task_status IN ('pending','running')) AS active,
+               COUNT(*) FILTER (WHERE t.task_status = 'FAILED')  AS failed,
+               COUNT(*) FILTER (WHERE t.task_status IN ('PENDING','SUBMITTED','RUNNING')) AS active,
                COUNT(*) FILTER (WHERE t.created_at::date = CURRENT_DATE)      AS today,
                COALESCE(SUM(r.gradient_count), 0)                AS gradients,
                COALESCE(SUM(r.database_reaches), 0)              AS samples,
@@ -125,8 +125,8 @@ async def _orphans() -> list[dict]:
 
     A worker that dies after sbatch but before writing the job id leaves a
     SLURM job nobody is watching, still burning grant time. The symptom
-    visible here is a row running or pending far longer than a job of this
-    size takes.
+    visible here is a row short of a terminal state far longer than a job of
+    this size takes.
     """
     return await db.fetch_all(
         """
@@ -134,7 +134,7 @@ async def _orphans() -> list[dict]:
                executor_task_id, submitted_by, created_at, updated_at,
                EXTRACT(EPOCH FROM (NOW() - updated_at)) AS stale_seconds
           FROM tasks
-         WHERE task_status IN ('pending', 'running')
+         WHERE task_status IN ('PENDING', 'SUBMITTED', 'RUNNING')
            AND updated_at < NOW() - INTERVAL '2 hours'
          ORDER BY updated_at ASC LIMIT 100
         """
@@ -154,7 +154,7 @@ async def queue(_: CurrentUser = Depends(require_admin)) -> dict:
                EXTRACT(EPOCH FROM (NOW() - COALESCE(started_at, queued_at, created_at)))
                    AS elapsed_seconds
           FROM tasks
-         WHERE task_status IN ('pending', 'running')
+         WHERE task_status IN ('PENDING', 'SUBMITTED', 'RUNNING')
          ORDER BY created_at ASC LIMIT 100
         """
     )

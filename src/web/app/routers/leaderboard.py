@@ -46,10 +46,10 @@ async def overview() -> dict:
         SELECT
             (SELECT COUNT(*) FROM submissions)                                  AS submissions,
             (SELECT COUNT(*) FROM tasks)                                        AS runs,
-            (SELECT COUNT(*) FROM tasks WHERE task_status = 'completed')        AS completed,
-            (SELECT COUNT(*) FROM tasks WHERE task_status = 'failed')           AS failed,
+            (SELECT COUNT(*) FROM tasks WHERE task_status = 'COMPLETED')        AS completed,
+            (SELECT COUNT(*) FROM tasks WHERE task_status = 'FAILED')           AS failed,
             (SELECT COUNT(*) FROM tasks
-              WHERE task_status IN ('pending', 'running'))                      AS active,
+              WHERE task_status IN ('PENDING', 'SUBMITTED', 'RUNNING'))                      AS active,
             (SELECT COUNT(DISTINCT submitted_by) FROM tasks)                    AS participants,
             (SELECT COUNT(DISTINCT dataset) FROM tasks WHERE dataset IS NOT NULL) AS datasets,
             (SELECT COUNT(DISTINCT optimizer_name) FROM tasks
