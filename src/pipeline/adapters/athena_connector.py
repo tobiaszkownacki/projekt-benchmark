@@ -210,14 +210,25 @@ cd {workdir}
 
         downloaded: list[str] = []
         with self.client.open_sftp() as sftp:
-            for entry in sftp.listdir_attr(remote_dir):
-                if stat.S_ISDIR(entry.st_mode):
-                    continue
-                local_file = local_path / entry.filename
-                sftp.get(f"{remote_dir}/{entry.filename}", str(local_file))
-                downloaded.append(str(local_file))
+            self._download_tree(sftp, remote_dir, local_path, downloaded)
 
         return downloaded
+
+    def _download_tree(self, sftp, remote_dir: str, local_dir: Path, downloaded: list[str]) -> None:
+        """Recursive, because the artifact browser serves a tree.
+
+        A flat copy dropped every subdirectory the plotting step writes, and
+        what it dropped was invisible: the download reported success.
+        """
+        local_dir.mkdir(parents=True, exist_ok=True)
+        for entry in sftp.listdir_attr(remote_dir):
+            remote_entry = f"{remote_dir}/{entry.filename}"
+            if stat.S_ISDIR(entry.st_mode):
+                self._download_tree(sftp, remote_entry, local_dir / entry.filename, downloaded)
+                continue
+            local_file = local_dir / entry.filename
+            sftp.get(remote_entry, str(local_file))
+            downloaded.append(str(local_file))
 
     def run_job(self, job: dict, local_script: str | None = None, local_dir: str = "./results") -> dict:
         """
