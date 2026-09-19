@@ -63,6 +63,7 @@ def task_message(
     optimizers: list[str],
     seed: int,
     stop_condition: dict[str, int],
+    webhook_token: str | None = None,
 ) -> dict[str, Any]:
     """The whole run, as pipeline.executor.JobDescription.from_message reads it.
 
@@ -79,6 +80,7 @@ def task_message(
         "optimizers": list(optimizers),
         "seed": int(seed),
         "stop_condition": {key: int(value) for key, value in stop_condition.items()},
+        "webhook_token": webhook_token,
     }
 
 

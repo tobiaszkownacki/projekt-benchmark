@@ -82,6 +82,14 @@ class Settings:
     microsoft_client_secret: str = field(default_factory=lambda: os.environ.get("MICROSOFT_CLIENT_SECRET", ""))
     public_base_url: str = field(default_factory=lambda: os.environ.get("PUBLIC_BASE_URL", "http://localhost:8000"))
 
+    # Long enough to outlive a queue wait on a busy partition plus the run
+    # itself, short enough that a token left on shared cluster storage stops
+    # working before someone finds it.
+    webhook_token_ttl_hours: int = field(default_factory=lambda: _int("WEBHOOK_TOKEN_TTL_HOURS", 48))
+    # A callback may fire twice for one job: the trap runs on both SIGTERM and
+    # exit, and curl retries. Ten is a ceiling on replay, not a nonce.
+    webhook_token_max_uses: int = field(default_factory=lambda: _int("WEBHOOK_TOKEN_MAX_USES", 10))
+
     @property
     def topology(self) -> QueueTopology:
         if not self.executor_name:
