@@ -1,10 +1,10 @@
 """A local CPU execution backend for the benchmark.
 
-Uses the multi-backend seam in ``shared/interfaces/`` to run the benchmark
-without SLURM.
+Runs a benchmark without SLURM, for development and tests.
 
-``BenchmarkRunner`` cannot be used here: it imports ``src.dataset`` and
-``src.config``, which are absent along with the datasets they index. This runner
+``BenchmarkRunner`` cannot be used here: it loads its problem from
+``benchmark_core.datasets``, whose registries are empty in this repository
+because the competition datasets and networks are not part of it. This runner
 drives the real ``ModelEvaluator`` and the real NumPy optimizers over public
 scikit-learn data instead, so the gradient and sample counters are incremented
 by the project's own evaluator exactly as they would be on the cluster.
@@ -23,23 +23,19 @@ from torch.nn.utils import parameters_to_vector
 from torch.utils.data import DataLoader
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
-from compat.benchmark_aliases import install as install_aliases  # noqa: E402
 
-install_aliases()
-
-from benchmark.evaluator import ModelEvaluator  # noqa: E402
-from benchmark.evaluator_dtos import PyTorchTensorEvaluatorDto  # noqa: E402
-from benchmark.optimizers.numpy.numpy_adam import NumpyAdam  # noqa: E402
-from benchmark.optimizers.numpy.numpy_adamw import NumpyAdamW  # noqa: E402
-from benchmark.optimizers.numpy.numpy_cmaes import NumpyCMAES  # noqa: E402
-from benchmark.optimizers.numpy.numpy_des import NumpyDES  # noqa: E402
-from benchmark.optimizers.numpy.numpy_differential_evolution import (  # noqa: E402
+from benchmark_core.optimization_engine.evaluator import ModelEvaluator  # noqa: E402
+from benchmark_core.optimization_engine.evaluator_dtos import PyTorchTensorEvaluatorDto  # noqa: E402
+from benchmark_core.optimization_engine.optimizers.numpy.numpy_adam import NumpyAdam  # noqa: E402
+from benchmark_core.optimization_engine.optimizers.numpy.numpy_adamw import NumpyAdamW  # noqa: E402
+from benchmark_core.optimization_engine.optimizers.numpy.numpy_cmaes import NumpyCMAES  # noqa: E402
+from benchmark_core.optimization_engine.optimizers.numpy.numpy_des import NumpyDES  # noqa: E402
+from benchmark_core.optimization_engine.optimizers.numpy.numpy_differential_evolution import (  # noqa: E402
     NumpyDifferentialEvolution,
 )
-from benchmark.optimizers.numpy.numpy_lion import NumpyLion  # noqa: E402
-from benchmark.optimizers.numpy.numpy_rmsprop import NumpyRMSProp  # noqa: E402
-from benchmark.optimizers.numpy.numpy_sgd import NumpySGD  # noqa: E402
-
+from benchmark_core.optimization_engine.optimizers.numpy.numpy_lion import NumpyLion  # noqa: E402
+from benchmark_core.optimization_engine.optimizers.numpy.numpy_rmsprop import NumpyRMSProp  # noqa: E402
+from benchmark_core.optimization_engine.optimizers.numpy.numpy_sgd import NumpySGD  # noqa: E402
 from tools.local_backend.datasets import (  # noqa: E402
     build_dataset,
     build_model,

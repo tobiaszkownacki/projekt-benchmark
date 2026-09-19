@@ -152,8 +152,8 @@ batch_size próbek, każde evaluate_with_grad() dodatkowo jeden gradient.
 
 import numpy as np
 
-from benchmark.evaluator import ModelEvaluator
-from benchmark.optimizer_protocols import NumpyBenchmarkOptimizer
+from benchmark_core.optimization_engine.evaluator import ModelEvaluator
+from benchmark_core.optimization_engine.optimizer_protocols import NumpyBenchmarkOptimizer
 
 
 class MyOptimizer(NumpyBenchmarkOptimizer):
