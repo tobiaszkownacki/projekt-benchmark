@@ -39,7 +39,6 @@ COPY src/benchmark_core /app/src/benchmark_core
 # The drain process declares the broker topology, and the names come from the
 # same module the pipeline derives them from.
 COPY src/shared         /app/src/shared
-COPY src/compat         /app/src/compat
 
 COPY --from=frontend /build/dist /app/static
 
