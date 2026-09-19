@@ -15,6 +15,7 @@ typical submission rates.
 """
 
 import json
+import os
 from typing import Any
 from uuid import UUID
 
@@ -22,6 +23,10 @@ import psycopg
 from psycopg.types.json import Jsonb
 
 from app.settings import settings
+
+# Read by the drain process too, so the budget a row is measured against and
+# the budget the interface reports it against cannot drift apart.
+MAX_ATTEMPTS = int(os.environ.get("OUTBOX_MAX_ATTEMPTS", "10"))
 
 
 async def enqueue(
@@ -68,9 +73,29 @@ def task_message(
 
 
 async def pending_count() -> int:
+    """Messages still waiting for a publisher that will still try them."""
     from app import db
 
-    row = await db.fetch_one("SELECT COUNT(*) AS n FROM queue_outbox WHERE published_at IS NULL")
+    row = await db.fetch_one(
+        "SELECT COUNT(*) AS n FROM queue_outbox WHERE published_at IS NULL AND attempts < %s",
+        (MAX_ATTEMPTS,),
+    )
+    return int(row["n"]) if row else 0
+
+
+async def abandoned_count() -> int:
+    """Messages nobody will publish again.
+
+    Counted apart from the pending ones because they are not slow, they are
+    lost: the row describes a submission that exists in tasks and will never
+    reach the cluster, and nothing else in the system says so.
+    """
+    from app import db
+
+    row = await db.fetch_one(
+        "SELECT COUNT(*) AS n FROM queue_outbox WHERE published_at IS NULL AND attempts >= %s",
+        (MAX_ATTEMPTS,),
+    )
     return int(row["n"]) if row else 0
 
 

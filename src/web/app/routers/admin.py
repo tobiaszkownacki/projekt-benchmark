@@ -143,8 +143,8 @@ async def _orphans() -> list[dict]:
 
 @router.get("/queue")
 async def queue(_: CurrentUser = Depends(require_admin)) -> dict:
-    broker, orphans, pending_outbox, recent_outbox = await asyncio.gather(
-        _rabbitmq(), _orphans(), outbox.pending_count(), outbox.recent(25)
+    broker, orphans, pending_outbox, abandoned_outbox, recent_outbox = await asyncio.gather(
+        _rabbitmq(), _orphans(), outbox.pending_count(), outbox.abandoned_count(), outbox.recent(25)
     )
 
     slurm = await db.fetch_all(
@@ -169,7 +169,7 @@ async def queue(_: CurrentUser = Depends(require_admin)) -> dict:
 
     return {
         "rabbitmq": broker,
-        "outbox": {"pending": pending_outbox, "recent": recent_outbox},
+        "outbox": {"pending": pending_outbox, "abandoned": abandoned_outbox, "recent": recent_outbox},
         "slurm": {
             "jobs": slurm,
             # sinfo/sacct run inside the poller's container, which holds the
