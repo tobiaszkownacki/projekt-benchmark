@@ -199,10 +199,12 @@ async def submit(payload: SubmissionRequest, user: CurrentUser = Depends(require
                 conn,
                 outbox.task_message(
                     task_id,
-                    settings.worker_queue,
                     run_name=run_name,
                     dataset=payload.dataset,
-                    optimizer=optimizer_name,
+                    model=payload.model,
+                    optimizers=[optimizer_name],
+                    seed=seed,
+                    stop_condition=stop_condition,
                 ),
             )
             created.append(str(task_id))

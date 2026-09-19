@@ -28,6 +28,11 @@ from app.settings import settings
 # the budget the interface reports it against cannot drift apart.
 MAX_ATTEMPTS = int(os.environ.get("OUTBOX_MAX_ATTEMPTS", "10"))
 
+# Bumped when a field is removed, retyped or given a new meaning. The consumer
+# reads exactly one version, so a message written before a deployment and
+# published after it is refused rather than misread.
+SCHEMA_VERSION = 1
+
 
 async def enqueue(
     conn: psycopg.AsyncConnection,
@@ -51,24 +56,29 @@ async def enqueue(
 
 def task_message(
     task_id: UUID,
-    queue_name: str,
     *,
     run_name: str,
     dataset: str,
-    optimizer: str,
+    model: str,
+    optimizers: list[str],
+    seed: int,
+    stop_condition: dict[str, int],
 ) -> dict[str, Any]:
-    """The message shape AthenaWorker.start_job consumes.
+    """The whole run, as pipeline.executor.JobDescription.from_message reads it.
 
-    start_job subscripts dataset and optimizer directly, so a message missing
-    either raises KeyError and the worker nacks it to the dead-letter queue.
-    optimizer is comma-separated when a task runs more than one.
+    A compute node cannot reach the database, so whatever is missing here is
+    missing for good: the seed, the model and the stop condition used to stay
+    behind in the row and the cluster ran defaults instead.
     """
     return {
+        "schema_version": SCHEMA_VERSION,
         "task_id": str(task_id),
-        "queue_name": queue_name,
         "run_name": run_name,
         "dataset": dataset,
-        "optimizer": optimizer,
+        "model": model,
+        "optimizers": list(optimizers),
+        "seed": int(seed),
+        "stop_condition": {key: int(value) for key, value in stop_condition.items()},
     }
 
 

@@ -8,13 +8,23 @@ import uuid
 
 from fakes import RecordingExecutor, RecordingRepository
 
+from pipeline.executor import SCHEMA_VERSION
 from pipeline.generic_services.generic_worker import GenericWorker
 from pipeline.task_repository import TaskStatus
 from shared.queue_topology import QueueTopology
 
 
 def _message(task_id: str) -> dict:
-    return {"task_id": task_id, "dataset": "wine_quality", "optimizer": "adam", "run_name": "run"}
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "task_id": task_id,
+        "run_name": "run",
+        "dataset": "wine_quality",
+        "model": "mlp-2x32",
+        "optimizers": ["adam"],
+        "seed": 11,
+        "stop_condition": {"max_epochs": 5},
+    }
 
 
 def _worker(repo: RecordingRepository, adapter: RecordingExecutor) -> GenericWorker:

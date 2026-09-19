@@ -1,5 +1,6 @@
 import logging
 import os
+import shlex
 
 from pipeline.adapters.athena_connector import AthenaConnector
 from pipeline.completion import CompletionSignal, CompletionSource
@@ -9,8 +10,6 @@ from pipeline.task_repository import TaskRepository
 logger = logging.getLogger(__name__)
 
 SLURM_TIME_LIMIT = "00:30:00"
-MAX_EPOCHS = 10
-MAX_GRADIENTS = 100000
 FAILURE_STATES = {"FAILED", "CANCELLED", "TIMEOUT", "OUT_OF_MEMORY", "NODE_FAIL"}
 
 SACCT_CMD = "sacct --parsable2 --allocations --format=JobID,JobName,Partition,AllocCPUS,State,ExitCode,Elapsed,End"
@@ -32,13 +31,26 @@ def _webhook_trap(webhook_token: str) -> str:
 ' EXIT SIGTERM'''
 
 
+# stop_condition keys as a submission stores them, mapped onto the flags
+# run_benchmark accepts.
+BUDGET_FLAGS = {
+    "max_epochs": "--max-epochs",
+    "max_gradient_count": "--max-gradients",
+    "max_database_reaches": "--max-db-reaches",
+}
+
+
+def _budget_args(stop_condition: dict[str, int]) -> str:
+    return " ".join(f"{flag} {stop_condition[key]}" for key, flag in BUDGET_FLAGS.items() if key in stop_condition)
+
+
 def _optimizer_args(optimizers: list[str]) -> str:
     names = [o.strip() for o in optimizers if o.strip()]
     if not names:
         raise ValueError("task has no optimizer selection")
     if len(names) == 1:
-        return f"--optimizer {names[0]}"
-    return "--compare " + " ".join(names)
+        return f"--optimizer {shlex.quote(names[0])}"
+    return "--compare " + " ".join(shlex.quote(name) for name in names)
 
 
 def _parse_sacct(raw: str) -> list[dict]:
@@ -61,11 +73,15 @@ class AthenaExecutor(ExecutorAdapter):
             "gpus": 1,
             "workdir": PROJECT_DIR,
             "run_command": (
-                f"uv run -m src.benchmark.run_benchmark "
-                f"--dataset {job.dataset} {_optimizer_args(job.optimizers)} "
-                f"--max-epochs {MAX_EPOCHS} --max-gradients {MAX_GRADIENTS} "
-                f"--task-id {job.task_id} --plot"
+                f"uv run -m benchmark_core.optimization_engine.run_benchmark "
+                f"--dataset {shlex.quote(job.dataset)} --model {shlex.quote(job.model)} "
+                f"{_optimizer_args(job.optimizers)} --seed {job.seed} "
+                f"{_budget_args(job.stop_condition)} "
+                f"--task-id {shlex.quote(job.task_id)} --plot"
             ),
+            # The engine lives under src/ and is not installed into the project
+            # environment, so the module resolves only with src/ on the path.
+            "env_vars": {"PYTHONPATH": f"{PROJECT_DIR}/src"},
         }
         if job.webhook_token:
             slurm_job["pre_commands"] = [_webhook_trap(job.webhook_token)]
