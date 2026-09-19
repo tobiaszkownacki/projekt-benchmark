@@ -64,11 +64,6 @@ def main():
         action="store_true",
         help="Generate benchmark plots after run",
     )
-    parser.add_argument(
-        "--plot-dir",
-        default="reports/model_analysis",
-        help="Directory where plots are written",
-    )
     parser.add_argument("--task-id", default=None, help="Task id - outputs land in reports/task_<id>")
     args = parser.parse_args()
     report_dir = f"reports/task_{args.task_id}" if args.task_id else "reports"
