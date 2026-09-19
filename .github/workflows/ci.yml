@@ -71,9 +71,12 @@ jobs:
         working-directory: src/web
         run: uv sync --group dev
 
+      # The pipeline suite runs from the web environment because that is the
+      # only one holding pika, psycopg and pytest; the root environment pulls
+      # torch and cupy, which this test job has no use for.
       - name: Run pytest
         working-directory: src/web
-        run: uv run pytest tests -q
+        run: uv run pytest tests ../pipeline/tests -q
 
   frontend:
     runs-on: ubuntu-latest

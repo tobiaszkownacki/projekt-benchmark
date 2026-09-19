@@ -1,0 +1,42 @@
+"""Stand-ins for the database and the cluster, shared by the pipeline tests."""
+
+from pipeline.executor import ExecutorAdapter, FetchResult, JobDescription, SubmitResult
+from pipeline.task_repository import TaskRepository, TaskStatus
+
+
+class RecordingRepository(TaskRepository):
+    def __init__(self, tasks: dict[str, TaskStatus] | None = None) -> None:
+        self.tasks = tasks or {}
+        self.submitted: list[tuple[str, str]] = []
+        self.failed: list[tuple[str, str]] = []
+        self.errors: list[tuple[str, str]] = []
+
+    def mark_submitted(self, task_id: str, executor_task_id: str) -> None:
+        self.submitted.append((task_id, executor_task_id))
+
+    def mark_failed(self, task_id: str, error_message: str) -> None:
+        self.failed.append((task_id, error_message))
+
+    def set_error(self, task_id: str, error_message: str) -> None:
+        self.errors.append((task_id, error_message))
+
+    def mark_completed_by_executor_id(self, executor_task_id: str) -> bool:
+        return False
+
+    def get_by_executor_id(self, executor_task_id: str) -> TaskStatus | None:
+        return None
+
+
+class RecordingExecutor(ExecutorAdapter):
+    def __init__(self, executor_task_id: str = "job-1") -> None:
+        self.executor_task_id = executor_task_id
+        self.submitted: list[JobDescription] = []
+        self.fetched: list[str] = []
+
+    def submit_job(self, job: JobDescription) -> SubmitResult:
+        self.submitted.append(job)
+        return SubmitResult(executor_task_id=self.executor_task_id, std_out="")
+
+    def fetch_results(self, task_id: str, delete_after_download: bool = False) -> FetchResult:
+        self.fetched.append(task_id)
+        return FetchResult(files=[])
