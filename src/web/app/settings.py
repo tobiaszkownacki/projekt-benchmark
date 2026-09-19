@@ -4,6 +4,8 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from shared.queue_topology import QueueTopology
+
 
 def find_source_root() -> Path:
     """Locate the directory that contains ``src/benchmark_core``.
@@ -70,14 +72,29 @@ class Settings:
     rabbitmq_management_url: str = field(default_factory=lambda: os.environ.get("RABBITMQ_MANAGEMENT_URL", ""))
     rabbitmq_user: str = field(default_factory=lambda: os.environ.get("RABBITMQ_USER", ""))
     rabbitmq_password: str = field(default_factory=lambda: os.environ.get("RABBITMQ_PASSWORD", ""))
-    worker_queue: str = field(default_factory=lambda: os.environ.get("ATHENA_WORKER_QUEUE", "athena_worker_queue"))
-    main_exchange: str = field(default_factory=lambda: os.environ.get("MAIN_EXCHANGE", "main-exchange"))
+    # Which executor this deployment feeds. The queue names follow from it, so
+    # the web layer and the pipeline cannot disagree about where a job goes.
+    executor_name: str = field(default_factory=lambda: os.environ.get("EXECUTOR", ""))
 
     google_client_id: str = field(default_factory=lambda: os.environ.get("GOOGLE_CLIENT_ID", ""))
     google_client_secret: str = field(default_factory=lambda: os.environ.get("GOOGLE_CLIENT_SECRET", ""))
     microsoft_client_id: str = field(default_factory=lambda: os.environ.get("MICROSOFT_CLIENT_ID", ""))
     microsoft_client_secret: str = field(default_factory=lambda: os.environ.get("MICROSOFT_CLIENT_SECRET", ""))
     public_base_url: str = field(default_factory=lambda: os.environ.get("PUBLIC_BASE_URL", "http://localhost:8000"))
+
+    @property
+    def topology(self) -> QueueTopology:
+        if not self.executor_name:
+            raise RuntimeError("EXECUTOR is not configured")
+        return QueueTopology(self.executor_name)
+
+    @property
+    def worker_queue(self) -> str:
+        return self.topology.worker_queue
+
+    @property
+    def main_exchange(self) -> str:
+        return self.topology.main_exchange
 
 
 settings = Settings()

@@ -105,6 +105,9 @@ services:
       SESSION_SECRET: ${SESSION_SECRET}
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_MANAGEMENT_URL: http://rabbitmq:15672
+      # Names the queue a submission is written for, and has to match the
+      # pipeline services above.
+      EXECUTOR: athena
       PUBLIC_RESULTS: ${PUBLIC_RESULTS:-1}
       DAILY_SUBMISSION_LIMIT: ${DAILY_SUBMISSION_LIMIT:-3}
       # The validator needs a Docker socket to start its sandbox. Off by default
