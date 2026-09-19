@@ -20,6 +20,14 @@ class GenericWorker:
         logger.info(
             f"Received task_id={job.task_id} dataset={job.dataset} optimizers={job.optimizers} run_name={job.run_name}"
         )
+        record = self.task_repo.get_by_task_id(job.task_id)
+        if record is not None and record.executor_task_id:
+            logger.info(
+                f"task_id={job.task_id} already runs as executor_task_id={record.executor_task_id}, "
+                "so this delivery submits nothing"
+            )
+            return
+
         try:
             submit_result = self.adapter.submit_job(job)
         except Exception as exc:
@@ -27,8 +35,18 @@ class GenericWorker:
             self.task_repo.mark_failed(job.task_id, str(exc))
             raise
 
-        logger.info(f"task_id={job.task_id} submitted, executor_task_id={submit_result.executor_task_id}")
-        self.task_repo.mark_submitted(job.task_id, submit_result.executor_task_id)
+        if self.task_repo.mark_submitted(job.task_id, submit_result.executor_task_id):
+            logger.info(f"task_id={job.task_id} submitted, executor_task_id={submit_result.executor_task_id}")
+            return
+
+        current = self.task_repo.get_by_task_id(job.task_id)
+        if current is not None and current.executor_task_id == submit_result.executor_task_id:
+            logger.info(f"task_id={job.task_id} was recorded as {submit_result.executor_task_id} by the callback")
+        else:
+            logger.error(
+                f"task_id={job.task_id} was already {current.executor_task_id if current else 'unknown'} "
+                f"when {submit_result.executor_task_id} came back, so that job runs untracked"
+            )
 
     def _read(self, message: dict) -> JobDescription:
         """Decode, and leave a trace in the database when it cannot be done.

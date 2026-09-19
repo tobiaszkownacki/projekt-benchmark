@@ -11,8 +11,13 @@ class RecordingRepository(TaskRepository):
         self.failed: list[tuple[str, str]] = []
         self.errors: list[tuple[str, str]] = []
 
-    def mark_submitted(self, task_id: str, executor_task_id: str) -> None:
+    def mark_submitted(self, task_id: str, executor_task_id: str) -> bool:
+        record = self.tasks.get(task_id)
+        if record is not None and record.executor_task_id:
+            return False
         self.submitted.append((task_id, executor_task_id))
+        self.tasks[task_id] = TaskStatus(task_id, "SUBMITTED", executor_task_id)
+        return True
 
     def mark_failed(self, task_id: str, error_message: str) -> None:
         self.failed.append((task_id, error_message))
@@ -24,7 +29,13 @@ class RecordingRepository(TaskRepository):
         return False
 
     def get_by_executor_id(self, executor_task_id: str) -> TaskStatus | None:
+        for record in self.tasks.values():
+            if record.executor_task_id == executor_task_id:
+                return record
         return None
+
+    def get_by_task_id(self, task_id: str) -> TaskStatus | None:
+        return self.tasks.get(task_id)
 
 
 class RecordingExecutor(ExecutorAdapter):
