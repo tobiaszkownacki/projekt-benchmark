@@ -41,7 +41,7 @@ export function Compare() {
   const logX = params.get('logx') === '1';
 
   const [picker, setPicker] = useState(false);
-  const available = useApi<{ runs: Run[] }>('/api/runs?status=completed&limit=200');
+  const available = useApi<{ runs: Run[] }>('/api/runs?status=COMPLETED&limit=200');
   const data = useApi<Payload>(
     runs ? `/api/compare${query({ runs, x: axis, metric, group_by: groupBy, logx: logX, points: 240 })}` : null,
   );
