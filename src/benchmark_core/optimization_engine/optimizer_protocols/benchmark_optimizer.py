@@ -1,5 +1,5 @@
-from src.benchmark_core.optimization_engine.evaluator import ModelEvaluator
-from src.benchmark_core.optimization_engine.evaluator_dtos import EvaluatorDto
+from benchmark_core.optimization_engine.evaluator import ModelEvaluator
+from benchmark_core.optimization_engine.evaluator_dtos import EvaluatorDto
 
 
 class BenchmarkOptimizer:

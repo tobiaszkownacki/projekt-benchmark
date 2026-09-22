@@ -4,7 +4,7 @@
 
 This directory contains concrete implementations (adapters) of various optimization algorithms, designed to be benchmarked by the system. These adapters translate generic optimizer concepts into the specific `EvaluatorDto` types required by the benchmark framework, allowing them to interact seamlessly with the `ModelEvaluator`.
 
-Each file typically contains an adapter class for a specific optimization algorithm (e.g., Adam, SGD, CMA-ES), inheriting from a suitable base class defined in `src/benchmark/optimizer_protocols/`.
+Each file typically contains an adapter class for a specific optimization algorithm (e.g., Adam, SGD, CMA-ES), inheriting from a suitable base class defined in `src/benchmark_core/optimization_engine/optimizer_protocols/`.
 
 ## 2. Structure
 
@@ -16,16 +16,16 @@ Each file typically contains an adapter class for a specific optimization algori
 To add a new optimization algorithm to the benchmark suite:
 
 1.  **Create your Optimizer Adapter File**:
-    Create a new Python file in this directory (e.g., `src/benchmark/optimizers/my_custom_optimizer.py`).
+    Create a new Python file in this directory (e.g., `src/benchmark_core/optimization_engine/optimizers/my_custom_optimizer.py`).
 
 2.  **Implement Your Optimizer Class**:
-    Define your optimizer class within this new file. It should inherit from one of the base optimizer classes provided in `src/benchmark/optimizer_protocols/`. Choose `NumpyBenchmarkOptimizer` if your optimizer works with NumPy arrays, `CupyBenchmarkOptimizer` for CuPy arrays, or `BenchmarkOptimizer` if you handle PyTorch tensors directly or need more custom control over `get_output_type()`.
+    Define your optimizer class within this new file. It should inherit from one of the base optimizer classes provided in `src/benchmark_core/optimization_engine/optimizer_protocols/`. Choose `NumpyBenchmarkOptimizer` if your optimizer works with NumPy arrays, `CupyBenchmarkOptimizer` for CuPy arrays, or `BenchmarkOptimizer` if you handle PyTorch tensors directly or need more custom control over `get_output_type()`.
 
     ```python
-    # src/benchmark/optimizers/my_custom_optimizer.py
+    # src/benchmark_core/optimization_engine/optimizers/my_custom_optimizer.py
     import numpy as np
-    from src.benchmark_core.optimization_engine.evaluator import ModelEvaluator
-    from src.benchmark_core.optimization_engine.optimizer_protocols import (
+    from benchmark_core.optimization_engine.evaluator import ModelEvaluator
+    from benchmark_core.optimization_engine.optimizer_protocols import (
         NumpyBenchmarkOptimizer,
     )  # Or CupyBenchmarkOptimizer
 
@@ -53,11 +53,11 @@ To add a new optimization algorithm to the benchmark suite:
     ```
 
 3.  **Register Your Optimizer**:
-    Open `src/benchmark/optimizers/registry.py`.
+    Open `src/benchmark_core/optimization_engine/optimizers/registry.py`.
     Import your new optimizer class and add it to the `OPTIMIZER_REGISTRY` dictionary.
 
     ```python
-    # src/benchmark/optimizers/registry.py
+    # src/benchmark_core/optimization_engine/optimizers/registry.py
     # ... other imports ...
     from .my_custom_optimizer import MyCustomOptimizer  # Import your new optimizer
 

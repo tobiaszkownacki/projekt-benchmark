@@ -1,6 +1,6 @@
-from src.benchmark_core.optimization_engine.evaluator import ModelEvaluator
-from src.benchmark_core.optimization_engine.evaluator_dtos import CupyNdarrayTensorEvaluatorDto, EvaluatorDto
-from src.benchmark_core.optimization_engine.optimizer_protocols.benchmark_optimizer import BenchmarkOptimizer
+from benchmark_core.optimization_engine.evaluator import ModelEvaluator
+from benchmark_core.optimization_engine.evaluator_dtos import CupyNdarrayTensorEvaluatorDto, EvaluatorDto
+from benchmark_core.optimization_engine.optimizer_protocols.benchmark_optimizer import BenchmarkOptimizer
 
 
 class CupyBenchmarkOptimizer(BenchmarkOptimizer):

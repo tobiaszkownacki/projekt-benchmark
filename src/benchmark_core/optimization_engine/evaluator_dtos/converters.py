@@ -3,7 +3,6 @@ This file defines and registers all DTO conversion functions.
 Importing this file will populate the conversion registry.
 """
 
-import cupy as cp
 import torch
 
 from . import registry
@@ -22,6 +21,10 @@ def pytorch_to_numpy(source_dto: PyTorchTensorEvaluatorDto, **params):
 
 def pytorch_to_cupy(source_dto: PyTorchTensorEvaluatorDto, **params):
     """Converts a PyTorch DTO to a CuPy DTO."""
+    # Imported on use: registering this converter must not cost the whole
+    # module its importability on a host with no CuPy.
+    import cupy as cp
+
     data = cp.from_dlpack(source_dto.data().detach())
     return CupyNdarrayTensorEvaluatorDto(data)
 

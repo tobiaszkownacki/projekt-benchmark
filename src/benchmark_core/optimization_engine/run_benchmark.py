@@ -2,13 +2,13 @@
 Simple runner script with very basic argparse
 
 Usage:
-    python -m src.benchmark.run_benchmark --dataset digits --optimizer my_optimizer
-    or: uv run -m src.benchmark.run_benchmark --dataset digits --optimizer my_optimizer
+    python -m benchmark_core.optimization_engine.run_benchmark --dataset digits --optimizer my_optimizer
+    or: uv run -m benchmark_core.optimization_engine.run_benchmark --dataset digits --optimizer my_optimizer
 
 or with comparison and plotting:
-    python -m src.benchmark.run_benchmark --dataset wine_quality --optimizer adam sgd cma-es \
+    python -m benchmark_core.optimization_engine.run_benchmark --dataset wine_quality --optimizer adam sgd cma-es \
         --max-epochs 10 --max-gradients 100000 --plot
-    or: uv run -m src.benchmark.run_benchmark --dataset wine_quality --optimizer adam sgd cma-es \
+    or: uv run -m benchmark_core.optimization_engine.run_benchmark --dataset wine_quality --optimizer adam sgd cma-es \
         --max-epochs 10 --max-gradients 100000 --plot
 """
 
@@ -17,10 +17,10 @@ import importlib
 import sys
 from pathlib import Path
 
-from src.benchmark import BenchmarkRunner, StopCondition
-from src.benchmark.optimizers import BUILTIN_OPTIMIZERS
-from src.config import ALLOWED_DATASETS
-from src.plotting.benchmark_analyzer import BenchmarkAnalyzer
+from benchmark_core.datasets import DATA_SETS
+from benchmark_core.optimization_engine import BenchmarkRunner, StopCondition
+from benchmark_core.optimization_engine.optimizers import BUILTIN_OPTIMIZERS
+from benchmark_core.plotting.benchmark_analyzer import BenchmarkAnalyzer
 
 
 def load_custom_optimizer(path: str):
@@ -42,7 +42,9 @@ def main():
     parser.add_argument(
         "--dataset",
         required=True,
-        choices=ALLOWED_DATASETS,
+        # The registry is the only list of datasets there is; a hard-coded one
+        # would drift from what the runner can actually load.
+        choices=sorted(DATA_SETS),
     )
     parser.add_argument(
         "--model",
