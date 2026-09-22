@@ -6,7 +6,7 @@ costs 30 seconds of local CPU.
 The code being checked is untrusted by construction -- arbitrary Python written
 by a competition entrant -- so it runs with no network, 2 GB, one CPU, a
 read-only root with a writable tmpfs, a non-root user and a hard timeout, and
-its own source mounted read-only.
+receives its source only through standard input.
 
 The validator log is returned verbatim rather than summarised, because /submit
 displays it to the participant.
@@ -16,16 +16,11 @@ import asyncio
 import hashlib
 import logging
 import shutil
-import tempfile
 from dataclasses import dataclass
-from pathlib import Path
 
-from app.settings import find_source_root, settings
+from app.settings import settings
 
 logger = logging.getLogger(__name__)
-
-REPO_ROOT = find_source_root()
-VALIDATOR_SCRIPT = "src/benchmark_core/optimization_engine/optimizers/validation/verify_optimizer.py"
 
 _FAMILY_HINTS = {
     "gradient": ("evaluate_with_grad", ".grad(", "grad()"),
@@ -72,11 +67,12 @@ def docker_available() -> bool:
     return shutil.which("docker") is not None
 
 
-def _docker_command(workdir: Path, filename: str) -> list[str]:
+def _docker_command() -> list[str]:
     return [
         "docker",
         "run",
         "--rm",
+        "--interactive",
         "--network",
         "none",
         "--memory",
@@ -94,41 +90,41 @@ def _docker_command(workdir: Path, filename: str) -> list[str]:
         "ALL",
         "--pids-limit",
         "128",
-        "-v",
-        f"{REPO_ROOT}/src:/bench/src:ro",
-        "-v",
-        f"{workdir}:/submission:ro",
         "-w",
-        "/bench",
+        "/app",
         "-e",
-        "PYTHONPATH=/bench/src",
+        "PYTHONPATH=/app:/app/src",
         "-e",
         "HOME=/tmp",
-        settings.validator_image,
+        "--entrypoint",
         "python",
+        settings.validator_image,
         "-c",
         _IN_CONTAINER_ENTRY,
-        f"/submission/{filename}",
     ]
 
 
 # Executed inside the container. Installs the import aliases first, because the
 # validator and the evaluator it imports still use the pre-refactor module names.
 _IN_CONTAINER_ENTRY = """
-import runpy, sys
-sys.path.insert(0, "/bench/src")
+import pathlib, runpy, sys
+sys.path.insert(0, "/app")
+sys.path.insert(0, "/app/src")
 from compat.benchmark_aliases import install
 install()
-sys.argv = ["verify_optimizer", sys.argv[1]]
+submission = pathlib.Path("/tmp/optimizer.py")
+submission.write_bytes(sys.stdin.buffer.read())
+submission.chmod(0o444)
+sys.argv = ["verify_optimizer", str(submission)]
 runpy.run_path(
-    "/bench/" + "src/benchmark_core/optimization_engine/optimizers/validation/"
+    "/app/" + "src/benchmark_core/optimization_engine/optimizers/validation/"
     "verify_optimizer.py",
     run_name="__main__",
 )
 """
 
 
-async def validate_source(source: str, filename: str = "optimizer.py") -> ValidationResult:
+async def validate_source(source: str) -> ValidationResult:
     """Validate uploaded source in the sandbox, or explain why we could not."""
     family = infer_family(source)
 
@@ -152,31 +148,26 @@ async def validate_source(source: str, filename: str = "optimizer.py") -> Valida
             version="unavailable",
         )
 
-    workdir = Path(tempfile.mkdtemp(prefix="submission-"))
+    process = await asyncio.create_subprocess_exec(
+        *_docker_command(),
+        stdin=asyncio.subprocess.PIPE,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.STDOUT,
+    )
     try:
-        target = workdir / filename
-        target.write_text(source, encoding="utf-8")
-        target.chmod(0o444)
-
-        process = await asyncio.create_subprocess_exec(
-            *_docker_command(workdir, filename),
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.STDOUT,
+        stdout, _ = await asyncio.wait_for(
+            process.communicate(source.encode("utf-8")), timeout=settings.validator_timeout + 10
         )
-        try:
-            stdout, _ = await asyncio.wait_for(process.communicate(), timeout=settings.validator_timeout + 10)
-        except TimeoutError:
-            process.kill()
-            await process.wait()
-            return ValidationResult(
-                ok=False,
-                log=f"Walidacja przerwana po {settings.validator_timeout} s.\n"
-                "Optymalizator nie zakończył pojedynczego kroku w limicie czasu.",
-                family=family,
-            )
+    except TimeoutError:
+        process.kill()
+        await process.wait()
+        return ValidationResult(
+            ok=False,
+            log=f"Walidacja przerwana po {settings.validator_timeout} s.\n"
+            "Optymalizator nie zakończył pojedynczego kroku w limicie czasu.",
+            family=family,
+        )
 
-        log = stdout.decode("utf-8", errors="replace")
-        ok = process.returncode == 0 and "ERROR" not in log
-        return ValidationResult(ok=ok, log=log, family=family)
-    finally:
-        shutil.rmtree(workdir, ignore_errors=True)
+    log = stdout.decode("utf-8", errors="replace")
+    ok = process.returncode == 0 and "ERROR" not in log
+    return ValidationResult(ok=ok, log=log, family=family)
