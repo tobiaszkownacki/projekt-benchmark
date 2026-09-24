@@ -11,7 +11,6 @@ TODO: 5. Plotting
 
 import time
 from dataclasses import dataclass, field
-from enum import Enum, auto
 from typing import Any
 
 import numpy as np
@@ -20,18 +19,12 @@ from torch.nn import CrossEntropyLoss
 from torch.nn.utils import parameters_to_vector
 from torch.utils.data import DataLoader
 
-from custom_logging import Log
-from src.benchmark_core.optimization_engine.evaluator import ModelEvaluator
-from src.benchmark_core.optimization_engine.evaluator_dtos import PyTorchTensorEvaluatorDto
-from src.benchmark_core.optimization_engine.optimizer_protocols import BenchmarkableOptimizer
-
-
-class StopReason(Enum):
-    GRADIENT_LIMIT = auto()
-    DATABASE_LIMIT = auto()
-    EPOCH_LIMIT = auto()
-    OPTIMIZER_CONVERGED = auto()
-    MAX_STEPS = auto()
+from benchmark_core.custom_logging import Log
+from benchmark_core.datasets import DATA_SETS, MODELS
+from benchmark_core.metrics.stop_metrics import StopReason
+from benchmark_core.optimization_engine.evaluator import ModelEvaluator
+from benchmark_core.optimization_engine.evaluator_dtos import PyTorchTensorEvaluatorDto
+from benchmark_core.optimization_engine.optimizer_protocols import BenchmarkableOptimizer
 
 
 @dataclass
@@ -122,13 +115,8 @@ class BenchmarkRunner:
         device: str | None = None,
         report_dir: str = "reports",
     ):
-        from src.dataset import (
-            DATA_SETS,
-            MODELS,
-        )  # Import is here due to circular dependency error
-
         if dataset_name not in DATA_SETS:
-            raise ValueError(f"Unknown dataset: {dataset_name}")
+            raise ValueError(f"Unknown dataset: {dataset_name}. Registered: {sorted(DATA_SETS)}")
 
         self.dataset_name = dataset_name
         self.model_name = model_name

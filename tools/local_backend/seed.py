@@ -49,8 +49,8 @@ SEEDS = [11, 23, 42, 57, 71, 89, 101, 113]
 
 SAMPLE_OPTIMIZER = '''import numpy as np
 
-from benchmark.evaluator import ModelEvaluator
-from benchmark.optimizer_protocols import NumpyBenchmarkOptimizer
+from benchmark_core.optimization_engine.evaluator import ModelEvaluator
+from benchmark_core.optimization_engine.optimizer_protocols import NumpyBenchmarkOptimizer
 
 
 class SignSgdOptimizer(NumpyBenchmarkOptimizer):
@@ -193,25 +193,25 @@ def _walk_states(conn, task_id, created, started, completed, failed=False) -> No
     The transitions table is filled by a trigger on tasks, so inserting a row
     already marked completed produces a history with exactly one entry. That
     both undersells the feature and leaves the update path of the trigger
-    untested. Walking pending -> running -> completed writes the same history
+    untested. Walking PENDING -> RUNNING -> COMPLETED writes the same history
     the worker and poller would, and proves the trigger fires on updates.
     """
     with conn.cursor() as cur:
         cur.execute(
-            """UPDATE tasks SET task_status = 'running', started_at = %s,
+            """UPDATE tasks SET task_status = 'RUNNING', started_at = %s,
                                 updated_at = %s WHERE task_id = %s""",
             (started, started, task_id),
         )
         if failed:
             cur.execute(
-                """UPDATE tasks SET task_status = 'failed', completed_at = %s,
+                """UPDATE tasks SET task_status = 'FAILED', completed_at = %s,
                                     updated_at = %s WHERE task_id = %s""",
                 (completed, completed, task_id),
             )
             return
         # The downloader has not finished yet: a real intermediate state.
         cur.execute(
-            """UPDATE tasks SET task_status = 'completed', artifact_status = 'downloading',
+            """UPDATE tasks SET task_status = 'COMPLETED', artifact_status = 'downloading',
                                 completed_at = %s, updated_at = %s WHERE task_id = %s""",
             (completed, completed, task_id),
         )
@@ -342,7 +342,7 @@ def main() -> None:
                     optimizer_name=optimizer_key,
                     family=family,
                     stop_condition=Jsonb({"max_epochs": args.epochs}),
-                    task_status="pending",
+                    task_status="PENDING",
                     artifact_status="absent",
                     artifact_root=None,
                     artifact_bytes=0,
@@ -425,7 +425,7 @@ def main() -> None:
             optimizer_name=optimizer_key,
             family=LOCAL_OPTIMIZERS[optimizer_key][2],
             stop_condition=Jsonb({"max_epochs": args.epochs}),
-            task_status="pending",
+            task_status="PENDING",
             artifact_status="absent",
             artifact_root=None,
             artifact_bytes=0,
@@ -522,7 +522,7 @@ def seed_states(conn, downloads: Path, researcher, guest, now) -> None:
     states = [
         {
             "run_name": "sign-sgd-digits-queued",
-            "task_status": "pending",
+            "task_status": "PENDING",
             "artifact_status": "absent",
             "executor_task_id": None,
             "error_message": None,
@@ -536,7 +536,7 @@ def seed_states(conn, downloads: Path, researcher, guest, now) -> None:
         },
         {
             "run_name": "sign-sgd-digits-slurm",
-            "task_status": "pending",
+            "task_status": "PENDING",
             "artifact_status": "absent",
             "executor_task_id": "4812004",
             "error_message": None,
@@ -550,7 +550,7 @@ def seed_states(conn, downloads: Path, researcher, guest, now) -> None:
         },
         {
             "run_name": "sign-sgd-digits-running",
-            "task_status": "running",
+            "task_status": "RUNNING",
             "artifact_status": "absent",
             "executor_task_id": "4812005",
             "error_message": None,
@@ -564,7 +564,7 @@ def seed_states(conn, downloads: Path, researcher, guest, now) -> None:
         },
         {
             "run_name": "cma-es-wine-downloading",
-            "task_status": "completed",
+            "task_status": "COMPLETED",
             "artifact_status": "downloading",
             "executor_task_id": "4812006",
             "error_message": None,
@@ -578,7 +578,7 @@ def seed_states(conn, downloads: Path, researcher, guest, now) -> None:
         },
         {
             "run_name": "de-digits-failed",
-            "task_status": "failed",
+            "task_status": "FAILED",
             "artifact_status": "ready",
             "executor_task_id": "4812007",
             "error_message": "RuntimeError: CUDA out of memory. Tried to allocate "
@@ -593,7 +593,7 @@ def seed_states(conn, downloads: Path, researcher, guest, now) -> None:
         },
         {
             "run_name": "des-wine-no-artifacts",
-            "task_status": "failed",
+            "task_status": "FAILED",
             "artifact_status": "empty",
             "executor_task_id": "4812008",
             "error_message": "No files found under /net/people/plgrid/plggolem/projekt-benchmark/reports/task_...",
@@ -607,7 +607,7 @@ def seed_states(conn, downloads: Path, researcher, guest, now) -> None:
         },
         {
             "run_name": "broken-optimizer-rejected",
-            "task_status": "failed",
+            "task_status": "FAILED",
             "artifact_status": "absent",
             "executor_task_id": None,
             "error_message": "Zgłoszenie odrzucone przez walidator protokołu.",
@@ -630,8 +630,8 @@ def seed_states(conn, downloads: Path, researcher, guest, now) -> None:
             **state,
             created_at=created,
             queued_at=created,
-            started_at=created + timedelta(minutes=8) if state["task_status"] != "pending" else None,
-            completed_at=created + timedelta(minutes=20) if state["task_status"] in ("completed", "failed") else None,
+            started_at=created + timedelta(minutes=8) if state["task_status"] != "PENDING" else None,
+            completed_at=created + timedelta(minutes=20) if state["task_status"] in ("COMPLETED", "FAILED") else None,
             updated_at=created + timedelta(minutes=10),
         )
         # The failed run that did produce a log gets one, so the tail of .out

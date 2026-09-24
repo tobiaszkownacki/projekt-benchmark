@@ -115,30 +115,28 @@ RUN_STATES = {
 
 
 def derive_state(task: dict) -> str:
-    """Collapse (task_status, artifact_status, executor_task_id) into one state.
+    """Collapse (task_status, artifact_status) into one state.
 
-    The database stores three coarse fields; the interface owes the user a
+    The database stores two coarse fields; the interface owes the user a
     single precise answer, and the mapping belongs in one place.
     """
     status = task.get("task_status")
     artifact = task.get("artifact_status")
 
-    if status == "failed":
+    if status == "FAILED":
         if artifact in (None, "absent", "empty"):
             return "failed_no_artifacts"
         return "failed"
-    if status == "completed":
+    if status == "COMPLETED":
         if artifact == "downloading":
             return "downloading"
         if artifact == "empty":
             return "completed_no_artifacts"
         return "completed"
-    if status == "running":
+    if status == "RUNNING":
         return "running"
-    if status == "pending":
-        if task.get("executor_task_id"):
-            return "queued_slurm"
-        return "queued_broker"
+    if status == "SUBMITTED":
+        return "queued_slurm"
     return "queued_broker"
 
 

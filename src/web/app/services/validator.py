@@ -104,8 +104,7 @@ def _docker_command() -> list[str]:
     ]
 
 
-# Executed inside the container. Installs the import aliases first, because the
-# validator and the evaluator it imports still use the pre-refactor module names.
+# Executed inside the container.
 _IN_CONTAINER_ENTRY = """
 import pathlib, runpy, sys
 sys.path.insert(0, "/app")

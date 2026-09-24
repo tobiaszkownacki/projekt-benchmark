@@ -4,12 +4,17 @@ from enum import Enum, auto
 
 
 class StopReason(Enum):
+    """Why a run ended.
+
+    The `stop_reason_t` database type mirrors these names, so a member added
+    here needs a migration to go with it.
+    """
+
     GRADIENT_LIMIT = auto()
-    DATABASE_REACH_LIMIT = auto()
+    DATABASE_LIMIT = auto()
     EPOCH_LIMIT = auto()
-    CONVERGENCE = auto()
-    OPTIMIZER_SIGNAL = auto()
-    NONE = auto()
+    OPTIMIZER_CONVERGED = auto()
+    MAX_STEPS = auto()
 
 
 @dataclass
@@ -35,7 +40,7 @@ class MetricsTracker:
         self._gradient_count: int = 0
         self._database_reach_count: int = 0
         self._epoch_count: int = 0
-        self._stop_reason: StopReason = StopReason.NONE
+        self._stop_reason: StopReason | None = None
         self._callbacks: list[Callable[[MetricsTracker], None]] = []
 
     @property
@@ -51,7 +56,8 @@ class MetricsTracker:
         return self._epoch_count
 
     @property
-    def stop_reason(self) -> StopReason:
+    def stop_reason(self) -> StopReason | None:
+        """The reason the run ended, or None while it is still running."""
         return self._stop_reason
 
     def record_gradients(self, count: int = 1) -> bool:
@@ -70,12 +76,12 @@ class MetricsTracker:
 
     def should_stop(self) -> bool:
         """Check all stop conditions."""
-        return self._stop_reason != StopReason.NONE
+        return self._stop_reason is not None
 
     def signal_optimizer_stop(self):
         """Called when optimizer signals it wants to stop early."""
-        if self._stop_reason == StopReason.NONE:
-            self._stop_reason = StopReason.OPTIMIZER_SIGNAL
+        if self._stop_reason is None:
+            self._stop_reason = StopReason.OPTIMIZER_CONVERGED
 
     def _check_gradient_limit(self) -> bool:
         if self.stop_condition.max_gradients is not None and self._gradient_count >= self.stop_condition.max_gradients:
@@ -88,7 +94,7 @@ class MetricsTracker:
             self.stop_condition.max_database_reaches is not None
             and self._database_reach_count >= self.stop_condition.max_database_reaches
         ):
-            self._stop_reason = StopReason.DATABASE_REACH_LIMIT
+            self._stop_reason = StopReason.DATABASE_LIMIT
             return True
         return False
 
@@ -111,5 +117,5 @@ class MetricsTracker:
             "gradient_count": self._gradient_count,
             "database_reach_count": self._database_reach_count,
             "epoch_count": self._epoch_count,
-            "stop_reason": self._stop_reason.name,
+            "stop_reason": self._stop_reason.name if self._stop_reason else None,
         }

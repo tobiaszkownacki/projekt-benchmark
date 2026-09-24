@@ -41,7 +41,6 @@ COPY src/db/migrations /app/migrations
 # Read at runtime by /docs, so the protocol page shows the live contract rather
 # than a copy that drifts.
 COPY src/benchmark_core /app/src/benchmark_core
-COPY src/compat         /app/src/compat
 
 COPY --from=frontend /build/dist /app/static
 

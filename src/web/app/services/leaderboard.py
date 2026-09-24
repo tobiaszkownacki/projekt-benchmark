@@ -52,7 +52,7 @@ SELECT
     ARRAY_AGG(t.task_id::text ORDER BY r.final_loss)              AS task_ids
 FROM tasks t
 JOIN results r ON r.task_id = t.task_id
-WHERE t.task_status = 'completed'
+WHERE t.task_status = 'COMPLETED'
   AND t.optimizer_name IS NOT NULL
 """
 
