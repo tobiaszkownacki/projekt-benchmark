@@ -64,7 +64,9 @@ class Settings:
     archive_max_entries: int = field(default_factory=lambda: _int("ARCHIVE_MAX_ENTRIES", 5000))
 
     validator_enabled: bool = field(default_factory=lambda: _bool("VALIDATOR_ENABLED", True))
-    validator_image: str = field(default_factory=lambda: os.environ.get("VALIDATOR_IMAGE", "python:3.12-slim"))
+    validator_image: str = field(
+        default_factory=lambda: os.environ.get("VALIDATOR_IMAGE", "benchmark-validator:latest")
+    )
     validator_timeout: int = field(default_factory=lambda: _int("VALIDATOR_TIMEOUT", 30))
 
     rabbitmq_management_url: str = field(default_factory=lambda: os.environ.get("RABBITMQ_MANAGEMENT_URL", ""))
