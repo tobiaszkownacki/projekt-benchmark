@@ -143,10 +143,13 @@ curl -s localhost:15672/api/queues -u "$RABBITMQ_USER:$RABBITMQ_PASSWORD" \
 `consumers: 0` is the whole story. The rows already showing "running on Athena"
 or "downloading" are seeded fixtures, not live cluster state.
 
-**Submissions are accepted without being checked.** `VALIDATOR_ENABLED=0`,
-because the validator needs a Docker socket to start its sandbox. Submissions
-carry an explicit note saying nothing was verified, rather than silently
-appearing to have passed. Set it to `1` if you have a socket to spare.
+**Uploaded optimizers are checked before they are queued.** Compose builds the
+`benchmark-validator:latest` image and the web service starts a short-lived,
+restricted container for each validation. The web container reaches the host
+daemon through `/var/run/docker.sock`. On native Linux, set `DOCKER_GID` to the
+numeric ID of the host's Docker group if the default group cannot access the
+socket. Set `VALIDATOR_ENABLED=0` only when deploying without Docker; accepted
+submissions will then carry an explicit note that no validation was performed.
 
 **OAuth and reCAPTCHA are absent.** The control plane never reads
 `secrets.toml`; it has no Streamlit dependency at all, and the OAuth client ids
