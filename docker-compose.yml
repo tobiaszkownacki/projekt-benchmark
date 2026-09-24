@@ -88,6 +88,14 @@ services:
     volumes:
       - ./downloads:/downloads
 
+  validator_image:
+    build:
+      context: .
+      dockerfile: Dockerfile.validator
+    image: ${VALIDATOR_IMAGE:-benchmark-validator:latest}
+    entrypoint: ["/bin/true"]
+    restart: "no"
+
   web:
     build:
       context: .
@@ -99,6 +107,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      validator_image:
+        condition: service_completed_successfully
     env_file: .env
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
@@ -110,10 +120,8 @@ services:
       EXECUTOR: athena
       PUBLIC_RESULTS: ${PUBLIC_RESULTS:-1}
       DAILY_SUBMISSION_LIMIT: ${DAILY_SUBMISSION_LIMIT:-3}
-      # The validator needs a Docker socket to start its sandbox. Off by default
-      # so the web container does not require one; submissions are then accepted
-      # with an explicit note that nothing was checked, rather than silently.
-      VALIDATOR_ENABLED: ${VALIDATOR_ENABLED:-0}
+      VALIDATOR_ENABLED: ${VALIDATOR_ENABLED:-1}
+      VALIDATOR_IMAGE: ${VALIDATOR_IMAGE:-benchmark-validator:latest}
     ports:
       # 8080, not 8000: main's task API claims ${API_PORT:-8000} and the two
       # would refuse to bind together on a default `docker compose up`.
@@ -123,6 +131,13 @@ services:
       # only reads it, and defence in depth means a bug here cannot write into
       # the artifact tree.
       - ./downloads:/downloads:ro
+      # The API starts a fresh, restricted validator container for every
+      # uploaded optimizer. Set VALIDATOR_ENABLED=0 to deploy without it.
+      - /var/run/docker.sock:/var/run/docker.sock
+    # Docker Desktop exposes the socket to group 0. Native Linux deployments
+    # can set DOCKER_GID to the host's Docker group id.
+    group_add:
+      - "${DOCKER_GID:-0}"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3).status==200 else 1)"]
       interval: 15s

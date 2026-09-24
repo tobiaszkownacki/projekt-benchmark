@@ -10,7 +10,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from src.benchmark_core.optimization_engine.evaluator import ModelEvaluator
+from benchmark_core.optimization_engine.evaluator import ModelEvaluator
 
 
 class DummyModel(nn.Module):
@@ -41,6 +41,35 @@ logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
 
 
+_NETWORK_AUDIT_EVENTS = frozenset(
+    {
+        "socket.bind",
+        "socket.connect",
+        "socket.getaddrinfo",
+        "socket.gethostbyaddr",
+        "socket.gethostbyname",
+        "socket.gethostbyname_ex",
+        "socket.getnameinfo",
+        "socket.sendto",
+    }
+)
+
+
+class NetworkAccessMonitor:
+    """Block and remember network operations, even if submitted code catches the error."""
+
+    def __init__(self):
+        self.attempts: list[str] = []
+
+    def install(self):
+        sys.addaudithook(self._audit_hook)
+
+    def _audit_hook(self, event: str, _args):
+        if event in _NETWORK_AUDIT_EVENTS:
+            self.attempts.append(event)
+            raise PermissionError("External network access is forbidden during optimizer validation")
+
+
 def print_status(test_name: str, passed: bool, details: str = ""):
     if passed:
         logger.info(f"PASSED {test_name}")
@@ -52,6 +81,12 @@ def print_status(test_name: str, passed: bool, details: str = ""):
             logger.error(f"   └─ {details}")
 
 
+def print_warning(test_name: str, details: str = ""):
+    logger.warning(f"WARNING {test_name}")
+    if details:
+        logger.warning(f"   └─ {details}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Verify an optimizer against the benchmark standard.")
     parser.add_argument("optimizer", help="Builtin optimizer name (e.g., 'adam') or path to custom .py file")
@@ -61,6 +96,9 @@ def main():
     logger.info(f"\nStarting verification for: {name}")
     logger.info("=" * 50)
     all_passed = True
+    has_warnings = False
+    network_monitor = NetworkAccessMonitor()
+    network_monitor.install()
 
     # --- TEST 1: Module Loading ---
     try:
@@ -74,7 +112,14 @@ def main():
             )
             sys.exit(1)
     except Exception as e:
-        print_status("Module and class loaded successfully", False, str(e))
+        if network_monitor.attempts:
+            print_status(
+                "External network access is forbidden",
+                False,
+                f"Blocked operations: {', '.join(sorted(set(network_monitor.attempts)))}",
+            )
+        else:
+            print_status("Module and class loaded successfully", False, str(e))
         sys.exit(1)
 
     # --- TEST 2: Protocol Compliance ---
@@ -216,11 +261,11 @@ def main():
         initial_params_np = raw_params
 
         if np.array_equal(opt_internal_params_np, initial_params_np) and grad_count > 0:
-            all_passed = False
-            print_status(
+            has_warnings = True
+            print_warning(
                 "Parameter mutation verification",
-                False,
-                "The parameters did not change after step() despite active gradient evaluation!",
+                "The parameters did not change after step(). This can be valid for optimizers "
+                "that intentionally delay their first update.",
             )
         else:
             print_status("Parameter mutation verification", True)
@@ -233,9 +278,22 @@ def main():
             f"Execution failed: {str(e)}\n{traceback.format_exc()}",
         )
 
+    if network_monitor.attempts:
+        all_passed = False
+        print_status(
+            "External network access is forbidden",
+            False,
+            f"Blocked operations: {', '.join(sorted(set(network_monitor.attempts)))}",
+        )
+    else:
+        print_status("External network access is forbidden", True, "No network operations detected")
+
     if not all_passed:
         logger.error("\nValidation FAILED due to one or more errors above.")
         sys.exit(1)
+    elif has_warnings:
+        logger.warning("\nValidation SUCCESSFUL with warnings.")
+        sys.exit(0)
     else:
         logger.info("\nValidation SUCCESSFUL. All checks passed.")
         sys.exit(0)

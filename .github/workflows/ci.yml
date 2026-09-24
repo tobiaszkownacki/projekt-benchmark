@@ -78,6 +78,25 @@ jobs:
         working-directory: src/web
         run: uv run pytest tests ../pipeline/tests -q
 
+  engine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      # NumPy and pytest only, outside the project environment. These
+      # assertions are about which generator a seed reaches, and pulling the
+      # GPU stack in to check that would make the job unrunnable on a CPU
+      # runner -- which is how the seeding defect stayed invisible.
+      - name: Run engine tests
+        env:
+          PYTHONPATH: src
+        run: uv run --no-project --with numpy --with pytest pytest src/tests -q
+
   frontend:
     runs-on: ubuntu-latest
     steps:

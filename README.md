@@ -40,41 +40,41 @@ To get started with this project, follow these steps:
 
 ## 3. Running the Benchmark
 
-You can run benchmarks using the `src.benchmark.run_benchmark` module.
+You can run benchmarks using the `benchmark_core.optimization_engine.run_benchmark` module.
 
 ### Running a single optimizer
 
 ```sh
-    uv run -m src.benchmark.run_benchmark --dataset digits --optimizer my_optimizer
+    uv run -m benchmark_core.optimization_engine.run_benchmark --dataset digits --optimizer my_optimizer
 ```
 
 ### Comparing multiple optimizers
 
 ```sh
-    uv run -m src.benchmark.run_benchmark --dataset heart_disease --optimizer adam sgd cma-es
+    uv run -m benchmark_core.optimization_engine.run_benchmark --dataset heart_disease --optimizer adam sgd cma-es
 ```
 
 ### Using a specific model architecture
 
 ```sh
-    uv run -m src.benchmark.run_benchmark --dataset digits --model mlp --optimizer adam
+    uv run -m benchmark_core.optimization_engine.run_benchmark --dataset digits --model mlp --optimizer adam
 ```
 
 Add the `--plot` flag to generate comparison and performance plots. By default, they are saved to `reports/model_analysis`.
 
 ```sh
-    uv run -m src.benchmark.run_benchmark --dataset wine_quality --optimizer adam sgd cma-es --max-epochs 10 --max-gradients 100000 --plot
+    uv run -m benchmark_core.optimization_engine.run_benchmark --dataset wine_quality --optimizer adam sgd cma-es --max-epochs 10 --max-gradients 100000 --plot
 ```
 
 ### Comparing multiple models and optimizers simultaneously
 
 ```sh
-	uv run -m src.benchmark.run_benchmark --dataset digits --model default mlp --optimizer adam sgd cma-es
+	uv run -m benchmark_core.optimization_engine.run_benchmark --dataset digits --model default mlp --optimizer adam sgd cma-es
 ```
 
 ### Available Arguments/Parameters
 
-- `--dataset`: Choose from `cifar10`, `heart_disease`, `wine_quality`, `digits` (required).
+- `--dataset`: Name of a dataset registered in `src/benchmark_core/datasets.py` (required). The networks and datasets themselves are not part of this repository, so the choices are whatever has been registered -- see section 6.
 - `--model`: Name of the model architecture to use (e.g., `default`, `mlp`). More than one model can be passed to test all combinations with the given optimizers (default: `['default']`).
 - `--optimizer`: Name of a built-in optimizer (e.g., `adam`, `sgd`, `cma-es`) or a file path to a custom optimizer python script. More than one optimizer can be passed for comparison (required).
 - `--max-gradients`: Stop condition for maximum number of gradient evaluations (default: 5000).
@@ -89,56 +89,82 @@ Add the `--plot` flag to generate comparison and performance plots. By default, 
 
 ```text
 ├── README.md              <- The top-level README for developers using this project.
-├── data/                  <- Raw and processed datasets.
-├── models/                <- PyTorch model definitions for each dataset.
-├── outputs/               <- Benchmark run output logs and CSVs.
+├── docker-compose.yml     <- The web control plane and the queue services.
+├── docs/LOCAL_SETUP.md    <- Long-form setup, including the secret taxonomy.
+├── downloads/             <- Run artifacts, reachable only through the artifact browser.
 ├── reports/               <- Generated plots and analysis artifacts.
+├── scripts/               <- Environment bootstrap, lint baseline, broker definitions.
 ├── src/                   <- Source code for use in this project.
-│   ├── benchmark/         <- Core logic: evaluator, runner, stop conditions.
-│   │   └── optimizers/    <- Optimizer adapters (Adam, SGD, CMA-ES, etc.) and registry.
-│   ├── datasets/          <- Dataset loading and preprocessing scripts.
-│   ├── metrics/           <- Stop metrics and evaluation tracking.
-│   ├── plotting/          <- Plot generation and analyzer modules.
-│   ├── trainers/          <- Internal model training loops and protocols.
-│   ├── config.py          <- Global configuration and variables.
-│   └── dataset.py         <- Factory mapping datasets to their PyTorch models.
+│   ├── benchmark_core/    <- The engine.
+│   │   ├── datasets.py    <- Registry mapping a dataset name to its data and models.
+│   │   ├── metrics/       <- Stop conditions, stop reasons and budget tracking.
+│   │   ├── optimization_engine/  <- Evaluator, runner, optimizer protocols, optimizers.
+│   │   └── plotting/      <- Plot generation and analyzer modules.
+│   ├── db/                <- initdb schemas and forward-only numbered migrations.
+│   ├── frontend/          <- The previous Streamlit interface.
+│   ├── shared/            <- Connectors and interfaces shared by the queue services.
+│   ├── task_queue/        <- Worker, poller and downloader for the compute backend.
+│   └── web/               <- FastAPI control plane and the React SPA it serves.
+├── tools/local_backend/   <- Development-only CPU runner and database seeder.
 └── pyproject.toml         <- Project metadata, dependencies, and tool configuration.
 ```
 
+The engine imports as `benchmark_core.*`, which `uv sync` puts on the path by
+installing this project; outside a synced environment put `src/` on
+`PYTHONPATH`.
+
 ## 5. Adding a New Optimizer
 
-1. Create a new python script inside `src/benchmark/optimizers/` (e.g., `my_optimizer_adapter.py`).
-2. Create your optimizer class inheriting from `src.benchmark.optimizer_protocols.BenchmarkOptimizer`.
+1. Create a new python script inside `src/benchmark_core/optimization_engine/optimizers/numpy/` (or `cupy/`, e.g., `my_optimizer_adapter.py`).
+2. Create your optimizer class inheriting from `benchmark_core.optimization_engine.optimizer_protocols.NumpyBenchmarkOptimizer`, or from `BenchmarkOptimizer` to declare the array backend yourself.
 3. Implement the `step(self, evaluator: ModelEvaluator) -> bool` method.
     - Inside `step()`, you can call `evaluator.evaluate_with_grad()` or `evaluator.evaluate()` depending on whether your optimizer needs gradients.
     - Update `self.params` and finally call `evaluator.set_params(self.params)`.
     - Return `True` if the optimizer has converged, `False` otherwise.
-4. Add your new optimizer to the `BUILTIN_OPTIMIZERS` registry located in `src/benchmark/optimizers/registry.py`.
+4. Add your new optimizer to the `BUILTIN_OPTIMIZERS` registry located in `src/benchmark_core/optimization_engine/optimizers/registry.py`. A CuPy optimizer belongs in the block that is skipped where CuPy does not load, so that a CPU-only host keeps the NumPy entries.
     - *Alternatively, you can test it directly without registering by passing the path to the file using `--optimizer path/to/my_optimizer_adapter.py`*.
 
 ## 6. Adding a New Dataset
 
-1. Create a new python file in `src/datasets/` (e.g., `my_dataset.py`).
-2. Implement a dataset class that inherits from `src.datasets.dataset.Dataset`.
-3. Implement the `get(self) -> ConcatDataset` abstract method to download/load and preprocess your data, returning it as a PyTorch dataset.
-4. Add your dataset name to the `ALLOWED_DATASETS` list in `src/config.py`.
+The datasets and networks the benchmark runs against are deliberately not in
+this repository, so both registries in `src/benchmark_core/datasets.py` start
+empty and the deployment supplies their contents.
+
+1. Write a callable that returns a PyTorch `Dataset`, wherever the data itself
+   lives.
+2. Register it under the dataset name in `DATA_SETS`:
+
+   ```python
+   from benchmark_core import datasets
+
+   datasets.DATA_SETS["my_dataset_name"] = {"data_set": load_my_dataset}
+   ```
+
+3. Register at least a `"default"` model for it, as in section 7. The runner
+   reads both registries by dataset name and raises if either has no entry.
+
+`--dataset` offers exactly what is registered, so there is no second list to
+keep in step with this one.
 
 ## 7. Configuring Model Architectures for a Dataset
 
-To add a new model architecture to an existing dataset or hook up a completely new dataset:
+To add a new model architecture to an existing dataset or hook up a completely
+new dataset:
 
-1. Create a PyTorch model inheriting from `torch.nn.Module` in the `models/` directory (e.g., `models/my_model.py` or `models/digits_mlp.py`).
-2. Open `src/dataset.py` and import your new model class.
-3. Update the `MODELS` dictionary in `src/dataset.py` by adding your new architecture under the respective dataset key. You can define a `"default"` model and any other variants:
+1. Create a PyTorch model inheriting from `torch.nn.Module`, next to the
+   dataset it belongs to.
+2. Register it in `MODELS` under the dataset name. The key is what `--model`
+   selects, and `"default"` is what it selects when you do not pass one:
 
    ```python
-   MODELS = {
-       "my_dataset_name": {
-           "default": MyStandardModelClass,
-           "experimental": MyNewModelClass,
-       },
-       # ... other datasets ...
+   from benchmark_core import datasets
+
+   datasets.MODELS["my_dataset_name"] = {
+       "default": MyStandardModelClass,
+       "experimental": MyNewModelClass,
    }
-4. If it's a completely new dataset, ensure the data loading logic is also registered in the DATA_SETS dictionary within src/dataset.py and the dataset name is added to ALLOWED_DATASETS in src/config.py.
-5. You can now benchmark this architecture by running: --dataset my_dataset_name --model experimental
+   ```
+
+3. You can now benchmark this architecture by running
+   `--dataset my_dataset_name --model experimental`.
 

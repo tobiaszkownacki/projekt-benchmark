@@ -1,7 +1,9 @@
 import cma
 import cupy as np
-from benchmark.evaluator import ModelEvaluator
-from benchmark.optimizer_protocols import NumpyBenchmarkOptimizer
+
+from benchmark_core.optimization_engine.evaluator import ModelEvaluator
+from benchmark_core.optimization_engine.optimizer_protocols import NumpyBenchmarkOptimizer
+from benchmark_core.seeding import resolve_optimizer_seed
 
 
 class CupyCMAES(NumpyBenchmarkOptimizer):
@@ -18,7 +20,7 @@ class CupyCMAES(NumpyBenchmarkOptimizer):
 
         opts = config.get("cma_options", {}).copy()
 
-        opts["seed"] = config.get("seed", 42)
+        opts["seed"] = resolve_optimizer_seed(config)
         if population_size:
             opts["popsize"] = population_size
 

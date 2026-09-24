@@ -25,6 +25,11 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
+# validator.py uses the host daemon through the mounted Docker socket. Only the
+# CLI is used; no daemon runs inside this image.
+RUN apt-get update && apt-get install -y --no-install-recommends docker.io \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY src/web/pyproject.toml ./
 RUN pip install --no-cache-dir \
         "fastapi>=0.115" "uvicorn[standard]>=0.32" "psycopg[binary,pool]>=3.2" \
@@ -39,7 +44,6 @@ COPY src/benchmark_core /app/src/benchmark_core
 # The drain process declares the broker topology, and the names come from the
 # same module the pipeline derives them from.
 COPY src/shared         /app/src/shared
-COPY src/compat         /app/src/compat
 
 COPY --from=frontend /build/dist /app/static
 

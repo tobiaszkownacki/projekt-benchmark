@@ -1,7 +1,8 @@
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-from src.benchmark.runner import BenchmarkResult
+
+from benchmark_core.optimization_engine.runner import BenchmarkResult
 
 # Okabe-Ito, the standard colour-blind-safe qualitative set, chosen so figures
 # stay readable in print.
@@ -38,7 +39,8 @@ class BenchmarkAnalyzer:
     Creates plots from BenchmarkResult objects and benchmark CSV logs
 
     example run:
-    python -m src.benchmark.run_benchmark --dataset digits --optimizer sgd --max-epochs 1 --max-gradients 100 --plot
+    python -m benchmark_core.optimization_engine.run_benchmark --dataset digits \
+        --optimizer sgd --max-epochs 1 --max-gradients 100 --plot
     """
 
     def __init__(self, output_dir: str = "reports/model_analysis"):
