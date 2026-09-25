@@ -13,7 +13,13 @@ SUCCESS_STATE = "COMPLETED"
 RUNNING_STATE = "RUNNING"
 FAILURE_STATES = {"FAILED", "CANCELLED", "TIMEOUT", "OUT_OF_MEMORY", "NODE_FAIL"}
 
-SACCT_CMD = "sacct --parsable2 --allocations --format=JobID,JobName,Partition,AllocCPUS,State,ExitCode,Elapsed,End"
+# Without --starttime sacct reports only jobs since midnight, so a run that
+# ends just before it while the poller is down is never reconciled.
+SACCT_CMD = (
+    "sacct --parsable2 --allocations --starttime=now-7days "
+    "--format=JobID,JobName,Partition,AllocCPUS,State,ExitCode,Elapsed,End"
+)
+JOB_NAME_PREFIX = "task_"
 
 ATHENA_REMOTE_PATH = os.environ.get("ATHENA_REMOTE_PATH")
 PROJECT_DIR = f"{ATHENA_REMOTE_PATH}/projekt-benchmark"
@@ -88,7 +94,7 @@ class AthenaExecutor(PollableExecutor):
             # the download reads reports/task_<task_id>/. Naming the job after
             # the task makes those the same directory, so the run's own log is
             # an artifact rather than something only a failure ever shows.
-            "job_name": f"task_{job.task_id}",
+            "job_name": f"{JOB_NAME_PREFIX}{job.task_id}",
             "time": SLURM_TIME_LIMIT,
             "cpus": 1,
             "gpus": 1,
@@ -137,6 +143,7 @@ class AthenaExecutor(PollableExecutor):
                 running=row.get("State", "") == RUNNING_STATE,
             )
             for row in rows
+            if row.get("JobName", "").startswith(JOB_NAME_PREFIX)
         ]
 
     def fetch_error_tail(self, job_name: str, executor_task_id: str, lines: int = 30) -> str:
