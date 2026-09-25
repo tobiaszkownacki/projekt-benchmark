@@ -408,7 +408,7 @@ def main() -> None:
         "Przebieg finałowy.",
         "accepted",
     )
-    for optimizer_key in ("adam", "cma-es"):
+    for job_number, optimizer_key in enumerate(("adam", "cma-es"), start=4800001):
         result = final_runner.run(optimizer_key)
         task_id = _insert_task(
             conn,
@@ -430,7 +430,7 @@ def main() -> None:
             artifact_root=None,
             artifact_bytes=0,
             artifact_files=0,
-            executor_task_id=str(4800001),
+            executor_task_id=str(job_number),
             error_message=None,
             runner_version=RUNNER_VERSION,
             gpu_model="CPU (local backend)",
@@ -444,7 +444,7 @@ def main() -> None:
         files, total = write_run_artifacts(
             root,
             result,
-            slurm_job_id="4800001",
+            slurm_job_id=str(job_number),
             extra_metadata={"task_id": str(task_id), "suite": "final"},
         )
         with conn.cursor() as cur:

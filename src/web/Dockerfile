@@ -41,13 +41,16 @@ COPY src/db/migrations /app/migrations
 # Read at runtime by /docs, so the protocol page shows the live contract rather
 # than a copy that drifts.
 COPY src/benchmark_core /app/src/benchmark_core
+# The drain process declares the broker topology, and the names come from the
+# same module the pipeline derives them from.
+COPY src/shared         /app/src/shared
 
 COPY --from=frontend /build/dist /app/static
 
 ENV STATIC_ROOT=/app/static \
     MIGRATIONS_DIR=/app/migrations \
     ARTIFACT_ROOT=/downloads \
-    PYTHONPATH=/app
+    PYTHONPATH=/app:/app/src
 
 RUN useradd --system --uid 10001 --create-home benchmark
 USER benchmark

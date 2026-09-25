@@ -16,7 +16,7 @@ from psycopg.types.json import Jsonb
 from pydantic import BaseModel, Field
 
 from app import db
-from app.security import CurrentUser, optional_user, require_verified
+from app.security import CurrentUser, generate_webhook_token, optional_user, require_verified
 from app.services import outbox, validator
 from app.services.authz import can_read_run
 from app.settings import settings
@@ -195,14 +195,30 @@ async def submit(payload: SubmissionRequest, user: CurrentUser = Depends(require
             ).fetchone()
 
             task_id = task["task_id"]
+
+            # Minted inside the submission's own transaction: until it commits
+            # the token does not exist, and neither does the message that
+            # carries it, so a callback cannot arrive before it can be verified.
+            raw_token, digest, prefix = generate_webhook_token()
+            await conn.execute(
+                """
+                INSERT INTO task_webhook_tokens (task_id, token_sha256, prefix, expires_at)
+                VALUES (%s, %s, %s, NOW() + make_interval(hours => %s))
+                """,
+                (task_id, digest, prefix, settings.webhook_token_ttl_hours),
+            )
+
             await outbox.enqueue(
                 conn,
                 outbox.task_message(
                     task_id,
-                    settings.worker_queue,
                     run_name=run_name,
                     dataset=payload.dataset,
-                    optimizer=optimizer_name,
+                    model=payload.model,
+                    optimizers=[optimizer_name],
+                    seed=seed,
+                    stop_condition=stop_condition,
+                    webhook_token=raw_token,
                 ),
             )
             created.append(str(task_id))

@@ -109,8 +109,6 @@ _IN_CONTAINER_ENTRY = """
 import pathlib, runpy, sys
 sys.path.insert(0, "/app")
 sys.path.insert(0, "/app/src")
-from compat.benchmark_aliases import install
-install()
 submission = pathlib.Path("/tmp/optimizer.py")
 submission.write_bytes(sys.stdin.buffer.read())
 submission.chmod(0o444)
