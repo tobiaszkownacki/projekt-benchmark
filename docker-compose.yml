@@ -100,6 +100,10 @@ services:
     build:
       context: .
       dockerfile: src/web/Dockerfile
+      args:
+        # The SPA's asset URLs are fixed at build time, so the prefix the API
+        # serves under at runtime has to reach the build as well.
+        BASE_PATH: ${ROOT_PATH:+${ROOT_PATH}/}
     container_name: benchmark_web
     restart: unless-stopped
     depends_on:
