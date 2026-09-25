@@ -8,7 +8,7 @@ from pipeline.executor import FetchResult, JobDescription, SubmitResult
 
 logger = logging.getLogger(__name__)
 
-SLURM_TIME_LIMIT = "00:30:00"
+SLURM_TIME_LIMIT = os.environ.get("ATHENA_TIME_LIMIT", "00:30:00")
 SUCCESS_STATE = "COMPLETED"
 RUNNING_STATE = "RUNNING"
 FAILURE_STATES = {"FAILED", "CANCELLED", "TIMEOUT", "OUT_OF_MEMORY", "NODE_FAIL"}
@@ -18,6 +18,9 @@ SACCT_CMD = "sacct --parsable2 --allocations --format=JobID,JobName,Partition,Al
 ATHENA_REMOTE_PATH = os.environ.get("ATHENA_REMOTE_PATH")
 PROJECT_DIR = f"{ATHENA_REMOTE_PATH}/projekt-benchmark"
 LOCAL_DOWNLOAD_DIR = os.environ.get("LOCAL_DOWNLOAD_DIR", "/downloads")
+# uv is not installed on the compute nodes, so the job finds it where it was
+# installed into the account.
+ATHENA_PATH_PREFIX = os.environ.get("ATHENA_PATH_PREFIX", "$SCRATCH/.local/bin")
 ATHENA_WEBHOOK_URL = os.environ.get("ATHENA_WEBHOOK_URL", "")
 ATHENA_LOGIN_NODE = os.environ.get("ATHENA_LOGIN_NODE", "athena.cyfronet.pl")
 
@@ -99,7 +102,7 @@ class AthenaExecutor(PollableExecutor):
             ),
             # The engine lives under src/ and is not installed into the project
             # environment, so the module resolves only with src/ on the path.
-            "env_vars": {"PYTHONPATH": f"{PROJECT_DIR}/src"},
+            "env_vars": {"PYTHONPATH": f"{PROJECT_DIR}/src", "PATH": f"{ATHENA_PATH_PREFIX}:$PATH"},
         }
         if job.webhook_token:
             slurm_job["pre_commands"] = [_webhook_trap(job.webhook_token)]

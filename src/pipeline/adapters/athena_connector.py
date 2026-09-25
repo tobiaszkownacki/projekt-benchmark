@@ -11,6 +11,7 @@ import paramiko
 from shared.connectors.base import BaseConnector
 
 POLL_EVERY = int(os.environ.get("POLL_EVERY", 30))
+DEFAULT_PARTITION = "plgrid-gpu-a100"
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ class AthenaConnector(BaseConnector):
         self.key_path = os.environ.get("ATHENA_KEY_PATH") or None
         self.host_key = os.environ.get("ATHENA_HOST_KEY") or None
         self.account = os.environ.get("ATHENA_ACCOUNT")
+        self.partition = os.environ.get("ATHENA_PARTITION") or DEFAULT_PARTITION
         self.client = None
         self._scratch: str | None = None
 
@@ -92,6 +94,7 @@ class AthenaConnector(BaseConnector):
 
         Optional keys:
             job_name        : str           default "benchmark_job"
+            partition       : str           default ATHENA_PARTITION env var
             account         : str           default ATHENA_ACCOUNT env var
             time            : str           default "01:00:00"
             mem             : str           default "64G"
@@ -104,6 +107,7 @@ class AthenaConnector(BaseConnector):
             env_vars        : dict[str,str] exported env vars  e.g. {"TORCH_HOME": "/path"}
         """
         account = job.get("account", self.account or "")
+        partition = job.get("partition", self.partition)
         job_name = job.get("job_name", "benchmark_job")
         time_limit = job.get("time", "01:00:00")
         mem = job.get("mem", "64G")
@@ -127,7 +131,7 @@ class AthenaConnector(BaseConnector):
 
         return f"""#!/bin/bash
 #SBATCH --job-name={job_name}
-#SBATCH --partition=plgrid-gpu-a100
+#SBATCH --partition={partition}
 #SBATCH --account={account}
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task={cpus}
