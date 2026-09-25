@@ -18,29 +18,26 @@ ATHENA_REMOTE_PATH = os.environ.get("ATHENA_REMOTE_PATH")
 PROJECT_DIR = f"{ATHENA_REMOTE_PATH}/projekt-benchmark"
 LOCAL_DOWNLOAD_DIR = os.environ.get("LOCAL_DOWNLOAD_DIR", "/downloads")
 ATHENA_WEBHOOK_URL = os.environ.get("ATHENA_WEBHOOK_URL", "")
-ATHENA_LOGIN_NODE = os.environ.get("ATHENA_LOGIN_NODE", "athena.cyfronet.pl")
 
 
 def _webhook_trap(webhook_token: str) -> str:
     """Report the run's own end on the way out.
 
-    Posted from the login node over ssh because compute nodes have no route
-    off the cluster. --max-time keeps a hanging call from holding the node
-    after the run is over, and retrying is safe: the receiver applies the
-    first report and answers the rest with applied=false.
+    Posted straight from the compute node, which reaches the internet. A hop
+    through the login node does not work: the node holds no key for it.
+    --max-time keeps a hanging call from holding the node after the run is
+    over, and retrying is safe: the receiver applies the first report and
+    answers the rest with applied=false.
     """
     if not ATHENA_WEBHOOK_URL:
         raise RuntimeError("ATHENA_WEBHOOK_URL is not set, so a job would report its end into nothing")
 
     callback_url = f"{ATHENA_WEBHOOK_URL}?job_id=$SLURM_JOB_ID&state=$FINAL_STATE&exit_code=$EXIT_CODE"
-    curl_cmd = (
-        f"curl -sS -X POST --max-time 10 --retry 2 --retry-connrefused "
-        f'-H \\"Authorization: Bearer {webhook_token}\\" \\"{callback_url}\\"'
-    )
     return f'''trap '
   EXIT_CODE=$?
   if [ $EXIT_CODE -eq 0 ]; then FINAL_STATE="COMPLETED"; else FINAL_STATE="FAILED"; fi
-  ssh -o StrictHostKeyChecking=no {ATHENA_LOGIN_NODE} "{curl_cmd}"
+  curl -sS -X POST --max-time 10 --retry 2 --retry-connrefused \\
+    -H "Authorization: Bearer {webhook_token}" "{callback_url}"
 ' EXIT SIGTERM'''
 
 
