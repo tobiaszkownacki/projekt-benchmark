@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { api, ApiError } from '../api';
 import { useApi } from '../hooks/useApi';
+import { suiteLabel } from '../components/format';
+import { api, ApiError } from '../api';
 import type { User } from '../types';
 
 const BUILTINS = [
@@ -22,6 +23,10 @@ interface Accepted {
   family: string; task_ids: string[]; remaining_today: number;
 }
 
+function parseSeeds(raw: string): number[] {
+  return raw.split(',').map((s) => Number(s.trim())).filter((n) => Number.isFinite(n));
+}
+
 export function Submit({ user }: { user: User | null }) {
   const navigate = useNavigate();
   const quota = useApi<Quota>(user?.is_verified ? '/api/submissions/quota' : null);
@@ -31,17 +36,26 @@ export function Submit({ user }: { user: User | null }) {
   const [builtin, setBuiltin] = useState('adam');
   const [source, setSource] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [dataset, setDataset] = useState('wine_quality');
-  const [model, setModel] = useState('mlp-1x16');
+  const [datasetChoice, setDataset] = useState('wine_quality');
+  const [modelChoice, setModel] = useState('mlp-1x16');
   const [suite, setSuite] = useState('test');
   const [seeds, setSeeds] = useState('11,23,42');
   const [maxEpochs, setMaxEpochs] = useState('12');
   const [maxGradients, setMaxGradients] = useState('');
   const [maxSamples, setMaxSamples] = useState('');
 
+  const [advanced, setAdvanced] = useState(false);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<Accepted | null>(null);
   const [rejection, setRejection] = useState<{ log: string; message: string } | null>(null);
+
+  // The vocabulary comes from the runs that exist, so a value chosen before it
+  // arrives may be absent from it. A select whose value is not among its
+  // options paints the first one and submits the other.
+  const datasets = filters.data?.datasets?.length ? filters.data.datasets : ['wine_quality'];
+  const models = filters.data?.models?.length ? filters.data.models : ['mlp-1x16'];
+  const dataset = datasets.includes(datasetChoice) ? datasetChoice : datasets[0];
+  const model = models.includes(modelChoice) ? modelChoice : models[0];
 
   if (!user) {
     return (
@@ -66,6 +80,18 @@ export function Submit({ user }: { user: User | null }) {
     );
   }
 
+  const stopConditions = [
+    maxEpochs && `epoki ${maxEpochs}`,
+    maxGradients && `gradienty ${maxGradients}`,
+    maxSamples && `próbki ${maxSamples}`,
+  ].filter(Boolean).join(', ');
+
+  const advancedSummary = [
+    `zadań: ${parseSeeds(seeds).length}`,
+    `zestaw ${suiteLabel(suite)}`,
+    `stop: ${stopConditions || 'brak'}`,
+  ].join(' · ');
+
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setBusy(true); setResult(null); setRejection(null);
@@ -76,7 +102,7 @@ export function Submit({ user }: { user: User | null }) {
         builtin_name: kind === 'builtin' ? builtin : null,
         source_code: kind === 'uploaded' ? source : null,
         dataset, model, suite,
-        seeds: seeds.split(',').map((s) => Number(s.trim())).filter((n) => Number.isFinite(n)),
+        seeds: parseSeeds(seeds),
         max_epochs: maxEpochs ? Number(maxEpochs) : null,
         max_gradient_count: maxGradients ? Number(maxGradients) : null,
         max_database_reaches: maxSamples ? Number(maxSamples) : null,
@@ -175,13 +201,13 @@ export function Submit({ user }: { user: User | null }) {
         </div>
 
         <div className="panel section">
-          <div className="panel-head"><h3>Zadanie i budżet</h3></div>
+          <div className="panel-head"><h3>Zadanie</h3></div>
           <div className="panel-body">
             <div className="controls">
               <div>
                 <label htmlFor="s-dataset">Zbiór danych</label>
                 <select id="s-dataset" value={dataset} onChange={(e) => setDataset(e.target.value)}>
-                  {(filters.data?.datasets ?? ['wine_quality']).map((d) => (
+                  {datasets.map((d) => (
                     <option key={d} value={d}>{d}</option>
                   ))}
                 </select>
@@ -189,43 +215,89 @@ export function Submit({ user }: { user: User | null }) {
               <div>
                 <label htmlFor="s-model">Model</label>
                 <select id="s-model" value={model} onChange={(e) => setModel(e.target.value)}>
-                  {(filters.data?.models ?? ['mlp-1x16']).map((m) => (
+                  {models.map((m) => (
                     <option key={m} value={m}>{m}</option>
                   ))}
                 </select>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="panel section">
+          <div className="panel-head">
+            <h3>
+              <button type="button" className="disclosure" aria-expanded={advanced}
+                      aria-controls="s-advanced" onClick={() => setAdvanced(!advanced)}>
+                <span className="disclosure-marker" aria-hidden="true">{advanced ? '▾' : '▸'}</span>
+                Zaawansowane
+              </button>
+            </h3>
+            <span className="small muted">{advancedSummary}</span>
+          </div>
+          <div className="panel-body" id="s-advanced" hidden={!advanced}>
+            <div className="params">
               <div>
                 <label htmlFor="s-suite">Zestaw</label>
                 <select id="s-suite" value={suite} onChange={(e) => setSuite(e.target.value)}>
                   <option value="test">testowy</option>
                   <option value="final">finałowy</option>
                 </select>
+                <p className="field-note">
+                  Etykieta przebiegu — rozdziela wyniki w rankingu i na liście
+                  uruchomień; nie zmienia sposobu liczenia.
+                </p>
               </div>
               <div>
                 <label htmlFor="s-seeds">Ziarna (po przecinku)</label>
                 <input id="s-seeds" value={seeds} onChange={(e) => setSeeds(e.target.value)} />
+                <p className="field-note">
+                  Każde ziarno to osobny przebieg tego samego optymalizatora
+                  z innym losowaniem — i osobne zadanie z dziennego limitu.
+                </p>
               </div>
-            </div>
-            <div className="controls" style={{ marginTop: 'var(--space-3)' }}>
+              {kind === 'builtin' && (
+                <div>
+                  <label htmlFor="s-display-name">Nazwa zgłoszenia</label>
+                  <input id="s-display-name" value={displayName} placeholder={builtin}
+                         onChange={(e) => setDisplayName(e.target.value)} />
+                  <p className="field-note">
+                    Pod tą nazwą przebieg pojawia się w rankingu. Puste pole
+                    znaczy nazwę optymalizatora wbudowanego.
+                  </p>
+                </div>
+              )}
               <div>
                 <label htmlFor="s-epochs">Limit epok</label>
                 <input id="s-epochs" type="number" min={1} value={maxEpochs}
-                       onChange={(e) => setMaxEpochs(e.target.value)} style={{ width: 120 }} />
+                       onChange={(e) => setMaxEpochs(e.target.value)} />
+                <p className="field-note">
+                  Ile razy optymalizator może przejść przez cały zbiór
+                  treningowy, zanim przebieg zostanie przerwany.
+                </p>
               </div>
               <div>
                 <label htmlFor="s-grads">Limit gradientów</label>
                 <input id="s-grads" type="number" min={1} value={maxGradients}
-                       placeholder="bez limitu" style={{ width: 140 }}
+                       placeholder="bez limitu"
                        onChange={(e) => setMaxGradients(e.target.value)} />
+                <p className="field-note">
+                  Ile razy optymalizator może policzyć gradient — licznik rośnie
+                  o 1 przy każdym evaluate_with_grad() i grad().
+                </p>
               </div>
               <div>
                 <label htmlFor="s-samples">Limit próbek</label>
                 <input id="s-samples" type="number" min={1} value={maxSamples}
-                       placeholder="bez limitu" style={{ width: 140 }}
+                       placeholder="bez limitu"
                        onChange={(e) => setMaxSamples(e.target.value)} />
+                <p className="field-note">
+                  Ile próbek optymalizator może pobrać ze zbioru danych — licznik
+                  rośnie o batch_size przy każdym przejściu w przód.
+                </p>
               </div>
             </div>
-            <p className="small muted" style={{ marginTop: 'var(--space-3)', marginBottom: 0 }}>
+            <p className="small muted" style={{ marginTop: 'var(--space-4)', marginBottom: 0 }}>
               Wymagany co najmniej jeden warunek stopu. Powód zatrzymania trafia
               do wyniku — „zbiegłem” i „wyczerpałem budżet” to zupełnie różne rezultaty.
             </p>

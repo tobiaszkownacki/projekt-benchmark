@@ -1,16 +1,16 @@
 import logging
 import os
+import shlex
 
 from pipeline.adapters.athena_connector import AthenaConnector
-from pipeline.completion import CompletionSignal, CompletionSource
-from pipeline.executor import ExecutorAdapter, FetchResult, JobDescription, SubmitResult
-from pipeline.task_repository import TaskRepository
+from pipeline.completion import JobState, PollableExecutor
+from pipeline.executor import FetchResult, JobDescription, SubmitResult
 
 logger = logging.getLogger(__name__)
 
 SLURM_TIME_LIMIT = "00:30:00"
-MAX_EPOCHS = 10
-MAX_GRADIENTS = 100000
+SUCCESS_STATE = "COMPLETED"
+RUNNING_STATE = "RUNNING"
 FAILURE_STATES = {"FAILED", "CANCELLED", "TIMEOUT", "OUT_OF_MEMORY", "NODE_FAIL"}
 
 SACCT_CMD = "sacct --parsable2 --allocations --format=JobID,JobName,Partition,AllocCPUS,State,ExitCode,Elapsed,End"
@@ -23,8 +23,21 @@ ATHENA_LOGIN_NODE = os.environ.get("ATHENA_LOGIN_NODE", "athena.cyfronet.pl")
 
 
 def _webhook_trap(webhook_token: str) -> str:
-    callback_url = f"{ATHENA_WEBHOOK_URL}?job_id=$SLURM_JOB_ID&status=$FINAL_STATE&exit_code=$EXIT_CODE"
-    curl_cmd = f'curl -s -H \\"Authorization: Bearer {webhook_token}\\" \\"{callback_url}\\"'
+    """Report the run's own end on the way out.
+
+    Posted from the login node over ssh because compute nodes have no route
+    off the cluster. --max-time keeps a hanging call from holding the node
+    after the run is over, and retrying is safe: the receiver applies the
+    first report and answers the rest with applied=false.
+    """
+    if not ATHENA_WEBHOOK_URL:
+        raise RuntimeError("ATHENA_WEBHOOK_URL is not set, so a job would report its end into nothing")
+
+    callback_url = f"{ATHENA_WEBHOOK_URL}?job_id=$SLURM_JOB_ID&state=$FINAL_STATE&exit_code=$EXIT_CODE"
+    curl_cmd = (
+        f"curl -sS -X POST --max-time 10 --retry 2 --retry-connrefused "
+        f'-H \\"Authorization: Bearer {webhook_token}\\" \\"{callback_url}\\"'
+    )
     return f'''trap '
   EXIT_CODE=$?
   if [ $EXIT_CODE -eq 0 ]; then FINAL_STATE="COMPLETED"; else FINAL_STATE="FAILED"; fi
@@ -32,13 +45,26 @@ def _webhook_trap(webhook_token: str) -> str:
 ' EXIT SIGTERM'''
 
 
+# stop_condition keys as a submission stores them, mapped onto the flags
+# run_benchmark accepts.
+BUDGET_FLAGS = {
+    "max_epochs": "--max-epochs",
+    "max_gradient_count": "--max-gradients",
+    "max_database_reaches": "--max-db-reaches",
+}
+
+
+def _budget_args(stop_condition: dict[str, int]) -> str:
+    return " ".join(f"{flag} {stop_condition[key]}" for key, flag in BUDGET_FLAGS.items() if key in stop_condition)
+
+
 def _optimizer_args(optimizers: list[str]) -> str:
     names = [o.strip() for o in optimizers if o.strip()]
     if not names:
         raise ValueError("task has no optimizer selection")
     if len(names) == 1:
-        return f"--optimizer {names[0]}"
-    return "--compare " + " ".join(names)
+        return f"--optimizer {shlex.quote(names[0])}"
+    return "--compare " + " ".join(shlex.quote(name) for name in names)
 
 
 def _parse_sacct(raw: str) -> list[dict]:
@@ -50,22 +76,30 @@ def _parse_sacct(raw: str) -> list[dict]:
     return [dict(zip(columns, row.split("|"), strict=True)) for row in rows]
 
 
-class AthenaExecutor(ExecutorAdapter):
+class AthenaExecutor(PollableExecutor):
     # one SSH connection per call - fine at the poller's 60s cadence
 
     def submit_job(self, job: JobDescription) -> SubmitResult:
         slurm_job = {
-            "job_name": f"job_{job.task_id}",
+            # The batch script writes its stdout to reports/<job_name>/, and
+            # the download reads reports/task_<task_id>/. Naming the job after
+            # the task makes those the same directory, so the run's own log is
+            # an artifact rather than something only a failure ever shows.
+            "job_name": f"task_{job.task_id}",
             "time": SLURM_TIME_LIMIT,
             "cpus": 1,
             "gpus": 1,
             "workdir": PROJECT_DIR,
             "run_command": (
-                f"uv run -m src.benchmark.run_benchmark "
-                f"--dataset {job.dataset} {_optimizer_args(job.optimizers)} "
-                f"--max-epochs {MAX_EPOCHS} --max-gradients {MAX_GRADIENTS} "
-                f"--task-id {job.task_id} --plot"
+                f"uv run -m benchmark_core.optimization_engine.run_benchmark "
+                f"--dataset {shlex.quote(job.dataset)} --model {shlex.quote(job.model)} "
+                f"{_optimizer_args(job.optimizers)} --seed {job.seed} "
+                f"{_budget_args(job.stop_condition)} "
+                f"--task-id {shlex.quote(job.task_id)} --plot"
             ),
+            # The engine lives under src/ and is not installed into the project
+            # environment, so the module resolves only with src/ on the path.
+            "env_vars": {"PYTHONPATH": f"{PROJECT_DIR}/src"},
         }
         if job.webhook_token:
             slurm_job["pre_commands"] = [_webhook_trap(job.webhook_token)]
@@ -88,54 +122,21 @@ class AthenaExecutor(ExecutorAdapter):
         logger.info(f"downloaded {len(files)} file(s) for task_id={task_id} to {local_dir}")
         return FetchResult(files=files)
 
-    def poll_job_states(self) -> list[dict]:
+    def poll_job_states(self) -> list[JobState]:
         with AthenaConnector() as athena:
-            return _parse_sacct(athena.ssh(SACCT_CMD))
+            rows = _parse_sacct(athena.ssh(SACCT_CMD))
+        return [
+            JobState(
+                executor_task_id=row.get("JobID", ""),
+                job_name=row.get("JobName", ""),
+                succeeded=row.get("State", "") == SUCCESS_STATE,
+                failed=row.get("State", "") in FAILURE_STATES,
+                running=row.get("State", "") == RUNNING_STATE,
+            )
+            for row in rows
+        ]
 
-    def fetch_error_tail(self, job_name: str, job_id: str, lines: int = 30) -> str:
-        remote_out = f"{PROJECT_DIR}/reports/{job_name}/{job_id}.out"
+    def fetch_error_tail(self, job_name: str, executor_task_id: str, lines: int = 30) -> str:
+        remote_out = f"{PROJECT_DIR}/reports/{job_name}/{executor_task_id}.out"
         with AthenaConnector() as athena:
             return athena.ssh(f"tail -n {lines} {remote_out} 2>/dev/null || true")
-
-
-class AthenaCompletionSource(CompletionSource):
-    def __init__(self, adapter: AthenaExecutor, task_repo: TaskRepository):
-        self.adapter = adapter
-        self.task_repo = task_repo
-
-    def on_poll(self) -> CompletionSignal:
-        completed: list[str] = []
-        failed: list[str] = []
-        for job in self.adapter.poll_job_states():
-            state = job.get("State", "")
-            job_id = job.get("JobID", "")
-            if state == "COMPLETED":
-                task_id = self._reconcile_completed(job_id)
-                if task_id:
-                    completed.append(task_id)
-            elif state in FAILURE_STATES:
-                task_id = self._reconcile_failed(job_id, job.get("JobName", ""), state)
-                if task_id:
-                    failed.append(task_id)
-        return CompletionSignal(completed, failed)
-
-    def _reconcile_completed(self, job_id: str) -> str | None:
-        record = self.task_repo.get_by_executor_id(job_id)
-        if record is None or record.task_status == "COMPLETED":
-            return None
-        if not self.task_repo.mark_completed_by_executor_id(job_id):
-            return None
-        logger.info(f"task_id={record.task_id} completed (job_id={job_id})")
-        return record.task_id
-
-    def _reconcile_failed(self, job_id: str, job_name: str, state: str) -> str | None:
-        record = self.task_repo.get_by_executor_id(job_id)
-        if record is None:
-            logger.warning(f"job_id={job_id} is {state} but has no matching task")
-            return None
-        if record.task_status == "FAILED":
-            return None
-        error_tail = self.adapter.fetch_error_tail(job_name, job_id)
-        self.task_repo.mark_failed(record.task_id, error_tail)
-        logger.error(f"task_id={record.task_id} failed (job_id={job_id}, state={state})")
-        return record.task_id

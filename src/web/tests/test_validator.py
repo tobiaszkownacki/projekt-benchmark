@@ -1,3 +1,6 @@
+import ast
+import sys
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -18,6 +21,19 @@ def test_docker_command_runs_prebuilt_image_and_reads_stdin(monkeypatch):
     assert command[command.index("--entrypoint") + 1] == "python"
     assert "-v" not in command
     assert "sys.stdin.buffer.read()" in validator._IN_CONTAINER_ENTRY
+
+
+def test_container_entry_imports_only_modules_the_image_ships():
+    shipped = {p.name for p in (Path(__file__).resolve().parents[2]).iterdir() if p.is_dir()}
+    imported = set()
+    for node in ast.walk(ast.parse(validator._IN_CONTAINER_ENTRY)):
+        if isinstance(node, ast.Import):
+            imported.update(alias.name.split(".")[0] for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            imported.add(node.module.split(".")[0])
+
+    missing = imported - sys.stdlib_module_names - shipped
+    assert not missing, f"the validator image has no module {sorted(missing)}"
 
 
 @pytest.mark.asyncio

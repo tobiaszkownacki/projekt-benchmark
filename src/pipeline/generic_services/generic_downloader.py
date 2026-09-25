@@ -1,9 +1,11 @@
 import logging
+from pathlib import Path
 
 from pipeline.consumer import run_consumer
 from pipeline.executor import ExecutorAdapter
 from pipeline.task_repository import TaskRepository
 from shared.queue_topology import QueueTopology
+from shared.run_result import RunResult, find_manifest
 
 logger = logging.getLogger(__name__)
 
@@ -18,17 +20,31 @@ class Downloader:
         self.message_broker = message_broker
 
     def handle(self, message: dict) -> None:
-        task_id = message["task_id"]
+        try:
+            task_id = message["task_id"]
+        except KeyError:
+            logger.exception("Unreadable message names no task, so nothing can be marked failed")
+            raise
         logger.info(f"Request for downloading task_id={task_id}")
 
         try:
-            self.adapter.fetch_results(task_id, delete_after_download=False)
+            fetched = self.adapter.fetch_results(task_id, delete_after_download=False)
         except Exception as exc:
             logger.exception(f"Failed to fetch results for task_id={task_id}")
             self.task_repo.set_error(task_id, str(exc))
             raise  # task_id goes to DLQ
 
-        logger.info(f"Downloaded results for task_id={task_id}")
+        total_bytes = sum(Path(name).stat().st_size for name in fetched.files)
+        self.task_repo.mark_artifacts(task_id, len(fetched.files), total_bytes)
+
+        manifest = find_manifest(fetched.files)
+        if manifest is None:
+            logger.warning(f"task_id={task_id} left no result manifest, so the run has artifacts but no numbers")
+        else:
+            self.task_repo.store_result(task_id, RunResult.from_manifest(manifest))
+            logger.info(f"Stored result for task_id={task_id}")
+
+        logger.info(f"Downloaded {len(fetched.files)} file(s) for task_id={task_id}")
 
     def run(self) -> None:
         run_consumer(

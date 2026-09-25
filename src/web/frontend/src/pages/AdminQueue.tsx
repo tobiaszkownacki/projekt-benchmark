@@ -24,7 +24,7 @@ interface Orphan {
 }
 interface Payload {
   rabbitmq: { available: boolean; reason?: string; queues?: Queue[] };
-  outbox: { pending: number; recent: OutboxRow[] };
+  outbox: { pending: number; abandoned: number; recent: OutboxRow[] };
   slurm: { jobs: SlurmJob[]; cluster_probe: { available: boolean; reason: string } };
   orphans: Orphan[];
   states: { status: string; artifact: string | null; n: number }[];
@@ -112,6 +112,14 @@ export function AdminQueue({ user, revision }: { user: User | null; revision: nu
           publikuje je osobny proces. Dzięki temu awaria brokera nie gubi zgłoszenia
           i nie zwraca użytkownikowi błędu, a API nie ma poświadczeń do kolejki.
         </p>
+        {data.data.outbox.abandoned > 0 && (
+          <div className="note note-error">
+            <strong className="mono">{data.data.outbox.abandoned}</strong> wiadomości
+            wyczerpało budżet prób i nie zostanie już opublikowanych. Każda z nich to
+            zgłoszenie, które istnieje w bazie i nigdy nie trafi na klaster. Wiersze
+            z liczbą prób na maksimum są w tabeli niżej, razem z ostatnim błędem.
+          </div>
+        )}
         <div className="table-scroll">
           <table>
             <thead>
