@@ -1,3 +1,5 @@
+import base64
+import logging
 import os
 import re
 import stat
@@ -10,27 +12,50 @@ from shared.connectors.base import BaseConnector
 
 POLL_EVERY = int(os.environ.get("POLL_EVERY", 30))
 
+logger = logging.getLogger(__name__)
+
 
 class AthenaConnector(BaseConnector):
     def __init__(self) -> None:
         self.host = os.environ.get("ATHENA_HOST")
         self.user = os.environ.get("ATHENA_USER")
-        self.password = os.environ.get("ATHENA_PASSWORD")
+        self.password = os.environ.get("ATHENA_PASSWORD") or None
+        self.key_path = os.environ.get("ATHENA_KEY_PATH") or None
+        self.host_key = os.environ.get("ATHENA_HOST_KEY") or None
         self.account = os.environ.get("ATHENA_ACCOUNT")
         self.client = None
         self._scratch: str | None = None
 
     def __enter__(self) -> "AthenaConnector":
+        if not self.key_path and not self.password:
+            raise RuntimeError("neither ATHENA_KEY_PATH nor ATHENA_PASSWORD is set")
         self.client = paramiko.SSHClient()
-        self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self._trust_host()
         self.client.connect(
             self.host,
             username=self.user,
             password=self.password,
+            key_filename=self.key_path,
             look_for_keys=False,
             allow_agent=False,
         )
         return self
+
+    def _trust_host(self) -> None:
+        """Pin the login node when ATHENA_HOST_KEY carries its public key.
+
+        Without a pin the first server to answer is trusted, which is how the
+        connector has always behaved, so an unpinned deployment keeps working
+        and only says so.
+        """
+        if not self.host_key:
+            logger.warning("ATHENA_HOST_KEY is not set, trusting whatever %s presents", self.host)
+            self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            return
+        key_type, key_b64 = self.host_key.split()[-2:]
+        key = paramiko.PKey.from_type_string(key_type, base64.b64decode(key_b64))
+        self.client.get_host_keys().add(self.host, key_type, key)
+        self.client.set_missing_host_key_policy(paramiko.RejectPolicy())
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         if self.client is not None:
