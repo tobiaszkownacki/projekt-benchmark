@@ -3,6 +3,7 @@ import logging
 import os
 import shlex
 import shutil
+import signal
 import subprocess
 import sys
 import uuid
@@ -75,11 +76,11 @@ class LocalExecutor(PollableExecutor):
         # at all is invisible to the poller, and an invisible job is a task
         # that waits for ever.
         _write_state(job_dir, RUNNING_STATE)
-        subprocess.Popen(["sh", "-c", _wrapped(arguments, job_dir)], start_new_session=True)
+        process = subprocess.Popen(["sh", "-c", _wrapped(arguments, job_dir)], start_new_session=True)
 
         executor_task_id = f"local-{uuid.uuid4().hex[:12]}"
         (job_dir / JOB_FILE).write_text(
-            json.dumps({"executor_task_id": executor_task_id, "task_id": job.task_id}),
+            json.dumps({"executor_task_id": executor_task_id, "task_id": job.task_id, "pid": process.pid}),
             encoding="utf-8",
         )
         logger.info(f"started local job {executor_task_id} for task_id={job.task_id}")
@@ -104,6 +105,27 @@ class LocalExecutor(PollableExecutor):
 
         logger.info(f"copied {len(files)} file(s) for task_id={task_id} to {local_dir}")
         return FetchResult(files=files)
+
+    def cancel_job(self, executor_task_id: str) -> None:
+        """Ends the run and reports it failed, as a cancelled job on the cluster is."""
+        for job_dir in self.workspace.glob(f"{JOB_PREFIX}*"):
+            job_file = job_dir / JOB_FILE
+            if not job_file.is_file():
+                continue
+            bookkeeping = json.loads(job_file.read_text(encoding="utf-8"))
+            if bookkeeping["executor_task_id"] != executor_task_id:
+                continue
+            try:
+                # start_new_session made the shell a group leader, so this
+                # reaches the run it started as well.
+                os.killpg(bookkeeping["pid"], signal.SIGTERM)
+            except ProcessLookupError:
+                logger.info(f"local job {executor_task_id} had already ended")
+                return
+            _write_state(job_dir, FAILURE_STATE)
+            logger.info(f"cancelled local job {executor_task_id}")
+            return
+        logger.warning(f"local job {executor_task_id} is not in {self.workspace}, so nothing was cancelled")
 
     def poll_job_states(self) -> list[JobState]:
         states: list[JobState] = []

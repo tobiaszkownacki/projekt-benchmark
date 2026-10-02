@@ -80,3 +80,16 @@ def test_a_job_whose_process_dies_is_reported_failed(executor, monkeypatch):
 
     assert state.failed
     assert not state.succeeded
+
+
+def test_a_cancelled_job_stops_and_is_reported_failed(executor, monkeypatch, tmp_path):
+    monkeypatch.setattr(local, "JOB_MODULE", "fake_job_slow")
+    job = _job()
+
+    submitted = executor.submit_job(job)
+    executor.cancel_job(submitted.executor_task_id)
+    state = _wait_for(executor, lambda s: not s.running)
+    time.sleep(3)
+
+    assert state.failed
+    assert not (tmp_path / "workspace" / f"task_{job.task_id}" / "finished").exists()
