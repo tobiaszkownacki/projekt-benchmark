@@ -108,9 +108,10 @@ def publish_batch(db: psycopg.Connection, channel) -> int:
                 )
                 sent += 1
             except _PERMANENT as exc:
-                # The message or the topology is wrong, and trying it forever
-                # would drain the whole batch behind it. This is what the
-                # attempt budget is for.
+                # The message or the topology is wrong. Raising here sent the
+                # next pass back to the same row first, so one bad row held
+                # every row behind it until its budget ran out. The attempt is
+                # charged and the batch moves on.
                 logger.warning("Publish of row %s failed: %s", row["id"], exc)
                 cursor.execute(
                     """
@@ -120,8 +121,11 @@ def publish_batch(db: psycopg.Connection, channel) -> int:
                     """,
                     (f"{type(exc).__name__}: {exc}"[:500], row["id"]),
                 )
-                db.commit()
-                raise
+                if channel.is_closed:
+                    # An unroutable message leaves the channel open; a broker
+                    # refusal closes it, and the rest needs a new connection.
+                    db.commit()
+                    raise
             except Exception as exc:
                 # The broker went away. Charging the budget for that abandons
                 # submissions after a minute of downtime, so the row keeps its

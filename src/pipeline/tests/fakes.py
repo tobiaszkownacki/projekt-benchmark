@@ -1,5 +1,9 @@
 """Stand-ins for the database and the cluster, shared by the pipeline tests."""
 
+import threading
+from collections.abc import Iterator
+from contextlib import contextmanager
+
 from pipeline.executor import ExecutorAdapter, FetchResult, JobDescription, SubmitResult
 from pipeline.task_repository import TaskRepository, TaskStatus
 from shared.run_result import RunResult
@@ -14,6 +18,16 @@ class RecordingRepository(TaskRepository):
         self.running: list[str] = []
         self.results: dict[str, RunResult] = {}
         self.artifacts: dict[str, tuple[int, int]] = {}
+        self._reservations: dict[str, threading.Lock] = {}
+        self._guard = threading.Lock()
+
+    @contextmanager
+    def reserve_submission(self, task_id: str) -> Iterator[bool]:
+        with self._guard:
+            lock = self._reservations.setdefault(task_id, threading.Lock())
+        with lock:
+            record = self.tasks.get(task_id)
+            yield record is not None and record.task_status == "PENDING" and not record.executor_task_id
 
     def mark_submitted(self, task_id: str, executor_task_id: str) -> bool:
         record = self.tasks.get(task_id)
@@ -58,6 +72,7 @@ class RecordingExecutor(ExecutorAdapter):
         self.executor_task_id = executor_task_id
         self.submitted: list[JobDescription] = []
         self.fetched: list[str] = []
+        self.cancelled: list[str] = []
 
     def submit_job(self, job: JobDescription) -> SubmitResult:
         self.submitted.append(job)
@@ -66,3 +81,6 @@ class RecordingExecutor(ExecutorAdapter):
     def fetch_results(self, task_id: str, delete_after_download: bool = False) -> FetchResult:
         self.fetched.append(task_id)
         return FetchResult(files=[])
+
+    def cancel_job(self, executor_task_id: str) -> None:
+        self.cancelled.append(executor_task_id)
