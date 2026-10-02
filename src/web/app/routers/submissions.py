@@ -178,7 +178,7 @@ async def submit(payload: SubmissionRequest, user: CurrentUser = Depends(require
                 """,
                     (
                         settings.worker_queue,
-                        "athena",
+                        settings.executor_name,
                         user.id,
                         payload.dataset,
                         run_name,
