@@ -28,12 +28,15 @@ class SqlTaskRepository(TaskRepository):
             )
             return cursor.rowcount > 0
 
-    def mark_failed(self, task_id: str, error_message: str) -> None:
+    def mark_failed(self, task_id: str, error_message: str) -> bool:
+        """Closes a task that is not closed yet. False means another path closed it first."""
         with self._db_cls() as db:
-            db.execute(
-                "UPDATE tasks SET task_status = 'FAILED', updated_at = NOW(), error_message = %s WHERE task_id = %s",
+            cursor = db.execute(
+                "UPDATE tasks SET task_status = 'FAILED', updated_at = NOW(), error_message = %s "
+                "WHERE task_id = %s AND task_status NOT IN ('COMPLETED', 'FAILED')",
                 (error_message, task_id),
             )
+            return cursor.rowcount > 0
 
     def set_error(self, task_id: str, error_message: str) -> None:
         with self._db_cls() as db:
@@ -43,11 +46,12 @@ class SqlTaskRepository(TaskRepository):
             )
 
     def mark_completed_by_executor_id(self, executor_task_id: str) -> bool:
+        """Closes a task that is not closed yet, as the completion callback does."""
         with self._db_cls() as db:
             cursor = db.execute(
                 "UPDATE tasks SET task_status = 'COMPLETED', artifact_status = 'downloading', "
                 "updated_at = NOW(), completed_at = NOW() "
-                "WHERE executor_task_id = %s AND task_status != 'COMPLETED'",
+                "WHERE executor_task_id = %s AND task_status NOT IN ('COMPLETED', 'FAILED')",
                 (executor_task_id,),
             )
             return cursor.rowcount > 0

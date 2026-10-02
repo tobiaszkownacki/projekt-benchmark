@@ -23,8 +23,9 @@ class RecordingRepository(TaskRepository):
         self.tasks[task_id] = TaskStatus(task_id, "SUBMITTED", executor_task_id)
         return True
 
-    def mark_failed(self, task_id: str, error_message: str) -> None:
+    def mark_failed(self, task_id: str, error_message: str) -> bool:
         self.failed.append((task_id, error_message))
+        return True
 
     def set_error(self, task_id: str, error_message: str) -> None:
         self.errors.append((task_id, error_message))

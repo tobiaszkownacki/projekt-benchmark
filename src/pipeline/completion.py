@@ -7,6 +7,10 @@ from pipeline.task_repository import TaskRepository
 
 logger = logging.getLogger(__name__)
 
+# Whichever of the poller and the completion callback closes a task first
+# decides how it ended; the other one changes nothing.
+TERMINAL_STATES = {"COMPLETED", "FAILED"}
+
 
 @dataclass
 class CompletionSignal:
@@ -77,7 +81,7 @@ class PolledCompletionSource(CompletionSource):
             # The only symptom an orphaned job on the cluster ever produces.
             logger.warning(f"executor_task_id={job.executor_task_id} finished but has no matching task")
             return None
-        if record.task_status == "COMPLETED":
+        if record.task_status in TERMINAL_STATES:
             return None
         if not self.task_repo.mark_completed_by_executor_id(job.executor_task_id):
             return None
@@ -89,8 +93,10 @@ class PolledCompletionSource(CompletionSource):
         if record is None:
             logger.warning(f"executor_task_id={job.executor_task_id} failed but has no matching task")
             return None
-        if record.task_status == "FAILED":
+        if record.task_status in TERMINAL_STATES:
             return None
-        self.task_repo.mark_failed(record.task_id, self.adapter.fetch_error_tail(job.job_name, job.executor_task_id))
+        error_tail = self.adapter.fetch_error_tail(job.job_name, job.executor_task_id)
+        if not self.task_repo.mark_failed(record.task_id, error_tail):
+            return None
         logger.error(f"task_id={record.task_id} failed (executor_task_id={job.executor_task_id})")
         return record.task_id
