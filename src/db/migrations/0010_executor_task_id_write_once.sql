@@ -5,7 +5,9 @@
 --
 -- The index makes the second write fail rather than succeed quietly. Creation
 -- fails on a database that already holds duplicates, which is the intended
--- outcome: they have to be resolved by hand before the rule can hold.
+-- outcome: they have to be resolved by hand before the rule can hold. They are
+-- listed by SELECT executor_task_id, count(*) FROM tasks WHERE executor_task_id
+-- IS NOT NULL GROUP BY executor_task_id HAVING count(*) > 1.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_executor_task_id
     ON tasks (executor_task_id)
     WHERE executor_task_id IS NOT NULL;
