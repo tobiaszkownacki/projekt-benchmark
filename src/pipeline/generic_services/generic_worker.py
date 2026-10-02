@@ -20,14 +20,18 @@ class GenericWorker:
         logger.info(
             f"Received task_id={job.task_id} dataset={job.dataset} optimizers={job.optimizers} run_name={job.run_name}"
         )
-        record = self.task_repo.get_by_task_id(job.task_id)
-        if record is not None and record.executor_task_id:
-            logger.info(
-                f"task_id={job.task_id} already runs as executor_task_id={record.executor_task_id}, "
-                "so this delivery submits nothing"
-            )
-            return
+        with self.task_repo.reserve_submission(job.task_id) as reserved:
+            if not reserved:
+                record = self.task_repo.get_by_task_id(job.task_id)
+                logger.info(
+                    f"task_id={job.task_id} is {record.task_status if record else 'unknown'} "
+                    f"with executor_task_id={record.executor_task_id if record else None}, "
+                    "so this delivery submits nothing"
+                )
+                return
+            self._submit(job)
 
+    def _submit(self, job: JobDescription) -> None:
         try:
             submit_result = self.adapter.submit_job(job)
         except Exception as exc:

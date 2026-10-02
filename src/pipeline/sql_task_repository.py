@@ -1,3 +1,6 @@
+from collections.abc import Iterator
+from contextlib import contextmanager
+
 from pipeline.task_repository import TaskRepository, TaskStatus
 from shared.connectors.base import DatabaseConnector
 
@@ -5,6 +8,24 @@ from shared.connectors.base import DatabaseConnector
 class SqlTaskRepository(TaskRepository):
     def __init__(self, db_connector_cls: type[DatabaseConnector]):
         self._db_cls = db_connector_cls
+
+    @contextmanager
+    def reserve_submission(self, task_id: str) -> Iterator[bool]:
+        """Holds the task for one submitter until the block exits; True if it is still PENDING with no job.
+
+        A transaction-scoped advisory lock rather than a status written to the
+        row: it ends with the transaction, so an exception, a killed worker or a
+        dropped connection releases it, and no task can be left reserved but
+        never submitted. A second submitter waits for the first and then finds
+        the job id it recorded.
+        """
+        with self._db_cls() as db:
+            db.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))", (f"submit:{task_id}",))
+            row = db.execute(
+                "SELECT 1 FROM tasks WHERE task_id = %s AND task_status = 'PENDING' AND executor_task_id IS NULL",
+                (task_id,),
+            ).fetchone()
+            yield row is not None
 
     def mark_submitted(self, task_id: str, executor_task_id: str) -> bool:
         """Records the cluster's job id, once. False means someone got there first."""

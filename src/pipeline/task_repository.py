@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from contextlib import AbstractContextManager
 from dataclasses import dataclass
 
 
@@ -10,6 +11,8 @@ class TaskStatus:
 
 
 class TaskRepository(ABC):
+    @abstractmethod
+    def reserve_submission(self, task_id: str) -> AbstractContextManager[bool]: ...
     @abstractmethod
     def mark_submitted(self, task_id: str, executor_task_id: str) -> bool: ...
     @abstractmethod
