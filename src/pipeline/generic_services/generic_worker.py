@@ -46,11 +46,18 @@ class GenericWorker:
         current = self.task_repo.get_by_task_id(job.task_id)
         if current is not None and current.executor_task_id == submit_result.executor_task_id:
             logger.info(f"task_id={job.task_id} was recorded as {submit_result.executor_task_id} by the callback")
-        else:
-            logger.error(
-                f"task_id={job.task_id} was already {current.executor_task_id if current else 'unknown'} "
-                f"when {submit_result.executor_task_id} came back, so that job runs untracked"
-            )
+            return
+
+        # The reservation should make this unreachable. If it is reached, the
+        # job just submitted is one nothing in the database points at.
+        logger.error(
+            f"task_id={job.task_id} was already {current.executor_task_id if current else 'unknown'} "
+            f"when {submit_result.executor_task_id} came back, so that job is cancelled"
+        )
+        try:
+            self.adapter.cancel_job(submit_result.executor_task_id)
+        except Exception:
+            logger.exception(f"{submit_result.executor_task_id} could not be cancelled, so it runs untracked")
 
     def _read(self, message: dict) -> JobDescription:
         """Decode, and leave a trace in the database when it cannot be done.

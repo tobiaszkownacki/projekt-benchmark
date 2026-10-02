@@ -114,6 +114,11 @@ class AthenaExecutor(ExecutorAdapter):
         logger.info(f"downloaded {len(files)} file(s) for task_id={task_id} to {local_dir}")
         return FetchResult(files=files)
 
+    def cancel_job(self, executor_task_id: str) -> None:
+        with AthenaConnector() as athena:
+            athena.cancel_job(shlex.quote(executor_task_id))
+        logger.info(f"cancelled slurm job {executor_task_id}")
+
     def poll_job_states(self) -> list[dict]:
         with AthenaConnector() as athena:
             return _parse_sacct(athena.ssh(SACCT_CMD))

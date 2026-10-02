@@ -57,6 +57,7 @@ class RecordingExecutor(ExecutorAdapter):
         self.executor_task_id = executor_task_id
         self.submitted: list[JobDescription] = []
         self.fetched: list[str] = []
+        self.cancelled: list[str] = []
 
     def submit_job(self, job: JobDescription) -> SubmitResult:
         self.submitted.append(job)
@@ -65,3 +66,6 @@ class RecordingExecutor(ExecutorAdapter):
     def fetch_results(self, task_id: str, delete_after_download: bool = False) -> FetchResult:
         self.fetched.append(task_id)
         return FetchResult(files=[])
+
+    def cancel_job(self, executor_task_id: str) -> None:
+        self.cancelled.append(executor_task_id)

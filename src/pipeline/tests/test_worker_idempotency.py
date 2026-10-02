@@ -88,3 +88,36 @@ def test_two_workers_given_the_same_message_at_once_submit_one_job():
 
     assert len(adapter.submitted) == 1
     assert repo.submitted == [(task_id, "job-1")]
+    assert adapter.cancelled == []
+
+
+class _OutracedRepository(RecordingRepository):
+    """Another writer records its own job id between submit_job and mark_submitted."""
+
+    def __init__(self, recorded_by_other: str) -> None:
+        super().__init__()
+        self.recorded_by_other = recorded_by_other
+
+    def mark_submitted(self, task_id: str, executor_task_id: str) -> bool:
+        self.tasks[task_id] = TaskStatus(task_id, "SUBMITTED", self.recorded_by_other)
+        return False
+
+
+def test_a_job_whose_id_lost_the_write_is_cancelled():
+    repo, adapter = _OutracedRepository(recorded_by_other="job-0"), RecordingExecutor()
+    task_id = str(uuid.uuid4())
+    repo.tasks[task_id] = TaskStatus(task_id, "PENDING")
+
+    _worker(repo, adapter).handle(_message(task_id))
+
+    assert adapter.cancelled == ["job-1"]
+
+
+def test_a_job_the_callback_recorded_first_is_kept():
+    repo, adapter = _OutracedRepository(recorded_by_other="job-1"), RecordingExecutor()
+    task_id = str(uuid.uuid4())
+    repo.tasks[task_id] = TaskStatus(task_id, "PENDING")
+
+    _worker(repo, adapter).handle(_message(task_id))
+
+    assert adapter.cancelled == []
