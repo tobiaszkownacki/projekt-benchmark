@@ -6,15 +6,15 @@ import { api, ApiError } from '../api';
 import type { User } from '../types';
 
 const BUILTINS = [
-  { name: 'adam', family: 'gradientowa' },
-  { name: 'adamw', family: 'gradientowa' },
-  { name: 'lion', family: 'gradientowa' },
-  { name: 'rmsprop', family: 'gradientowa' },
-  { name: 'sgd', family: 'gradientowa' },
-  { name: 'sgd_momentum', family: 'gradientowa' },
-  { name: 'cma-es', family: 'bezgradientowa' },
-  { name: 'de', family: 'bezgradientowa' },
-  { name: 'des', family: 'bezgradientowa' },
+  { name: 'adam', family: 'gradient-based' },
+  { name: 'adamw', family: 'gradient-based' },
+  { name: 'lion', family: 'gradient-based' },
+  { name: 'rmsprop', family: 'gradient-based' },
+  { name: 'sgd', family: 'gradient-based' },
+  { name: 'sgd_momentum', family: 'gradient-based' },
+  { name: 'cma-es', family: 'gradient-free' },
+  { name: 'de', family: 'gradient-free' },
+  { name: 'des', family: 'gradient-free' },
 ];
 
 interface Quota { limit: number; remaining: number; used: number }
@@ -60,10 +60,10 @@ export function Submit({ user }: { user: User | null }) {
   if (!user) {
     return (
       <div className="page">
-        <div className="page-head"><h1>Zgłoszenie optymalizatora</h1></div>
+        <div className="page-head"><h1>Optimizer submission</h1></div>
         <div className="note note-accent">
-          Żeby zgłosić optymalizator, trzeba mieć zatwierdzone konto.{' '}
-          <Link to="/login">Zaloguj się lub załóż konto</Link>.
+          You need an approved account to submit an optimizer.{' '}
+          <Link to="/login">Log in or create an account</Link>.
         </div>
       </div>
     );
@@ -71,25 +71,25 @@ export function Submit({ user }: { user: User | null }) {
   if (!user.is_verified) {
     return (
       <div className="page">
-        <div className="page-head"><h1>Zgłoszenie optymalizatora</h1></div>
+        <div className="page-head"><h1>Optimizer submission</h1></div>
         <div className="note note-warning">
-          Twoje konto czeka na zatwierdzenie przez administratora. Do tego czasu
-          możesz przeglądać ranking i wyniki, ale nie zgłaszać zadań.
+          Your account is awaiting administrator approval. Until then,
+          you can browse the leaderboard and results but cannot submit tasks.
         </div>
       </div>
     );
   }
 
   const stopConditions = [
-    maxEpochs && `epoki ${maxEpochs}`,
-    maxGradients && `gradienty ${maxGradients}`,
-    maxSamples && `próbki ${maxSamples}`,
+    maxEpochs && `epochs ${maxEpochs}`,
+    maxGradients && `gradient evaluations ${maxGradients}`,
+    maxSamples && `processed samples ${maxSamples}`,
   ].filter(Boolean).join(', ');
 
   const advancedSummary = [
-    `zadań: ${parseSeeds(seeds).length}`,
-    `zestaw ${suiteLabel(suite)}`,
-    `stop: ${stopConditions || 'brak'}`,
+    `tasks: ${parseSeeds(seeds).length}`,
+    `suite ${suiteLabel(suite)}`,
+    `stop: ${stopConditions || 'none'}`,
   ].join(' · ');
 
   async function submit(event: React.FormEvent) {
@@ -114,7 +114,7 @@ export function Submit({ user }: { user: User | null }) {
           && caught.body && typeof caught.body === 'object'
           && 'validator_log' in caught.body) {
         const body = caught.body as { validator_log: string };
-        setRejection({ log: body.validator_log, message: 'Walidator odrzucił zgłoszenie.' });
+        setRejection({ log: body.validator_log, message: 'Validator rejected the submission.' });
       } else {
         setRejection({
           log: '', message: caught instanceof ApiError ? caught.message : String(caught),
@@ -128,37 +128,37 @@ export function Submit({ user }: { user: User | null }) {
   return (
     <div className="page">
       <div className="page-head">
-        <h1>Zgłoszenie optymalizatora</h1>
+        <h1>Optimizer submission</h1>
         <p>
-          Zgłoszony kod jest najpierw uruchamiany w izolowanym kontenerze bez
-          dostępu do sieci, z limitem pamięci, jednym rdzeniem i twardym limitem
-          czasu. Wynik walidacji dostajesz od razu — zanim zadanie zajmie czas
-          klastra.
+          Submitted code first runs in an isolated network-disabled container with
+          a memory limit, one CPU core, and a hard
+          time limit. You receive the validation result immediately, before the task consumes
+          cluster time.
         </p>
       </div>
 
       {quota.data && (
         <div className="note section">
-          Pozostało dziś <strong className="mono">{quota.data.remaining}</strong> z{' '}
-          <span className="mono">{quota.data.limit}</span> zgłoszeń.
-          <span className="small muted"> Każde ziarno liczy się jako osobne zadanie.</span>
+          Remaining today <strong className="mono">{quota.data.remaining}</strong> of{' '}
+          <span className="mono">{quota.data.limit}</span> submissions.
+          <span className="small muted"> Each seed counts as a separate task.</span>
         </div>
       )}
 
       <form onSubmit={submit}>
         <div className="panel section">
-          <div className="panel-head"><h3>Optymalizator</h3></div>
+          <div className="panel-head"><h3>Optimizer</h3></div>
           <div className="panel-body">
             <div className="segmented" style={{ marginBottom: 'var(--space-3)' }}>
               <button type="button" className={kind === 'builtin' ? 'active' : ''}
-                      onClick={() => setKind('builtin')}>Wbudowany</button>
+                      onClick={() => setKind('builtin')}>Built-in</button>
               <button type="button" className={kind === 'uploaded' ? 'active' : ''}
-                      onClick={() => setKind('uploaded')}>Własny kod</button>
+                      onClick={() => setKind('uploaded')}>Custom code</button>
             </div>
 
             {kind === 'builtin' ? (
               <div className="field">
-                <label htmlFor="s-builtin">Nazwa</label>
+                <label htmlFor="s-builtin">Name</label>
                 <select id="s-builtin" value={builtin} onChange={(e) => setBuiltin(e.target.value)}>
                   {BUILTINS.map((b) => (
                     <option key={b.name} value={b.name}>{b.name} — {b.family}</option>
@@ -168,15 +168,15 @@ export function Submit({ user }: { user: User | null }) {
             ) : (
               <>
                 <div className="field">
-                  <label htmlFor="s-name">Nazwa zgłoszenia</label>
+                  <label htmlFor="s-name">Submission name</label>
                   <input id="s-name" style={{ width: '100%' }} value={displayName}
                          placeholder="np. sign-sgd"
                          onChange={(e) => setDisplayName(e.target.value)} required />
                 </div>
                 <div className="field">
                   <label htmlFor="s-source">
-                    Kod optymalizatora (.py) —{' '}
-                    <Link to="/docs">kontrakt i szablon</Link>
+                    Optimizer code (.py) —{' '}
+                    <Link to="/docs">contract and template</Link>
                   </label>
                   <textarea id="s-source" rows={16} value={source} required
                             placeholder="class MyOptimizer(NumpyBenchmarkOptimizer): ..."
@@ -184,7 +184,7 @@ export function Submit({ user }: { user: User | null }) {
                 </div>
                 <div className="row">
                   <label htmlFor="s-file" className="button" style={{ marginBottom: 0 }}>
-                    Wczytaj z pliku
+                    Load from file
                   </label>
                   <input id="s-file" type="file" accept=".py" style={{ display: 'none' }}
                          onChange={async (e) => {
@@ -192,7 +192,7 @@ export function Submit({ user }: { user: User | null }) {
                            if (file) setSource(await file.text());
                          }} />
                   <a className="small" href="/api/protocol/template" download>
-                    Pobierz szablon optimizer_template.py
+                    Download template optimizer_template.py
                   </a>
                 </div>
               </>
@@ -201,11 +201,11 @@ export function Submit({ user }: { user: User | null }) {
         </div>
 
         <div className="panel section">
-          <div className="panel-head"><h3>Zadanie</h3></div>
+          <div className="panel-head"><h3>Task</h3></div>
           <div className="panel-body">
             <div className="controls">
               <div>
-                <label htmlFor="s-dataset">Zbiór danych</label>
+                <label htmlFor="s-dataset">Dataset</label>
                 <select id="s-dataset" value={dataset} onChange={(e) => setDataset(e.target.value)}>
                   {datasets.map((d) => (
                     <option key={d} value={d}>{d}</option>
@@ -230,7 +230,7 @@ export function Submit({ user }: { user: User | null }) {
               <button type="button" className="disclosure" aria-expanded={advanced}
                       aria-controls="s-advanced" onClick={() => setAdvanced(!advanced)}>
                 <span className="disclosure-marker" aria-hidden="true">{advanced ? '▾' : '▸'}</span>
-                Zaawansowane
+                Advanced
               </button>
             </h3>
             <span className="small muted">{advancedSummary}</span>
@@ -238,75 +238,75 @@ export function Submit({ user }: { user: User | null }) {
           <div className="panel-body" id="s-advanced" hidden={!advanced}>
             <div className="params">
               <div>
-                <label htmlFor="s-suite">Zestaw</label>
+                <label htmlFor="s-suite">Suite</label>
                 <select id="s-suite" value={suite} onChange={(e) => setSuite(e.target.value)}>
-                  <option value="test">testowy</option>
-                  <option value="final">finałowy</option>
+                  <option value="test">test</option>
+                  <option value="final">final</option>
                 </select>
                 <p className="field-note">
-                  Etykieta przebiegu — rozdziela wyniki w rankingu i na liście
-                  uruchomień; nie zmienia sposobu liczenia.
+                  Run label — separates results in the leaderboard and run list
+                  and does not change how the run is scored.
                 </p>
               </div>
               <div>
-                <label htmlFor="s-seeds">Ziarna (po przecinku)</label>
+                <label htmlFor="s-seeds">Seeds (comma-separated)</label>
                 <input id="s-seeds" value={seeds} onChange={(e) => setSeeds(e.target.value)} />
                 <p className="field-note">
-                  Każde ziarno to osobny przebieg tego samego optymalizatora
-                  z innym losowaniem — i osobne zadanie z dziennego limitu.
+                  Each seed is a separate run of the same optimizer
+                  with a different random draw — and a separate task from the daily quota.
                 </p>
               </div>
               {kind === 'builtin' && (
                 <div>
-                  <label htmlFor="s-display-name">Nazwa zgłoszenia</label>
+                  <label htmlFor="s-display-name">Submission name</label>
                   <input id="s-display-name" value={displayName} placeholder={builtin}
                          onChange={(e) => setDisplayName(e.target.value)} />
                   <p className="field-note">
-                    Pod tą nazwą przebieg pojawia się w rankingu. Puste pole
-                    znaczy nazwę optymalizatora wbudowanego.
+                    The run appears under this name in the leaderboard. Leave the field blank
+                    to use the built-in optimizer name.
                   </p>
                 </div>
               )}
               <div>
-                <label htmlFor="s-epochs">Limit epok</label>
+                <label htmlFor="s-epochs">Epoch budget</label>
                 <input id="s-epochs" type="number" min={1} value={maxEpochs}
                        onChange={(e) => setMaxEpochs(e.target.value)} />
                 <p className="field-note">
-                  Ile razy optymalizator może przejść przez cały zbiór
-                  treningowy, zanim przebieg zostanie przerwany.
+                  How many times the optimizer may pass through the full training
+                  dataset before the run is stopped.
                 </p>
               </div>
               <div>
-                <label htmlFor="s-grads">Limit gradientów</label>
+                <label htmlFor="s-grads">Gradient evaluation budget</label>
                 <input id="s-grads" type="number" min={1} value={maxGradients}
-                       placeholder="bez limitu"
+                       placeholder="unlimited"
                        onChange={(e) => setMaxGradients(e.target.value)} />
                 <p className="field-note">
-                  Ile razy optymalizator może policzyć gradient — licznik rośnie
-                  o 1 przy każdym evaluate_with_grad() i grad().
+                  How many gradient evaluations the optimizer may perform — the counter increases
+                  by 1 for each evaluate_with_grad() and grad().
                 </p>
               </div>
               <div>
-                <label htmlFor="s-samples">Limit próbek</label>
+                <label htmlFor="s-samples">Processed sample budget</label>
                 <input id="s-samples" type="number" min={1} value={maxSamples}
-                       placeholder="bez limitu"
+                       placeholder="unlimited"
                        onChange={(e) => setMaxSamples(e.target.value)} />
                 <p className="field-note">
-                  Ile próbek optymalizator może pobrać ze zbioru danych — licznik
-                  rośnie o batch_size przy każdym przejściu w przód.
+                  How many samples the optimizer may read from the dataset — the counter
+                  increases by batch_size on each forward pass.
                 </p>
               </div>
             </div>
             <p className="small muted" style={{ marginTop: 'var(--space-4)', marginBottom: 0 }}>
-              Wymagany co najmniej jeden warunek stopu. Powód zatrzymania trafia
-              do wyniku — „zbiegłem” i „wyczerpałem budżet” to zupełnie różne rezultaty.
+              At least one stop condition is required. The stop reason is included
+              in the result — “converged” and “budget exhausted” are different outcomes.
             </p>
           </div>
         </div>
 
         <button className="primary" type="submit"
                 disabled={busy || (quota.data?.remaining ?? 1) === 0}>
-          {busy ? 'Walidacja i kolejkowanie…' : 'Zgłoś'}
+          {busy ? 'Validating and queueing…' : 'Submit'}
         </button>
       </form>
 
@@ -320,19 +320,19 @@ export function Submit({ user }: { user: User | null }) {
       {result && (
         <div className="section" style={{ marginTop: 'var(--space-4)' }}>
           <div className="note note-accent">
-            <strong>Zgłoszenie przyjęte.</strong> Utworzono{' '}
-            <span className="mono">{result.task_ids.length}</span> zadań.
-            Pozostało dziś <span className="mono">{result.remaining_today}</span>.
+            <strong>Submission accepted.</strong> Created{' '}
+            <span className="mono">{result.task_ids.length}</span> tasks.
+            Remaining today <span className="mono">{result.remaining_today}</span>.
           </div>
           <div className="panel" style={{ marginTop: 'var(--space-3)' }}>
-            <div className="panel-head"><h3>Log walidatora</h3></div>
+            <div className="panel-head"><h3>Validator log</h3></div>
             <div className="panel-body"><pre className="log">{result.validator_log}</pre></div>
           </div>
           <div className="row" style={{ marginTop: 'var(--space-3)' }}>
-            <button onClick={() => navigate('/runs?mine=1')}>Zobacz moje uruchomienia</button>
+            <button onClick={() => navigate('/runs?mine=1')}>View my runs</button>
             {result.task_ids[0] && (
               <Link className="button" to={`/runs/${result.task_ids[0]}`}>
-                Pierwsze zadanie
+                First task
               </Link>
             )}
           </div>

@@ -36,11 +36,11 @@ export function AdminQueue({ user, revision }: { user: User | null; revision: nu
   if (!user?.is_admin) {
     return (
       <div className="page">
-        <div className="note note-warning">Ta strona jest dostępna tylko dla administratorów.</div>
+        <div className="note note-warning">This page is available to administrators only.</div>
       </div>
     );
   }
-  if (data.loading) return <div className="page"><Loading what="stan kolejki" /></div>;
+  if (data.loading) return <div className="page"><Loading what="queue status" /></div>;
   if (data.error) return <div className="page"><ErrorNote error={data.error} /></div>;
   if (!data.data) return null;
 
@@ -51,10 +51,10 @@ export function AdminQueue({ user, revision }: { user: User | null; revision: nu
       <div className="page-head">
         <div className="spread">
           <div>
-            <h1>Kolejka i klaster</h1>
-            <p>Stan brokera, outboxu, zadań w SLURM i uruchomień, które przestały się ruszać.</p>
+            <h1>Queue and cluster</h1>
+            <p>Broker, outbox, SLURM tasks, and runs that have stopped progressing.</p>
           </div>
-          <Link className="button" to="/admin">← Panel</Link>
+          <Link className="button" to="/admin">← Admin</Link>
         </div>
       </div>
 
@@ -65,9 +65,9 @@ export function AdminQueue({ user, revision }: { user: User | null; revision: nu
             <table>
               <thead>
                 <tr>
-                  <th>Kolejka</th><th className="num">Wiadomości</th>
-                  <th className="num">Gotowe</th><th className="num">Niepotwierdzone</th>
-                  <th className="num">Konsumenci</th><th>Rodzaj</th>
+                  <th>Queue</th><th className="num">Messages</th>
+                  <th className="num">Ready</th><th className="num">Unacknowledged</th>
+                  <th className="num">Consumers</th><th>Type</th>
                 </tr>
               </thead>
               <tbody>
@@ -79,13 +79,13 @@ export function AdminQueue({ user, revision }: { user: User | null; revision: nu
                     <td className="num">{integer(queue.unacknowledged)}</td>
                     <td className="num">
                       {queue.consumers === 0
-                        ? <span style={{ color: 'var(--error)' }} title="Nikt nie czyta z tej kolejki">0</span>
+                        ? <span style={{ color: 'var(--error)' }} title="No consumers are reading this queue">0</span>
                         : queue.consumers}
                     </td>
                     <td className="small">
                       {queue.is_dlq
-                        ? <span style={{ color: 'var(--error)' }}>martwe listy</span>
-                        : 'robocza'}
+                        ? <span style={{ color: 'var(--error)' }}>dead-letter queue</span>
+                        : 'work queue'}
                     </td>
                   </tr>
                 ))}
@@ -94,7 +94,7 @@ export function AdminQueue({ user, revision }: { user: User | null; revision: nu
           </div>
         ) : (
           <div className="note note-warning">
-            Nie udało się odczytać stanu brokera.
+            Could not read broker status.
             <div className="small mono" style={{ marginTop: 4 }}>{broker.reason}</div>
           </div>
         )}
@@ -104,20 +104,20 @@ export function AdminQueue({ user, revision }: { user: User | null; revision: nu
         <div className="section-head">
           <h2>Outbox</h2>
           <span className="small muted">
-            oczekujących: <span className="mono">{data.data.outbox.pending}</span>
+            pending: <span className="mono">{data.data.outbox.pending}</span>
           </span>
         </div>
         <p className="small muted">
-          Zgłoszenie i wiadomość na kolejkę są zapisywane w jednej transakcji, a
-          publikuje je osobny proces. Dzięki temu awaria brokera nie gubi zgłoszenia
-          i nie zwraca użytkownikowi błędu, a API nie ma poświadczeń do kolejki.
+          The submission and queue message are written in one transaction, while
+          a separate process publishes them. This keeps a broker outage from losing the submission
+          or returning an error to the user, and the API needs no queue credentials.
         </p>
         {data.data.outbox.abandoned > 0 && (
           <div className="note note-error">
-            <strong className="mono">{data.data.outbox.abandoned}</strong> wiadomości
-            wyczerpało budżet prób i nie zostanie już opublikowanych. Każda z nich to
-            zgłoszenie, które istnieje w bazie i nigdy nie trafi na klaster. Wiersze
-            z liczbą prób na maksimum są w tabeli niżej, razem z ostatnim błędem.
+            <strong className="mono">{data.data.outbox.abandoned}</strong> messages
+            exhausted their retry budget and will not be published. Each is a
+            submission that exists in the database and will never reach the cluster. Rows
+            at the maximum attempt count appear below with the last error.
           </div>
         )}
         <div className="table-scroll">
@@ -125,8 +125,8 @@ export function AdminQueue({ user, revision }: { user: User | null; revision: nu
             <thead>
               <tr>
                 <th className="num">#</th><th>Exchange</th><th>Routing key</th>
-                <th>Utworzona</th><th>Opublikowana</th>
-                <th className="num">Prób</th><th>Ostatni błąd</th>
+                <th>Created</th><th>Published</th>
+                <th className="num">Attempts</th><th>Last error</th>
               </tr>
             </thead>
             <tbody>
@@ -139,7 +139,7 @@ export function AdminQueue({ user, revision }: { user: User | null; revision: nu
                   <td className="mono small">
                     {row.published_at
                       ? timestamp(row.published_at)
-                      : <span style={{ color: 'var(--warning)' }}>oczekuje</span>}
+                      : <span style={{ color: 'var(--warning)' }}>pending</span>}
                   </td>
                   <td className="num">{row.attempts}</td>
                   <td className="small mono">{row.last_error ?? '—'}</td>
@@ -148,17 +148,17 @@ export function AdminQueue({ user, revision }: { user: User | null; revision: nu
             </tbody>
           </table>
         </div>
-        {data.data.outbox.recent.length === 0 && <div className="empty">Outbox jest pusty.</div>}
+        {data.data.outbox.recent.length === 0 && <div className="empty">Outbox is empty.</div>}
       </div>
 
       <div className="section">
-        <div className="section-head"><h2>Zadania w kolejce i w obliczeniach</h2></div>
+        <div className="section-head"><h2>Queued and running tasks</h2></div>
         <div className="table-scroll">
           <table>
             <thead>
               <tr>
-                <th>Nazwa</th><th>Stan</th><th>ID zadania SLURM</th>
-                <th className="num">Czas od zgłoszenia</th><th>Utworzone</th>
+                <th>Name</th><th>Status</th><th>SLURM task ID</th>
+                <th className="num">Time since submission</th><th>Created</th>
               </tr>
             </thead>
             <tbody>
@@ -177,10 +177,10 @@ export function AdminQueue({ user, revision }: { user: User | null; revision: nu
           </table>
         </div>
         {data.data.slurm.jobs.length === 0 && (
-          <div className="empty">Nic nie czeka i nic się nie liczy.</div>
+          <div className="empty">Nothing is queued or running.</div>
         )}
         <div className="note" style={{ marginTop: 'var(--space-3)' }}>
-          <strong>Stan węzłów Ateny nie jest tu pokazany.</strong>
+          <strong>Athena node status is not shown here.</strong>
           <p className="small" style={{ marginTop: 4, marginBottom: 0 }}>
             {data.data.slurm.cluster_probe.reason}
           </p>
@@ -189,24 +189,24 @@ export function AdminQueue({ user, revision }: { user: User | null; revision: nu
 
       <div className="section">
         <div className="section-head">
-          <h2>Uruchomienia bez ruchu</h2>
+          <h2>Runs with no progress</h2>
           <span className="small muted mono">{data.data.orphans.length}</span>
         </div>
         <p className="small muted">
-          Zadania w stanie „w kolejce” albo „liczy się”, których stan nie zmienił się
-          od ponad dwóch godzin. Typowa przyczyna to worker, który padł po wysłaniu
-          zadania, a przed zapisaniem jego numeru — zadanie zostaje na klastrze,
-          pali grant, a nikt go nie obserwuje.
+          Tasks in queued or running state whose state has not changed
+          for more than two hours. A typical cause is a worker that died after submitting the
+          task but before writing its job number — the task remains on the cluster,
+          consumes grant time, and nobody is watching it.
         </p>
         {data.data.orphans.length === 0 ? (
-          <div className="empty">Nie ma osieroconych uruchomień.</div>
+          <div className="empty">No orphaned runs.</div>
         ) : (
           <div className="table-scroll">
             <table>
               <thead>
                 <tr>
-                  <th>Nazwa</th><th>Stan</th><th>ID zadania SLURM</th>
-                  <th className="num">Bez zmiany od</th><th>Ostatnia zmiana</th>
+                  <th>Name</th><th>Status</th><th>SLURM task ID</th>
+                  <th className="num">Unchanged for</th><th>Last change</th>
                 </tr>
               </thead>
               <tbody>
@@ -230,11 +230,11 @@ export function AdminQueue({ user, revision }: { user: User | null; revision: nu
       </div>
 
       <div className="section">
-        <div className="section-head"><h2>Rozkład stanów</h2></div>
+        <div className="section-head"><h2>State distribution</h2></div>
         <div className="table-scroll">
           <table>
             <thead>
-              <tr><th>task_status</th><th>artifact_status</th><th className="num">Liczba</th></tr>
+              <tr><th>task_status</th><th>artifact_status</th><th className="num">Count</th></tr>
             </thead>
             <tbody>
               {data.data.states.map((row, i) => (

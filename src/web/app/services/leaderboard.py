@@ -15,17 +15,17 @@ from app import db
 SCORE_FORMULAS = {
     "loss_v1": {
         "id": "loss_v1",
-        "label": "mediana straty końcowej",
+        "label": "median final loss",
         "direction": "asc",
         "column": "final_loss",
-        "note": "Niższa jest lepsza. Nie normalizuje po budżecie: gradienty i próbki nie mają wspólnej waluty.",
+        "note": "Lower is better. No budget normalization: gradient evaluations and processed samples have no common currency.",
     },
     "accuracy_v1": {
         "id": "accuracy_v1",
-        "label": "mediana dokładności końcowej",
+        "label": "median final accuracy",
         "direction": "desc",
         "column": "final_accuracy",
-        "note": "Wyższa jest lepsza. Również bez normalizacji po budżecie.",
+        "note": "Higher is better. Also without budget normalization.",
     },
 }
 DEFAULT_FORMULA = "loss_v1"

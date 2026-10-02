@@ -26,7 +26,7 @@ function CodeBlock({ name, label }: { name: string; label: string }) {
   if (code === null) {
     return (
       <div className="note note-warning">
-        Nie udało się wczytać przykładu <span className="mono">{label}</span> z repozytorium.
+        Could not load the example <span className="mono">{label}</span> from the repository.
       </div>
     );
   }
@@ -40,7 +40,7 @@ function CodeBlock({ name, label }: { name: string; label: string }) {
           setCopied(true);
           setTimeout(() => setCopied(false), 1500);
         }}>
-          {copied ? 'Skopiowano' : 'Kopiuj'}
+          {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
       {/* Source arrives as text and is rendered as a text node. */}
@@ -51,50 +51,50 @@ function CodeBlock({ name, label }: { name: string; label: string }) {
 
 export function Docs() {
   const protocol = useApi<Protocol>('/api/protocol');
-  if (protocol.loading) return <div className="page"><Loading what="dokumentację" /></div>;
+  if (protocol.loading) return <div className="page"><Loading what="documentation" /></div>;
   const data = protocol.data;
 
   return (
     <div className="page">
       <div className="page-head">
-        <h1>Kontrakt optymalizatora</h1>
+        <h1>Optimizer contract</h1>
         <p>
-          Piszesz wyłącznie matematyczną definicję optymalizatora. Nie widzisz
-          modelu ani zbioru danych — sieć jest sprowadzona do płaskiego wektora
-          parametrów i funkcji celu. Dzięki temu metoda gradientowa i ewolucyjna
-          podłączają się do tego samego interfejsu, a zużycia budżetu nie da się
-          zaraportować samemu: liczy je ewaluator.
+          You write only the mathematical definition of an optimizer. You do not see
+          the model or dataset — the network is reduced to a flat
+          parameter vector and objective function. This lets gradient-based and evolutionary
+          methods use the same interface, and budget use cannot be
+          reported by the optimizer: the evaluator counts it.
         </p>
       </div>
 
       <div className="section">
-        <div className="section-head"><h2>Metoda, którą implementujesz</h2></div>
+        <div className="section-head"><h2>The method you implement</h2></div>
         <pre className="log">{`class MyOptimizer(NumpyBenchmarkOptimizer):
 
     def __init__(self, initial_params, **config):
-        # Pierwszy argument pozycyjny MUSI nazywać się initial_params.
+        # The first positional argument MUST be named initial_params.
         ...
 
     def step(self, evaluator: ModelEvaluator) -> bool:
-        ...              # dowolna logika
-        return False     # True = zbiegłem, kończ`}</pre>
+        ...              # any logic
+        return False     # True = converged, stop`}</pre>
         <p className="small muted" style={{ marginTop: 'var(--space-3)' }}>
-          Dziedziczenie jest opcjonalne — <span className="mono">BenchmarkableOptimizer</span>{' '}
-          to <span className="mono">Protocol</span> z{' '}
-          <span className="mono">@runtime_checkable</span>, więc wystarczy zgodna
-          metoda <span className="mono">step()</span> i klasowa{' '}
+          Inheritance is optional — <span className="mono">BenchmarkableOptimizer</span>{' '}
+          is a <span className="mono">Protocol</span> with{' '}
+          <span className="mono">@runtime_checkable</span>, so a compatible
+          method needs <span className="mono">step()</span> and{' '}
           <span className="mono">get_output_type()</span>.
         </p>
       </div>
 
       <div className="section">
-        <div className="section-head"><h2>API ewaluatora</h2></div>
+        <div className="section-head"><h2>Evaluator API</h2></div>
         <div className="table-scroll">
           <table>
             <thead>
               <tr>
-                <th>Metoda</th><th>Zwraca</th>
-                <th>Efekt na licznikach budżetu</th><th>Uwagi</th>
+                <th>Method</th><th>Returns</th>
+                <th>Budget counter effect</th><th>Notes</th>
               </tr>
             </thead>
             <tbody>
@@ -110,18 +110,18 @@ export function Docs() {
           </table>
         </div>
         <div className="note" style={{ marginTop: 'var(--space-3)' }}>
-          Kolumna z efektem na licznikach jest tu najważniejsza. To jedyne miejsce,
-          w którym widać, ile kosztuje każde wywołanie — a licznik prowadzi system,
-          nie Twój kod.
+          The counter-effect column is the most important part. It is the only place
+          where you can see the cost of each call — the counter is maintained by the system,
+          not your code.
         </div>
       </div>
 
       <div className="section">
-        <div className="section-head"><h2>Warunki i powody zatrzymania</h2></div>
+        <div className="section-head"><h2>Stop conditions and reasons</h2></div>
         <div className="table-scroll">
           <table>
             <thead>
-              <tr><th>StopReason</th><th>W interfejsie</th><th>Znaczenie</th></tr>
+              <tr><th>StopReason</th><th>In the interface</th><th>Meaning</th></tr>
             </thead>
             <tbody>
               {Object.entries(data?.stop_reasons ?? {}).map(([key, value]) => (
@@ -138,14 +138,14 @@ export function Docs() {
 
       <div className="section">
         <div className="section-head">
-          <h2>Kompletne przykłady</h2>
+          <h2>Complete examples</h2>
           <a className="small" href="/api/protocol/template" download>
-            Pobierz szablon
+            Download template
           </a>
         </div>
         <p className="small muted">
-          Wczytywane bezpośrednio z plików w repozytorium, a nie skopiowane do tej
-          strony. Jeśli przykład w kodzie się zmieni, zmieni się też tutaj.
+          Loaded directly from files in the repository rather than copied into this
+          page. If an example changes in the code, it changes here too.
         </p>
         <div className="stack">
           <CodeBlock name="gradient" label="optimizer_protocols/example_gradient_optimizer.py" />
@@ -154,11 +154,11 @@ export function Docs() {
       </div>
 
       <div className="section">
-        <div className="section-head"><h2>Sandbox walidatora</h2></div>
+        <div className="section-head"><h2>Validator sandbox</h2></div>
         <p>
-          Zgłoszony kod jest uruchamiany w izolowanym kontenerze zanim trafi do
-          kolejki. Powód jest praktyczny: zadanie, które wywali się na klastrze,
-          zużywa czas grantu, a ten jest zasobem ograniczonym.
+          Submitted code runs in an isolated container before it enters the
+          queue. The reason is practical: a task that fails on the cluster
+          consumes grant time, which is a limited resource.
         </p>
         <dl className="kv">
           {Object.entries(data?.sandbox ?? {}).map(([key, value]) => (
@@ -170,10 +170,10 @@ export function Docs() {
       </div>
 
       <div className="section">
-        <div className="section-head"><h2>Znane ograniczenia kontraktu</h2></div>
+        <div className="section-head"><h2>Known contract limitations</h2></div>
         <p className="small muted">
-          Wypisane wprost, bo znalezienie ich metodą prób i błędów w trakcie konkursu
-          byłoby gorsze dla wszystkich niż przeczytanie ich tutaj.
+          Listed explicitly because discovering them by trial and error during the competition
+          would be worse for everyone than reading them here.
         </p>
         <div className="stack">
           {data?.known_limitations.map((item) => (

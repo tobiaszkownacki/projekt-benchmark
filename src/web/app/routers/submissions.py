@@ -76,9 +76,9 @@ async def quota(user: CurrentUser = Depends(require_verified)) -> dict:
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def submit(payload: SubmissionRequest, user: CurrentUser = Depends(require_verified)) -> dict:
     if payload.kind == "builtin" and not payload.builtin_name:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Brak nazwy optymalizatora")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Optimizer name is required")
     if payload.kind == "uploaded" and not payload.source_code:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Brak kodu optymalizatora")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Optimizer code is required")
 
     stop_condition: dict[str, Any] = {
         k: v
@@ -92,7 +92,7 @@ async def submit(payload: SubmissionRequest, user: CurrentUser = Depends(require
     if not stop_condition:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
-            "Podaj co najmniej jeden warunek stopu",
+            "Provide at least one stop condition",
         )
 
     seeds = payload.seeds[:16] or [2137]
@@ -100,7 +100,7 @@ async def submit(payload: SubmissionRequest, user: CurrentUser = Depends(require
     if len(seeds) > remaining:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
-            f"Dzienny limit zgłoszeń wyczerpany. Pozostało {remaining} z {settings.daily_submission_limit}.",
+            f"Daily submission limit exhausted. {remaining} of {settings.daily_submission_limit} remain.",
             headers={"Retry-After": "3600"},
         )
 
@@ -111,8 +111,8 @@ async def submit(payload: SubmissionRequest, user: CurrentUser = Depends(require
     else:
         outcome = validator.ValidationResult(
             ok=True,
-            log=f"Optymalizator wbudowany '{payload.builtin_name}' — "
-            f"walidacja protokołu pominięta, kod pochodzi z repozytorium.",
+            log=f"Built-in optimizer '{payload.builtin_name}' — "
+            f"protocol validation skipped because the code comes from the repository.",
             family=BUILTIN_FAMILIES.get(payload.builtin_name or "", "gradient"),
             version="builtin",
         )

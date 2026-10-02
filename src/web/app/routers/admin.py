@@ -92,7 +92,7 @@ async def budget(_: CurrentUser = Depends(require_admin)) -> dict:
 
 async def _rabbitmq() -> dict[str, Any]:
     if not settings.rabbitmq_management_url:
-        return {"available": False, "reason": "RABBITMQ_MANAGEMENT_URL nie jest ustawiony"}
+        return {"available": False, "reason": "RABBITMQ_MANAGEMENT_URL is not configured"}
     try:
         async with httpx.AsyncClient(
             timeout=4.0,
@@ -177,10 +177,10 @@ async def queue(_: CurrentUser = Depends(require_admin)) -> dict:
             # the cluster.
             "cluster_probe": {
                 "available": False,
-                "reason": "sinfo/sacct są dostępne wyłącznie z kontenera pollera "
-                "(tam są poświadczenia SSH). Do wystawienia przez "
-                "uzgodniony endpoint pollera, nie przez drugie "
-                "połączenie z klastrem.",
+                "reason": "sinfo/sacct are available only from the poller container "
+                "(that container holds the SSH credentials). Expose this through "
+                "an agreed poller endpoint rather than a second "
+                "cluster connection.",
             },
         },
         "orphans": orphans,

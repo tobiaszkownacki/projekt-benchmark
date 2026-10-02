@@ -20,17 +20,17 @@ export function Overview() {
   return (
     <div className="page">
       <div className="page-head">
-        <h1>Benchmark Czarnej Skrzynki</h1>
+        <h1>Black-Box Benchmark</h1>
         <p>
-          Uczestnik zgłasza wyłącznie matematyczną definicję optymalizatora i nigdy
-          nie widzi ani modelu, ani zbioru danych. Sieć jest sprowadzona do płaskiego
-          wektora parametrów i funkcji celu, a zużycie budżetu liczy ewaluator po
-          stronie systemu — nie zgłoszenie.
+          Participants submit only a mathematical definition of an optimizer and never
+          see the model or dataset. The network is reduced to a flat
+          parameter vector and objective function, while the evaluator tracks budget use on
+          the system side rather than the submission.
         </p>
         <p>
-          Dzięki temu metoda gradientowa i ewolucyjna podłączają się do tego samego
-          interfejsu i dają się porównać na wspólnej osi budżetu.{' '}
-          <Link to="/docs">Zobacz kontrakt optymalizatora</Link>.
+          This lets gradient-based and evolutionary methods use the same
+          interface and be compared on a shared budget axis.{' '}
+          <Link to="/docs">See the optimizer contract</Link>.
         </p>
       </div>
 
@@ -38,31 +38,31 @@ export function Overview() {
       {counters.data && (
         <div className="section">
           <div className="metrics">
-            <Metric label="Zgłoszenia" value={integer(counters.data.submissions)}
-                    context={`${integer(counters.data.optimizers)} optymalizatorów`} />
-            <Metric label="Uruchomienia" value={integer(counters.data.runs)}
-                    context={`${integer(counters.data.completed)} zakończonych, ${integer(counters.data.failed)} nieudanych`} />
-            <Metric label="W toku" value={integer(counters.data.active)}
-                    context="w kolejce lub liczące się" />
-            <Metric label="Wyliczone gradienty" value={integer(counters.data.gradients)}
-                    hint="Liczba obliczeń gradientu. Rośnie o 1 przy każdym evaluate_with_grad() i grad()." />
-            <Metric label="Przetworzone próbki" value={integer(counters.data.samples)}
-                    hint="Liczba próbek pobranych ze zbioru danych. Rośnie o batch_size przy każdym przejściu w przód." />
-            <Metric label="Czas obliczeń" value={duration(counters.data.compute_seconds)}
-                    context="świadomie nie jest metryką rankingu" />
+            <Metric label="Submissions" value={integer(counters.data.submissions)}
+                    context={`${integer(counters.data.optimizers)} optimizers`} />
+            <Metric label="Runs" value={integer(counters.data.runs)}
+                    context={`${integer(counters.data.completed)} completed, ${integer(counters.data.failed)} failed`} />
+            <Metric label="Active" value={integer(counters.data.active)}
+                    context="queued or running" />
+            <Metric label="Gradient evaluations" value={integer(counters.data.gradients)}
+                    hint="Number of gradient evaluations. Increases by 1 for each evaluate_with_grad() and grad()." />
+            <Metric label="Processed samples" value={integer(counters.data.samples)}
+                    hint="Number of samples read from the dataset. Increases by batch_size on each forward pass." />
+            <Metric label="Compute time" value={duration(counters.data.compute_seconds)}
+                    context="intentionally excluded from leaderboard metrics" />
           </div>
         </div>
       )}
 
       <div className="section">
         <div className="section-head">
-          <h2>Ranking — pierwsza dziesiątka</h2>
-          <Link to="/leaderboard" className="small">Pełna tabela i filtry →</Link>
+          <h2>Leaderboard — top ten</h2>
+          <Link to="/leaderboard" className="small">Full table and filters →</Link>
         </div>
-        {board.loading && <Loading what="ranking" />}
+        {board.loading && <Loading what="leaderboard" />}
         {board.error && <ErrorNote error={board.error} />}
         {board.data && board.data.rows.length === 0 && (
-          <div className="empty">Nie ma jeszcze zakończonych uruchomień.</div>
+          <div className="empty">No completed runs yet.</div>
         )}
         {board.data && board.data.rows.length > 0 && (
           <>
@@ -71,14 +71,14 @@ export function Overview() {
                 <thead>
                   <tr>
                     <th className="num">#</th>
-                    <th>Optymalizator</th>
-                    <th>Rodzina</th>
-                    <th>Zbiór</th>
+                    <th>Optimizer</th>
+                    <th>Family</th>
+                    <th>Dataset</th>
                     <th>Model</th>
-                    <th className="num">Strata (mediana)</th>
-                    <th className="num">Dokładność</th>
-                    <th className="num">Gradienty</th>
-                    <th className="num">Próbki</th>
+                    <th className="num">Final loss (median)</th>
+                    <th className="num">Accuracy</th>
+                    <th className="num">Gradient evaluations</th>
+                    <th className="num">Processed samples</th>
                     <th className="num">n</th>
                   </tr>
                 </thead>
@@ -101,7 +101,7 @@ export function Overview() {
               </table>
             </div>
             <div className="note" style={{ marginTop: 'var(--space-3)' }}>
-              Agregat: <strong>{board.data.score_formula.label}</strong>.{' '}
+              Aggregate: <strong>{board.data.score_formula.label}</strong>.{' '}
               {board.data.score_formula.note}
             </div>
           </>

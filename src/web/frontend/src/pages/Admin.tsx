@@ -39,7 +39,7 @@ export function Admin({ user }: { user: User | null }) {
   if (!user?.is_admin) {
     return (
       <div className="page">
-        <div className="note note-warning">Ta strona jest dostępna tylko dla administratorów.</div>
+        <div className="note note-warning">This page is available to administrators only.</div>
       </div>
     );
   }
@@ -54,10 +54,10 @@ export function Admin({ user }: { user: User | null }) {
       <div className="page-head">
         <div className="spread">
           <div>
-            <h1>Panel administratora</h1>
-            <p>Zatwierdzanie kont, zużycie budżetu i zgłoszenia.</p>
+            <h1>Admin panel</h1>
+            <p>Account approvals, budget usage, and submissions.</p>
           </div>
-          <Link className="button" to="/admin/queue">Stan kolejki i klastra →</Link>
+          <Link className="button" to="/admin/queue">Queue and cluster status →</Link>
         </div>
       </div>
 
@@ -66,18 +66,18 @@ export function Admin({ user }: { user: User | null }) {
 
       <div className="section">
         <div className="section-head">
-          <h2>Konta oczekujące na zatwierdzenie</h2>
+          <h2>Pending accounts</h2>
           <span className="small muted mono">{users.data?.pending.length ?? 0}</span>
         </div>
         {users.data && users.data.pending.length === 0 ? (
-          <div className="empty">Brak kont oczekujących.</div>
+          <div className="empty">No pending accounts.</div>
         ) : (
           <div className="table-scroll">
             <table>
               <thead>
                 <tr>
-                  <th>E-mail</th><th>Nazwa</th><th>Instytucja</th>
-                  <th>Powód dołączenia</th><th>Utworzone</th><th />
+                  <th>Email</th><th>Name</th><th>Organization</th>
+                  <th>Reason for joining</th><th>Created</th><th />
                 </tr>
               </thead>
               <tbody>
@@ -89,7 +89,7 @@ export function Admin({ user }: { user: User | null }) {
                     <td className="small muted">{row.join_reason ?? '—'}</td>
                     <td className="mono small">{timestamp(row.created_at)}</td>
                     <td>
-                      <button onClick={() => approve(row.id)}>Zatwierdź</button>
+                      <button onClick={() => approve(row.id)}>Approve</button>
                     </td>
                   </tr>
                 ))}
@@ -101,20 +101,20 @@ export function Admin({ user }: { user: User | null }) {
 
       <div className="section">
         <div className="section-head">
-          <h2>Zużycie budżetu per użytkownik</h2>
+          <h2>Budget usage by user</h2>
           <span className="small muted">
-            limit dzienny: <span className="mono">{budget.data?.daily_limit}</span>
+            daily limit: <span className="mono">{budget.data?.daily_limit}</span>
           </span>
         </div>
         <div className="table-scroll">
           <table>
             <thead>
               <tr>
-                <th>Użytkownik</th><th>Rola</th>
-                <th className="num">Uruchomienia</th><th className="num">Nieudane</th>
-                <th className="num">W toku</th><th className="num">Dziś</th>
-                <th className="num">Gradienty</th><th className="num">Próbki</th>
-                <th className="num">Czas obliczeń</th>
+                <th>User</th><th>Role</th>
+                <th className="num">Runs</th><th className="num">Failed</th>
+                <th className="num">Active</th><th className="num">Today</th>
+                <th className="num">Gradient evaluations</th><th className="num">Processed samples</th>
+                <th className="num">Compute time</th>
               </tr>
             </thead>
             <tbody>
@@ -139,20 +139,20 @@ export function Admin({ user }: { user: User | null }) {
           </table>
         </div>
         <div className="note" style={{ marginTop: 'var(--space-3)' }}>
-          Kolejka daje kolejność, nie sprawiedliwość. Ta tabela pokazuje, kto ile
-          faktycznie zużył — w walutach, które liczy ewaluator. Czas zegarowy jest
-          ostatni i nie jest metryką porównawczą.
+          The queue determines order, not fairness. This table shows actual consumption
+          in the units tracked by the evaluator. Wall-clock time comes last because it
+          is not a comparison metric.
         </div>
       </div>
 
       <div className="section">
-        <div className="section-head"><h2>Zgłoszenia</h2></div>
+        <div className="section-head"><h2>Submissions</h2></div>
         <div className="table-scroll">
           <table>
             <thead>
               <tr>
-                <th>Nazwa</th><th>Typ</th><th>Rodzina</th><th>Stan</th>
-                <th>Autor</th><th>Hash źródła</th><th>Utworzone</th><th />
+                <th>Name</th><th>Type</th><th>Family</th><th>Status</th>
+                <th>Submitter</th><th>Source hash</th><th>Created</th><th />
               </tr>
             </thead>
             <tbody>
@@ -172,7 +172,7 @@ export function Admin({ user }: { user: User | null }) {
                       <button className="subtle tiny" onClick={async () => {
                         await api.post(`/api/admin/submissions/${row.submission_id}/revoke`);
                         submissions.reload();
-                      }}>Unieważnij</button>
+                      }}>Revoke</button>
                     )}
                   </td>
                 </tr>

@@ -70,47 +70,47 @@ export function Leaderboard() {
   return (
     <div className="page page-wide">
       <div className="page-head">
-        <h1>Ranking</h1>
+        <h1>Leaderboard</h1>
         <p>
-          Wynik pojedynczego przebiegu jest anegdotą — metody ewolucyjne są
-          stochastyczne. Tabela pokazuje medianę z kwartylami po ziarnach, a liczba
-          przebiegów stoi w osobnej kolumnie, żeby było widać, na czym mediana stoi.
+          A single run is an anecdote — evolutionary methods are
+          stochastic. The table shows the median and quartiles across seeds, with the run
+          count in its own column so the basis of the median is visible.
         </p>
       </div>
 
       <div className="controls section">
         <div>
-          <label htmlFor="f-dataset">Zbiór danych</label>
+          <label htmlFor="f-dataset">Dataset</label>
           <select id="f-dataset" value={dataset} onChange={(e) => update('dataset', e.target.value)}>
-            <option value="">wszystkie</option>
+            <option value="">all</option>
             {filters.data?.datasets.map((d) => <option key={d} value={d}>{d}</option>)}
           </select>
         </div>
         <div>
           <label htmlFor="f-model">Model</label>
           <select id="f-model" value={model} onChange={(e) => update('model', e.target.value)}>
-            <option value="">wszystkie</option>
+            <option value="">all</option>
             {filters.data?.models.map((m) => <option key={m} value={m}>{m}</option>)}
           </select>
         </div>
         <div>
-          <label htmlFor="f-family">Rodzina metody</label>
+          <label htmlFor="f-family">Method family</label>
           <select id="f-family" value={family} onChange={(e) => update('family', e.target.value)}>
-            <option value="">wszystkie</option>
-            <option value="gradient">gradientowa</option>
-            <option value="gradient_free">bezgradientowa</option>
+            <option value="">all</option>
+            <option value="gradient">gradient-based</option>
+            <option value="gradient_free">gradient-free</option>
           </select>
         </div>
         <div>
-          <label htmlFor="f-suite">Zestaw</label>
+          <label htmlFor="f-suite">Suite</label>
           <select id="f-suite" value={suite} onChange={(e) => update('suite', e.target.value)}>
-            <option value="">wszystkie</option>
-            <option value="test">testowy</option>
-            <option value="final">finałowy</option>
+            <option value="">all</option>
+            <option value="test">test</option>
+            <option value="final">final</option>
           </select>
         </div>
         <div>
-          <label htmlFor="f-score">Agregat</label>
+          <label htmlFor="f-score">Aggregate</label>
           <select id="f-score" value={score} onChange={(e) => update('score', e.target.value)}>
             {board.data?.available_formulas.map((f) => (
               <option key={f.id} value={f.id}>{f.label}</option>
@@ -118,7 +118,7 @@ export function Leaderboard() {
           </select>
         </div>
         {compareLink && (
-          <Link className="button" to={compareLink}>Porównaj czołówkę</Link>
+          <Link className="button" to={compareLink}>Compare top entries</Link>
         )}
       </div>
 
@@ -132,17 +132,17 @@ export function Leaderboard() {
               <thead>
                 <tr>
                   {header('rank', '#')}
-                  <th>Optymalizator</th>
-                  <th>Rodzina</th>
-                  <th>Zbiór</th>
+                  <th>Optimizer</th>
+                  <th>Family</th>
+                  <th>Dataset</th>
                   <th>Model</th>
-                  <th>Zestaw</th>
-                  {header('loss', 'Strata — mediana')}
-                  <th className="num">IQR straty</th>
-                  {header('accuracy', 'Dokładność')}
-                  {header('gradients', 'Gradienty')}
-                  {header('samples', 'Próbki')}
-                  <th>Powód stopu</th>
+                  <th>Suite</th>
+                  {header('loss', 'Final loss — median')}
+                  <th className="num">Loss IQR</th>
+                  {header('accuracy', 'Accuracy')}
+                  {header('gradients', 'Gradient evaluations')}
+                  {header('samples', 'Processed samples')}
+                  <th>Stop reason</th>
                   {header('n', 'n')}
                   <th />
                 </tr>
@@ -168,14 +168,14 @@ export function Leaderboard() {
                       {/* A median over a single run is flagged rather than
                           presented as if it were a distribution. */}
                       {row.n_runs < 3
-                        ? <span title="Za mało powtórzeń, żeby mediana coś znaczyła"
+                        ? <span title="Too few repetitions for a meaningful median"
                                 style={{ color: 'var(--warning)' }}>{row.n_runs}!</span>
                         : row.n_runs}
                     </td>
                     <td>
                       <Link className="small"
                             to={`/compare?runs=${row.task_ids.slice(0, 12).join(',')}&group_by=run`}>
-                        krzywe
+                        curves
                       </Link>
                     </td>
                   </tr>
@@ -185,19 +185,19 @@ export function Leaderboard() {
           </div>
 
           {rows.length === 0 && (
-            <div className="empty">Brak wyników dla wybranych filtrów.</div>
+            <div className="empty">No results match the selected filters.</div>
           )}
 
           <div className="note note-accent" style={{ marginTop: 'var(--space-4)' }}>
             <p>
-              <strong>Agregat jest wymienialny, a nie zaszyty.</strong>{' '}
-              Aktywna formuła: {board.data.score_formula.label}. {board.data.score_formula.note}
+              <strong>The aggregate is configurable, not hard-coded.</strong>{' '}
+              Active formula: {board.data.score_formula.label}. {board.data.score_formula.note}
             </p>
             <p className="small" style={{ marginBottom: 0 }}>
-              Metody gradientowe i bezgradientowe zużywają budżet w różnych
-              jednostkach, więc żadna z formuł nie miesza gradientów z próbkami —
-              kolumny wymiarów stoją obok siebie, a nie są sprowadzane do jednej
-              liczby.
+              Gradient-based and gradient-free methods consume budget in different
+              units, so no formula combines gradient evaluations with processed samples —
+              the dimensions are shown side by side rather than collapsed into one
+              number.
             </p>
           </div>
         </>

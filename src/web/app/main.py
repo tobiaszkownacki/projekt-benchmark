@@ -183,5 +183,5 @@ async def spa(full_path: str) -> Response:
         return FileResponse(_INDEX)
     return JSONResponse(
         status_code=503,
-        content={"message": "Frontend nie jest zbudowany. Uruchom `npm run build`."},
+        content={"message": "The frontend is not built. Run `npm run build`."},
     )

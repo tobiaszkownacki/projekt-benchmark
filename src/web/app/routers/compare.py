@@ -153,10 +153,10 @@ async def compare(
         "missing": len(ids) - len(visible),
         "statistical_test": {
             "available": False,
-            "note": "Test istotności nie jest liczony: bez ustalonej liczby "
-            "powtórzeń i poprawki na wielokrotne porównania wynik byłby "
-            "mylący. Ziarno jest zapisywane per run, więc analiza "
-            "pozostaje możliwa poza serwisem.",
+            "note": "No significance test is computed: without a fixed number of "
+            "repetitions and a multiple-comparison correction, the result would be "
+            "misleading. The seed is recorded per run, so the analysis "
+            "can still be performed outside the service.",
         },
     }
 

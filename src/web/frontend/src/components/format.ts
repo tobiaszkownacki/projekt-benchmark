@@ -1,15 +1,15 @@
 /** Formatting helpers.
  *
  * Numbers are returned with their unit and surrounding context rather than as
- * bare digits. Polish digit grouping uses a narrow no-break space. */
+ * bare digits. English digit grouping uses a narrow no-break space. */
 
-// U+202F narrow no-break space: the Polish digit group separator. Written as
+// U+202F narrow no-break space: the English digit group separator. Written as
 // an escape so it is visible in review and does not trip the linter.
 const GROUP = '\u202f';
 
 export function integer(value: number | null | undefined): string {
   if (value === null || value === undefined) return '—';
-  return Math.round(value).toLocaleString('pl-PL').replace(/[\u00a0\u2007\u202f ]/g, GROUP);
+  return Math.round(value).toLocaleString('en-US').replace(/[\u00a0\u2007\u202f ]/g, GROUP);
 }
 
 export function decimal(value: number | null | undefined, digits = 4): string {
@@ -45,7 +45,7 @@ export function timestamp(value: string | null | undefined): string {
   if (!value) return '—';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleString('pl-PL', {
+  return date.toLocaleString('en-US', {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
@@ -66,13 +66,13 @@ export function shortId(id: string): string {
 }
 
 export function familyLabel(family: string | null): string {
-  if (family === 'gradient') return 'gradientowa';
-  if (family === 'gradient_free') return 'bezgradientowa';
+  if (family === 'gradient') return 'gradient-based';
+  if (family === 'gradient_free') return 'gradient-free';
   return '—';
 }
 
 export function suiteLabel(suite: string | null): string {
-  if (suite === 'final') return 'finałowy';
-  if (suite === 'test') return 'testowy';
+  if (suite === 'final') return 'final';
+  if (suite === 'test') return 'test';
   return '—';
 }
