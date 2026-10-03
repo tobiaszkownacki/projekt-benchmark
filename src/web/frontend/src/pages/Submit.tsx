@@ -161,7 +161,7 @@ export function Submit({ user }: { user: User | null }) {
                 <label htmlFor="s-builtin">Name</label>
                 <select id="s-builtin" value={builtin} onChange={(e) => setBuiltin(e.target.value)}>
                   {BUILTINS.map((b) => (
-                    <option key={b.name} value={b.name}>{b.name} — {b.family}</option>
+                    <option key={b.name} value={b.name}>{b.name} ({b.family})</option>
                   ))}
                 </select>
               </div>
@@ -175,7 +175,7 @@ export function Submit({ user }: { user: User | null }) {
                 </div>
                 <div className="field">
                   <label htmlFor="s-source">
-                    Optimizer code (.py) —{' '}
+                    Optimizer code (.py):{' '}
                     <Link to="/docs">contract and template</Link>
                   </label>
                   <textarea id="s-source" rows={16} value={source} required
@@ -244,7 +244,7 @@ export function Submit({ user }: { user: User | null }) {
                   <option value="final">final</option>
                 </select>
                 <p className="field-note">
-                  Run label — separates results in the leaderboard and run list
+                  Run label. It separates results in the leaderboard and run list
                   and does not change how the run is scored.
                 </p>
               </div>
@@ -253,7 +253,7 @@ export function Submit({ user }: { user: User | null }) {
                 <input id="s-seeds" value={seeds} onChange={(e) => setSeeds(e.target.value)} />
                 <p className="field-note">
                   Each seed is a separate run of the same optimizer
-                  with a different random draw — and a separate task from the daily quota.
+                  with a different random draw. Each seed is a separate task from the daily quota.
                 </p>
               </div>
               {kind === 'builtin' && (
@@ -282,7 +282,7 @@ export function Submit({ user }: { user: User | null }) {
                        placeholder="unlimited"
                        onChange={(e) => setMaxGradients(e.target.value)} />
                 <p className="field-note">
-                  How many gradient evaluations the optimizer may perform — the counter increases
+                  How many gradient evaluations the optimizer may perform. The counter increases
                   by 1 for each evaluate_with_grad() and grad().
                 </p>
               </div>
@@ -292,14 +292,14 @@ export function Submit({ user }: { user: User | null }) {
                        placeholder="unlimited"
                        onChange={(e) => setMaxSamples(e.target.value)} />
                 <p className="field-note">
-                  How many samples the optimizer may read from the dataset — the counter
+                  How many samples the optimizer may read from the dataset. The counter
                   increases by batch_size on each forward pass.
                 </p>
               </div>
             </div>
             <p className="small muted" style={{ marginTop: 'var(--space-4)', marginBottom: 0 }}>
               At least one stop condition is required. The stop reason is included
-              in the result — “converged” and “budget exhausted” are different outcomes.
+              in the result. “converged” and “budget exhausted” are different outcomes.
             </p>
           </div>
         </div>

@@ -211,7 +211,7 @@ export function RunFiles() {
         <div>
           <h1>Run artifacts</h1>
           <p className="small muted" style={{ marginTop: 4, marginBottom: 0 }}>
-            Directory <span className="mono">/downloads/{taskId}</span> — only
+            Directory <span className="mono">/downloads/{taskId}</span>. Only
             files from this run.
           </p>
         </div>
@@ -227,9 +227,9 @@ export function RunFiles() {
         <div className="note section">
           <strong>Shortcuts</strong>
           <div className="small mono" style={{ marginTop: 6, lineHeight: 1.8 }}>
-            ↑ ↓ — previous / next file · ← → — collapse / expand directory ·
-            Enter — open · / — search · y — copy path ·
-            g / G — start / end of preview · ? — this guide
+            ↑ ↓: previous / next file; ← →: collapse / expand directory.
+            Enter: open; /: search; y: copy path.
+            g / G: start / end of preview; ?: this guide
           </div>
         </div>
       )}

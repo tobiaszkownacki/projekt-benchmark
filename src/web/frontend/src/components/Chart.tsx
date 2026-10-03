@@ -361,7 +361,7 @@ export function Chart({
                     </td>
                     <td style={{ borderBottom: 'none', padding: '1px 8px 1px 0' }}>{entry.label}</td>
                     <td className="num" style={{ borderBottom: 'none', padding: '1px 8px 1px 0' }}>
-                      {median === null ? '—' : decimal(median, 4)}
+                      {median === null ? 'N/A' : decimal(median, 4)}
                     </td>
                     <td className="num tiny muted" style={{ borderBottom: 'none' }}>
                       {/* n at this budget, because it changes along the axis and
@@ -395,7 +395,7 @@ export function Chart({
                 })}
                 style={{ opacity: off ? 0.4 : 1, fontSize: 12, padding: '2px 6px' }}
                 title={flat
-                  ? 'This method does not consume this budget currency — no curve on this axis'
+                  ? 'This method does not consume this budget currency, so no curve is shown on this axis'
                   : (off ? 'Show series' : 'Hide series')}
               >
                 <svg width="20" height="8" style={{ verticalAlign: 'middle', marginRight: 5 }}>

@@ -56,7 +56,7 @@ export function Overview() {
 
       <div className="section">
         <div className="section-head">
-          <h2>Leaderboard — top ten</h2>
+          <h2>Leaderboard: top ten</h2>
           <Link to="/leaderboard" className="small">Full table and filters →</Link>
         </div>
         {board.loading && <Loading what="leaderboard" />}

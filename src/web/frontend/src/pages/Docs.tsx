@@ -60,7 +60,7 @@ export function Docs() {
         <h1>Optimizer contract</h1>
         <p>
           You write only the mathematical definition of an optimizer. You do not see
-          the model or dataset — the network is reduced to a flat
+          the model or dataset. The network is reduced to a flat
           parameter vector and objective function. This lets gradient-based and evolutionary
           methods use the same interface, and budget use cannot be
           reported by the optimizer: the evaluator counts it.
@@ -79,7 +79,7 @@ export function Docs() {
         ...              # any logic
         return False     # True = converged, stop`}</pre>
         <p className="small muted" style={{ marginTop: 'var(--space-3)' }}>
-          Inheritance is optional — <span className="mono">BenchmarkableOptimizer</span>{' '}
+          Inheritance is optional. <span className="mono">BenchmarkableOptimizer</span>{' '}
           is a <span className="mono">Protocol</span> with{' '}
           <span className="mono">@runtime_checkable</span>, so a compatible
           method needs <span className="mono">step()</span> and{' '}
@@ -111,7 +111,7 @@ export function Docs() {
         </div>
         <div className="note" style={{ marginTop: 'var(--space-3)' }}>
           The counter-effect column is the most important part. It is the only place
-          where you can see the cost of each call — the counter is maintained by the system,
+          where you can see the cost of each call. The counter is maintained by the system,
           not your code.
         </div>
       </div>

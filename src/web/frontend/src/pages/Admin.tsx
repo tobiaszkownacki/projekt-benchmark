@@ -84,9 +84,9 @@ export function Admin({ user }: { user: User | null }) {
                 {users.data?.pending.map((row) => (
                   <tr key={row.id}>
                     <td className="mono small">{row.email}</td>
-                    <td className="small">{row.display_name ?? '—'}</td>
-                    <td className="small">{row.associated_organisation ?? '—'}</td>
-                    <td className="small muted">{row.join_reason ?? '—'}</td>
+                    <td className="small">{row.display_name ?? 'N/A'}</td>
+                    <td className="small">{row.associated_organisation ?? 'N/A'}</td>
+                    <td className="small muted">{row.join_reason ?? 'N/A'}</td>
                     <td className="mono small">{timestamp(row.created_at)}</td>
                     <td>
                       <button onClick={() => approve(row.id)}>Approve</button>
@@ -160,11 +160,11 @@ export function Admin({ user }: { user: User | null }) {
                 <tr key={row.submission_id}>
                   <td className="mono small">{row.display_name}</td>
                   <td className="small">{row.kind}</td>
-                  <td className="small">{row.family ?? '—'}</td>
+                  <td className="small">{row.family ?? 'N/A'}</td>
                   <td className="small">{row.status}</td>
                   <td className="mono small">{row.submitter}</td>
                   <td className="tiny mono dim">
-                    {row.source_sha256 ? row.source_sha256.slice(0, 12) : '—'}
+                    {row.source_sha256 ? row.source_sha256.slice(0, 12) : 'N/A'}
                   </td>
                   <td className="mono small">{timestamp(row.created_at)}</td>
                   <td>

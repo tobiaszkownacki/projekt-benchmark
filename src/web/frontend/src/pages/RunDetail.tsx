@@ -136,7 +136,7 @@ export function RunDetail({ user, revision }: { user: User | null; revision: num
               <span className="small muted">
                 {item.converged
                   ? 'The optimizer reported convergence before the budget was exhausted.'
-                  : 'The budget was exhausted — that is not the same as convergence.'}
+                  : 'The budget was exhausted. That is not the same as convergence.'}
               </span>
             </div>
           )}
@@ -149,17 +149,17 @@ export function RunDetail({ user, revision }: { user: User | null; revision: num
           <div className="panel-body">
             <dl className="kv">
               <dt>Identifier</dt><dd>{item.task_id}</dd>
-              <dt>Optimizer</dt><dd>{item.optimizer ?? '—'}</dd>
+              <dt>Optimizer</dt><dd>{item.optimizer ?? 'N/A'}</dd>
               <dt>Method family</dt><dd>{familyLabel(item.family)}</dd>
-              <dt>Dataset</dt><dd>{item.dataset ?? '—'}</dd>
-              <dt>Model</dt><dd>{item.model ?? '—'}</dd>
+              <dt>Dataset</dt><dd>{item.dataset ?? 'N/A'}</dd>
+              <dt>Model</dt><dd>{item.model ?? 'N/A'}</dd>
               <dt>Suite</dt><dd>{suiteLabel(item.suite)}</dd>
-              <dt>Seed</dt><dd>{item.seed ?? '—'}</dd>
-              <dt>SLURM task ID</dt><dd>{item.slurm_job_id ?? '—'}</dd>
-              <dt>Execution environment</dt><dd>{item.executor ?? '—'}</dd>
-              <dt>Runner version</dt><dd>{item.runner_version ?? '—'}</dd>
-              <dt>Hardware</dt><dd>{item.gpu_model ?? '—'}</dd>
-              <dt>Submitter</dt><dd>{item.submitter_name ?? '—'}</dd>
+              <dt>Seed</dt><dd>{item.seed ?? 'N/A'}</dd>
+              <dt>SLURM task ID</dt><dd>{item.slurm_job_id ?? 'N/A'}</dd>
+              <dt>Execution environment</dt><dd>{item.executor ?? 'N/A'}</dd>
+              <dt>Runner version</dt><dd>{item.runner_version ?? 'N/A'}</dd>
+              <dt>Hardware</dt><dd>{item.gpu_model ?? 'N/A'}</dd>
+              <dt>Submitter</dt><dd>{item.submitter_name ?? 'N/A'}</dd>
               <dt>Artifacts</dt>
               <dd>{item.artifact_files ?? 0} files · {bytes(item.artifact_bytes)}</dd>
             </dl>
@@ -191,10 +191,10 @@ export function RunDetail({ user, revision }: { user: User | null; revision: num
             )}
             <div className="small muted" style={{ marginTop: 'var(--space-3)' }}>
               Queue time: <span className="mono">
-                {item.queued_at ? since(item.queued_at, item.started_at) : '—'}
+                {item.queued_at ? since(item.queued_at, item.started_at) : 'N/A'}
               </span>
               {' · '}Compute time: <span className="mono">
-                {item.started_at ? since(item.started_at, item.completed_at) : '—'}
+                {item.started_at ? since(item.started_at, item.completed_at) : 'N/A'}
               </span>
             </div>
           </div>
@@ -240,7 +240,7 @@ export function RunDetail({ user, revision }: { user: User | null; revision: num
             )}
           </div></div>
           <div className="small muted" style={{ marginTop: 'var(--space-2)' }}>
-            The x-axis is budget, not wall-clock time — the time depends on the node
+            The x-axis is budget, not wall-clock time. The time depends on the node
             assigned by the scheduler, not on optimizer quality.
           </div>
         </div>

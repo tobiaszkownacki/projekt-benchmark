@@ -77,7 +77,7 @@ export function Compare() {
 
       <div className="controls section">
         <div>
-          <label htmlFor="c-axis">X axis — budget</label>
+          <label htmlFor="c-axis">X axis: budget</label>
           <div className="segmented" id="c-axis">
             {AXES.map((option) => (
               <button key={option.id} className={axis === option.id ? 'active' : ''}
@@ -179,8 +179,7 @@ export function Compare() {
 
           {data.data.missing > 0 && (
             <div className="note note-warning section">
-              {data.data.missing} of the selected runs are unavailable —
-              either they do not have results yet or you do not have access to them.
+              {data.data.missing} of the selected runs are unavailable. They either do not have results yet or you do not have access to them.
             </div>
           )}
 
@@ -212,7 +211,7 @@ export function Compare() {
                           {d.delta > 0 ? '+' : ''}{decimal(d.delta)}
                         </td>
                         <td className="num">
-                          {d.relative === null ? '—'
+                          {d.relative === null ? 'N/A'
                             : `${d.relative > 0 ? '+' : ''}${(d.relative * 100).toFixed(1)}%`}
                         </td>
                         <td className="num">{d.n_a}</td>
@@ -224,7 +223,7 @@ export function Compare() {
               </div>
             )}
             <div className="note section" style={{ marginTop: 'var(--space-3)' }}>
-              <strong>No p-values — deliberately.</strong>
+              <strong>No p-values are shown deliberately.</strong>
               <p className="small" style={{ marginTop: 6, marginBottom: 0 }}>
                 {data.data.statistical_test.note}
               </p>
@@ -255,7 +254,7 @@ export function Compare() {
                       <td className="num">{decimal(run.metrics?.final_loss ?? null)}</td>
                       <td className="num">{integer(run.metrics?.gradient_count ?? null)}</td>
                       <td className="num">{integer(run.metrics?.database_reaches ?? null)}</td>
-                      <td className="mono small">{run.stop_reason ?? '—'}</td>
+                      <td className="mono small">{run.stop_reason ?? 'N/A'}</td>
                     </tr>
                   ))}
                 </tbody>

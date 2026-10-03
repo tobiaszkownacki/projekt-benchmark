@@ -121,17 +121,17 @@ export function Runs({ user, revision }: { user: User | null; revision: number }
                         {run.run_name ?? shortId(run.task_id)}
                       </Link>
                     </td>
-                    <td className="mono small">{run.optimizer ?? '—'}</td>
+                    <td className="mono small">{run.optimizer ?? 'N/A'}</td>
                     <td className="mono small">{run.dataset} / {run.model}</td>
-                    <td className="num small">{run.seed ?? '—'}</td>
+                    <td className="num small">{run.seed ?? 'N/A'}</td>
                     <td className="num">{decimal(run.metrics?.final_loss ?? null)}</td>
                     <td className="num">{integer(run.metrics?.gradient_count ?? null)}</td>
                     <td className="num">{integer(run.metrics?.database_reaches ?? null)}</td>
-                    <td className="small mono">{run.stop_reason ?? '—'}</td>
+                    <td className="small mono">{run.stop_reason ?? 'N/A'}</td>
                     <td className="num small">
                       {/* Time between queueing and starting: the number a user
                           actually wants when a run "has not done anything". */}
-                      {run.queued_at ? since(run.queued_at, run.started_at) : '—'}
+                      {run.queued_at ? since(run.queued_at, run.started_at) : 'N/A'}
                     </td>
                     <td className="small mono">{timestamp(run.created_at)}</td>
                     <td className="tiny mono dim">{shortId(run.task_id)}</td>

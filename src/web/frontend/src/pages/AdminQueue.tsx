@@ -142,7 +142,7 @@ export function AdminQueue({ user, revision }: { user: User | null; revision: nu
                       : <span style={{ color: 'var(--warning)' }}>pending</span>}
                   </td>
                   <td className="num">{row.attempts}</td>
-                  <td className="small mono">{row.last_error ?? '—'}</td>
+                  <td className="small mono">{row.last_error ?? 'N/A'}</td>
                 </tr>
               ))}
             </tbody>
@@ -168,7 +168,7 @@ export function AdminQueue({ user, revision }: { user: User | null; revision: nu
                     {job.run_name ?? shortId(job.task_id)}
                   </Link></td>
                   <td className="small">{job.task_status}</td>
-                  <td className="mono small">{job.executor_task_id ?? '—'}</td>
+                  <td className="mono small">{job.executor_task_id ?? 'N/A'}</td>
                   <td className="num small">{duration(job.elapsed_seconds)}</td>
                   <td className="mono small">{timestamp(job.created_at)}</td>
                 </tr>
@@ -195,7 +195,7 @@ export function AdminQueue({ user, revision }: { user: User | null; revision: nu
         <p className="small muted">
           Tasks in queued or running state whose state has not changed
           for more than two hours. A typical cause is a worker that died after submitting the
-          task but before writing its job number — the task remains on the cluster,
+          task but before writing its job number. The task remains on the cluster,
           consumes grant time, and nobody is watching it.
         </p>
         {data.data.orphans.length === 0 ? (
@@ -216,7 +216,7 @@ export function AdminQueue({ user, revision }: { user: User | null; revision: nu
                       {row.run_name ?? shortId(row.task_id)}
                     </Link></td>
                     <td className="small">{row.task_status}</td>
-                    <td className="mono small">{row.executor_task_id ?? '—'}</td>
+                    <td className="mono small">{row.executor_task_id ?? 'N/A'}</td>
                     <td className="num small" style={{ color: 'var(--warning)' }}>
                       {duration(row.stale_seconds)}
                     </td>
@@ -240,7 +240,7 @@ export function AdminQueue({ user, revision }: { user: User | null; revision: nu
               {data.data.states.map((row, i) => (
                 <tr key={i}>
                   <td className="mono small">{row.status}</td>
-                  <td className="mono small">{row.artifact ?? '—'}</td>
+                  <td className="mono small">{row.artifact ?? 'N/A'}</td>
                   <td className="num">{integer(row.n)}</td>
                 </tr>
               ))}

@@ -72,7 +72,7 @@ export function Leaderboard() {
       <div className="page-head">
         <h1>Leaderboard</h1>
         <p>
-          A single run is an anecdote — evolutionary methods are
+          A single run is an anecdote. Evolutionary methods are
           stochastic. The table shows the median and quartiles across seeds, with the run
           count in its own column so the basis of the median is visible.
         </p>
@@ -137,7 +137,7 @@ export function Leaderboard() {
                   <th>Dataset</th>
                   <th>Model</th>
                   <th>Suite</th>
-                  {header('loss', 'Final loss — median')}
+                  {header('loss', 'Final loss: median')}
                   <th className="num">Loss IQR</th>
                   {header('accuracy', 'Accuracy')}
                   {header('gradients', 'Gradient evaluations')}
@@ -158,12 +158,12 @@ export function Leaderboard() {
                     <td className="small">{suiteLabel(row.suite)}</td>
                     <td className="num">{decimal(row.final_loss.median)}</td>
                     <td className="num small muted">
-                      {decimal(row.final_loss.q1, 3)}–{decimal(row.final_loss.q3, 3)}
+                      {decimal(row.final_loss.q1, 3)} to {decimal(row.final_loss.q3, 3)}
                     </td>
                     <td className="num">{decimal(row.final_accuracy.median, 2)}%</td>
                     <td className="num">{integer(row.gradient_count.median)}</td>
                     <td className="num">{integer(row.database_reaches.median)}</td>
-                    <td className="small mono">{row.stop_reason_mode ?? '—'}</td>
+                    <td className="small mono">{row.stop_reason_mode ?? 'N/A'}</td>
                     <td className="num">
                       {/* A median over a single run is flagged rather than
                           presented as if it were a distribution. */}
@@ -195,8 +195,7 @@ export function Leaderboard() {
             </p>
             <p className="small" style={{ marginBottom: 0 }}>
               Gradient-based and gradient-free methods consume budget in different
-              units, so no formula combines gradient evaluations with processed samples —
-              the dimensions are shown side by side rather than collapsed into one
+              units, so no formula combines gradient evaluations with processed samples. The dimensions are shown side by side rather than collapsed into one
               number.
             </p>
           </div>
