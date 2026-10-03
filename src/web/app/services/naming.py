@@ -31,7 +31,7 @@ METRIC_LABELS = {
     "wall_time_seconds": {
         "label": "wall-clock time",
         "short": "time",
-        "hint": "Intentionally excluded from the leaderboard — it depends on the hardware assigned by the scheduler.",
+        "hint": "Intentionally excluded from the leaderboard because it depends on the hardware assigned by the scheduler.",
     },
 }
 
@@ -92,7 +92,7 @@ RUN_STATES = {
         "tone": "success",
     },
     "completed_no_artifacts": {
-        "label": "completed — no artifacts",
+        "label": "completed without artifacts",
         "detail": "Computation succeeded, but the downloader found no files.",
         "tone": "warning",
     },
@@ -102,7 +102,7 @@ RUN_STATES = {
         "tone": "error",
     },
     "failed_no_artifacts": {
-        "label": "failed — no artifacts",
+        "label": "failed without artifacts",
         "detail": "The task failed and left no files to inspect.",
         "tone": "error",
     },

@@ -111,7 +111,7 @@ async def submit(payload: SubmissionRequest, user: CurrentUser = Depends(require
     else:
         outcome = validator.ValidationResult(
             ok=True,
-            log=f"Built-in optimizer '{payload.builtin_name}' — "
+            log=f"Built-in optimizer '{payload.builtin_name}'. "
             f"protocol validation skipped because the code comes from the repository.",
             family=BUILTIN_FAMILIES.get(payload.builtin_name or "", "gradient"),
             version="builtin",

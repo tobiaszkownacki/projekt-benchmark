@@ -139,7 +139,7 @@ async def validate_source(source: str) -> ValidationResult:
         return ValidationResult(
             ok=True,
             log="Validator unavailable: the `docker` command is missing on this host.\n"
-            "Submission accepted WITHOUT protocol validation — the code was not "
+            "Submission accepted WITHOUT protocol validation. The code was not "
             "checked.",
             family=family,
             version="unavailable",

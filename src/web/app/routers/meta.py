@@ -45,11 +45,11 @@ EVALUATOR_API = [
         "effect": "database_reaches += batch_size, gradient_count += 1",
         "note": "Gradient only; does not return the loss.",
     },
-    {"method": "get_params()", "returns": "ndarray", "effect": "—", "note": "Flattened parameter vector."},
+    {"method": "get_params()", "returns": "ndarray", "effect": "N/A", "note": "Flattened parameter vector."},
     {
         "method": "set_params(params)",
         "returns": "None",
-        "effect": "—",
+        "effect": "N/A",
         "note": "Writes parameters back to the model.",
     },
     {
@@ -58,8 +58,8 @@ EVALUATOR_API = [
         "effect": "database_reaches += batch_size",
         "note": "Predictions and labels.",
     },
-    {"method": "batch_size", "returns": "int", "effect": "—", "note": "Property. Current batch size."},
-    {"method": "param_count", "returns": "int", "effect": "—", "note": "Property. Number of model parameters."},
+    {"method": "batch_size", "returns": "int", "effect": "N/A", "note": "Property. Current batch size."},
+    {"method": "param_count", "returns": "int", "effect": "N/A", "note": "Property. Number of model parameters."},
 ]
 
 # Documented rather than hidden. These are limitations of the contract a
