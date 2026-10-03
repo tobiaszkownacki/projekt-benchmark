@@ -30,6 +30,17 @@ _FROM = """
 """
 
 
+_LEGACY_ERROR_MESSAGES = {
+    "Zgłoszenie odrzucone przez walidator protokołu.":
+        "Submission rejected by protocol validator.",
+}
+
+
+def display_error_message(message: str | None) -> str | None:
+    """Keep historical system-generated run errors consistent with the UI language."""
+    return _LEGACY_ERROR_MESSAGES.get(message, message)
+
+
 def serialise(row: dict) -> dict:
     """Shape one run for the API, including the derived state label.
 
@@ -68,7 +79,7 @@ def serialise(row: dict) -> dict:
         "started_at": row.get("started_at"),
         "completed_at": row.get("completed_at"),
         "updated_at": row.get("updated_at"),
-        "error_message": row.get("error_message"),
+        "error_message": display_error_message(row.get("error_message")),
         "runner_version": row.get("runner_version"),
         "gpu_model": row.get("gpu_model"),
         "metrics": {
