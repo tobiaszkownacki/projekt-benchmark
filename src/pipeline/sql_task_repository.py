@@ -1,25 +1,63 @@
+from collections.abc import Iterator
+from contextlib import contextmanager
+
 from pipeline.task_repository import TaskRepository, TaskStatus
 from shared.connectors.base import DatabaseConnector
+from shared.run_result import RunResult
 
 
 class SqlTaskRepository(TaskRepository):
     def __init__(self, db_connector_cls: type[DatabaseConnector]):
         self._db_cls = db_connector_cls
 
-    def mark_submitted(self, task_id: str, executor_task_id: str) -> None:
+    @contextmanager
+    def reserve_submission(self, task_id: str) -> Iterator[bool]:
+        """Holds the task for one submitter until the block exits; True if it is still PENDING with no job.
+
+        A transaction-scoped advisory lock rather than a status written to the
+        row: it ends with the transaction, so an exception, a killed worker or a
+        dropped connection releases it, and no task can be left reserved but
+        never submitted. A second submitter waits for the first and then finds
+        the job id it recorded.
+        """
         with self._db_cls() as db:
-            db.execute(
+            db.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))", (f"submit:{task_id}",))
+            row = db.execute(
+                "SELECT 1 FROM tasks WHERE task_id = %s AND task_status = 'PENDING' AND executor_task_id IS NULL",
+                (task_id,),
+            ).fetchone()
+            yield row is not None
+
+    def mark_submitted(self, task_id: str, executor_task_id: str) -> bool:
+        """Records the cluster's job id, once. False means someone got there first."""
+        with self._db_cls() as db:
+            cursor = db.execute(
                 "UPDATE tasks SET executor_task_id = %s, task_status = 'SUBMITTED', updated_at = NOW() "
-                "WHERE task_id = %s",
+                "WHERE task_id = %s AND executor_task_id IS NULL",
                 (executor_task_id, task_id),
             )
+            return cursor.rowcount > 0
 
-    def mark_failed(self, task_id: str, error_message: str) -> None:
+    def mark_running_by_executor_id(self, executor_task_id: str) -> bool:
+        """SUBMITTED means queued at the scheduler, RUNNING means burning compute."""
         with self._db_cls() as db:
-            db.execute(
-                "UPDATE tasks SET task_status = 'FAILED', updated_at = NOW(), error_message = %s WHERE task_id = %s",
+            cursor = db.execute(
+                "UPDATE tasks SET task_status = 'RUNNING', started_at = COALESCE(started_at, NOW()), "
+                "updated_at = NOW() "
+                "WHERE executor_task_id = %s AND task_status = 'SUBMITTED'",
+                (executor_task_id,),
+            )
+            return cursor.rowcount > 0
+
+    def mark_failed(self, task_id: str, error_message: str) -> bool:
+        """Closes a task that is not closed yet. False means another path closed it first."""
+        with self._db_cls() as db:
+            cursor = db.execute(
+                "UPDATE tasks SET task_status = 'FAILED', updated_at = NOW(), error_message = %s "
+                "WHERE task_id = %s AND task_status NOT IN ('COMPLETED', 'FAILED')",
                 (error_message, task_id),
             )
+            return cursor.rowcount > 0
 
     def set_error(self, task_id: str, error_message: str) -> None:
         with self._db_cls() as db:
@@ -29,22 +67,78 @@ class SqlTaskRepository(TaskRepository):
             )
 
     def mark_completed_by_executor_id(self, executor_task_id: str) -> bool:
+        """Closes a task that is not closed yet, as the completion callback does."""
         with self._db_cls() as db:
             cursor = db.execute(
-                "UPDATE tasks SET task_status = 'COMPLETED', updated_at = NOW(), completed_at = NOW() "
-                "WHERE executor_task_id = %s AND task_status != 'COMPLETED'",
+                "UPDATE tasks SET task_status = 'COMPLETED', artifact_status = 'downloading', "
+                "updated_at = NOW(), completed_at = NOW() "
+                "WHERE executor_task_id = %s AND task_status NOT IN ('COMPLETED', 'FAILED')",
                 (executor_task_id,),
             )
             return cursor.rowcount > 0
 
     def get_by_executor_id(self, executor_task_id: str) -> TaskStatus | None:
+        return self._fetch(
+            "SELECT task_id, task_status, executor_task_id FROM tasks WHERE executor_task_id = %s",
+            executor_task_id,
+        )
+
+    def get_by_task_id(self, task_id: str) -> TaskStatus | None:
+        return self._fetch(
+            "SELECT task_id, task_status, executor_task_id FROM tasks WHERE task_id = %s",
+            task_id,
+        )
+
+    def _fetch(self, query: str, value: str) -> TaskStatus | None:
         with self._db_cls() as db:
-            cursor = db.execute(
-                "SELECT task_id, task_status FROM tasks WHERE executor_task_id = %s",
-                (executor_task_id,),
-            )
-            row = cursor.fetchone()
+            row = db.execute(query, (value,)).fetchone()
         if row is None:
             return None
-        task_id, task_status = row
-        return TaskStatus(task_id=str(task_id), task_status=str(task_status))
+        task_id, task_status, executor_task_id = row
+        return TaskStatus(
+            task_id=str(task_id),
+            task_status=str(task_status),
+            executor_task_id=str(executor_task_id) if executor_task_id else None,
+        )
+
+    def store_result(self, task_id: str, result: RunResult) -> None:
+        """Idempotent on purpose: delivery to the downloader is at-least-once."""
+        series = result.series
+        with self._db_cls() as db:
+            db.execute(
+                "INSERT INTO results (task_id, final_loss, final_accuracy, gradient_count, database_reaches, "
+                "total_steps, total_epochs, wall_time_seconds, stop_reason) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (task_id) DO NOTHING",
+                (
+                    task_id,
+                    result.final_loss,
+                    result.final_accuracy,
+                    result.gradient_count,
+                    result.database_reaches,
+                    result.total_steps,
+                    result.total_epochs,
+                    result.wall_time_seconds,
+                    result.stop_reason,
+                ),
+            )
+            db.execute(
+                "INSERT INTO result_series (task_id, epochs, loss, accuracy, gradient_count, database_reaches, "
+                "wall_time_seconds) VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT (task_id) DO NOTHING",
+                (
+                    task_id,
+                    series.epochs,
+                    series.loss,
+                    series.accuracy,
+                    series.gradient_count,
+                    series.database_reaches,
+                    series.wall_time_seconds,
+                ),
+            )
+
+    def mark_artifacts(self, task_id: str, files: int, total_bytes: int) -> None:
+        with self._db_cls() as db:
+            db.execute(
+                "UPDATE tasks SET artifact_status = %s, artifact_files = %s, artifact_bytes = %s, "
+                "updated_at = NOW() WHERE task_id = %s",
+                ("ready" if files else "empty", files, total_bytes, task_id),
+            )
