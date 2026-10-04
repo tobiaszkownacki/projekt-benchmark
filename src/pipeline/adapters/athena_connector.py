@@ -168,6 +168,9 @@ cd {workdir}
 
         return match.group(1), stderr
 
+    def cancel_job(self, job_id: str) -> None:
+        self.ssh(f"scancel {job_id}")
+
     def get_job_status(self, job_id: str) -> str:
         try:
             return self.ssh(f"squeue -j {job_id} -h -o '%T'")
