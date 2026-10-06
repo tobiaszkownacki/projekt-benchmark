@@ -53,6 +53,13 @@ class Settings:
     session_cookie_path: str = field(default_factory=lambda: "/" + os.environ.get("ROOT_PATH", "").strip("/"))
     session_max_age: int = field(default_factory=lambda: _int("SESSION_MAX_AGE", 60 * 60 * 12))
     secure_cookies: bool = field(default_factory=lambda: _bool("SECURE_COOKIES", False))
+    trusted_proxy_cidrs: tuple[str, ...] = field(
+        default_factory=lambda: tuple(
+            part.strip()
+            for part in os.environ.get("TRUSTED_PROXY_CIDRS", "127.0.0.0/8,::1/128").split(",")
+            if part.strip()
+        )
+    )
 
     daily_submission_limit: int = field(default_factory=lambda: _int("DAILY_SUBMISSION_LIMIT", 3))
 
