@@ -2,9 +2,9 @@ import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
 import { Chart } from '../components/Chart';
-import { ErrorNote, Loading } from '../components/Empty';
+import { Empty, ErrorNote, Loading } from '../components/Empty';
 import { decimal, familyLabel, integer } from '../components/format';
-import { query, withBase } from '../api';
+import { ApiError, query, withBase } from '../api';
 import type { AggregatedSeries, Run } from '../types';
 
 interface Difference {
@@ -63,6 +63,22 @@ export function Compare() {
   const exportHref = withBase(`/api/compare/export.csv${query({
     runs, x: axis, metric, group_by: groupBy, logx: logX, points: 240,
   })}`);
+
+  // Comparison reads runs, which only their owner and administrators may see:
+  // the API answers 401 to an anonymous visitor, as on the Runs page.
+  const unauthorized = [available.error, data.error].some(
+    (error) => error instanceof ApiError && error.status === 401,
+  );
+  if (unauthorized) {
+    return (
+      <div className="page">
+        <div className="page-head"><h1>Comparison</h1></div>
+        <Empty title="Log in to compare your runs">
+          Runs are visible only to their owner. <Link to="/login">Log in</Link>
+        </Empty>
+      </div>
+    );
+  }
 
   return (
     <div className="page page-wide">
