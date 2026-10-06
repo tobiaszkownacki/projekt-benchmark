@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import type { User } from '../types';
-import { api, withBase } from '../api';
+import { api } from '../api';
 
+// Runs and comparisons are visible only to their owner (and administrators),
+// so an anonymous visitor would find nothing behind those two links.
 const LINKS = [
   { to: '/', label: 'Overview', end: true },
   { to: '/leaderboard', label: 'Leaderboard' },
-  { to: '/runs', label: 'Runs' },
-  { to: '/compare', label: 'Compare' },
+  { to: '/runs', label: 'Runs', signedIn: true },
+  { to: '/compare', label: 'Compare', signedIn: true },
   { to: '/submit', label: 'Submit' },
   { to: '/docs', label: 'Protocol' },
 ];
@@ -53,10 +55,11 @@ export function Layout({
       <header className="masthead">
         <div className="masthead-inner">
           <Link to="/" className="wordmark">
-            Black-Box Benchmark <span>· Warsaw University of Technology</span>
+            Opti-Mark <span className="wordmark-sub">The Golem Benchmark</span>
+            <span className="wordmark-context">· Warsaw University of Technology</span>
           </Link>
           <nav className="nav" aria-label="Main navigation">
-            {LINKS.map((link) => (
+            {LINKS.filter((link) => user || !link.signedIn).map((link) => (
               <NavLink key={link.to} to={link.to} end={link.end}
                        className={({ isActive }) => (isActive ? 'active' : '')}>
                 {link.label}
@@ -99,9 +102,9 @@ export function Layout({
         color: 'var(--text-3)', fontSize: 12,
       }}>
         <div style={{ maxWidth: 1400, margin: '0 auto' }}>
-          Department of Artificial Intelligence, Faculty of Electronics and Information Technology ·{' '}
-          <Link to="/docs">optimizer contract</Link> ·{' '}
-          <a href={withBase('/api/openapi')}>API documentation</a>
+          Golem Artificial Intelligence Society · Department of Artificial Intelligence,
+          Faculty of Electronics and Information Technology ·{' '}
+          <Link to="/docs">optimizer contract</Link>
         </div>
       </footer>
     </div>

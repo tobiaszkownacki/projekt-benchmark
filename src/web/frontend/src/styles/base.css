@@ -80,10 +80,14 @@ select:focus-visible, input:focus-visible, textarea:focus-visible {
   flex: none;
 }
 .wordmark:hover { text-decoration: none; }
-/* The institution is context, not identity: it is the first thing to go when
- * the bar runs out of room, so the navigation stays on one line. */
+/* The subtitle and the institution are context, not identity: they are the
+ * first things to go when the bar runs out of room, institution first, so the
+ * navigation stays on one line. */
 .wordmark span { color: var(--text-2); font-weight: 400; }
-@media (max-width: 1250px) { .wordmark span { display: none; } }
+.wordmark-sub { margin-left: var(--space-2); font-style: italic; }
+.wordmark-context { margin-left: 4px; }
+@media (max-width: 1400px) { .wordmark-context { display: none; } }
+@media (max-width: 1100px) { .wordmark-sub { display: none; } }
 
 .nav { display: flex; gap: 2px; flex-wrap: wrap; flex: 1; min-width: 0; }
 .nav a {

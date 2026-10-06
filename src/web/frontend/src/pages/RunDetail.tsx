@@ -4,7 +4,7 @@ import { useApi } from '../hooks/useApi';
 import { Chart } from '../components/Chart';
 import { Metric } from '../components/Metric';
 import { StatusPill } from '../components/StatusPill';
-import { Loading } from '../components/Empty';
+import { Loading, RunNotFound } from '../components/Empty';
 import {
   bytes, decimal, duration, familyLabel, integer, percent, since, suiteLabel, timestamp,
 } from '../components/format';
@@ -44,19 +44,7 @@ export function RunDetail({ user, revision }: { user: User | null; revision: num
   );
 
   if (run.loading) return <div className="page"><Loading what="run" /></div>;
-  if (run.error) {
-    return (
-      <div className="page">
-        <div className="note note-error">
-          <strong>Run not found or you do not have access.</strong>
-          <p className="small" style={{ marginTop: 6, marginBottom: 0 }}>
-            Results are visible to the owner and administrators. We return 404 instead of 403
-            so we do not confirm that someone else’s resource exists.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  if (run.error) return <RunNotFound />;
   if (!run.data) return null;
 
   const item = run.data;

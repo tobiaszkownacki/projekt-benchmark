@@ -22,3 +22,17 @@ export function ErrorNote({ error }: { error: Error | null }) {
     </div>
   );
 }
+
+export function RunNotFound() {
+  return (
+    <div className="page">
+      <div className="note note-error">
+        <strong>Run not found or you do not have access.</strong>
+        <p className="small" style={{ marginTop: 6, marginBottom: 0 }}>
+          Results are visible to the owner and administrators. We return 404 instead of 403
+          so we do not confirm that someone else’s resource exists.
+        </p>
+      </div>
+    </div>
+  );
+}

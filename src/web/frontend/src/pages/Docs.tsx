@@ -4,11 +4,9 @@ import { Loading } from '../components/Empty';
 import { withBase } from '../api';
 
 interface ApiRow { method: string; returns: string; effect: string; note: string }
-interface Limitation { title: string; detail: string }
 interface Protocol {
   evaluator_api: ApiRow[];
   examples: Record<string, { filename: string; present: boolean; repo_path: string | null }>;
-  known_limitations: Limitation[];
   sandbox: Record<string, string>;
   stop_reasons: Record<string, { label: string; note: string; converged: boolean }>;
 }
@@ -168,22 +166,6 @@ export function Docs() {
             </div>
           ))}
         </dl>
-      </div>
-
-      <div className="section">
-        <div className="section-head"><h2>Known contract limitations</h2></div>
-        <p className="small muted">
-          Listed explicitly because discovering them by trial and error during the competition
-          would be worse for everyone than reading them here.
-        </p>
-        <div className="stack">
-          {data?.known_limitations.map((item) => (
-            <div key={item.title} className="note note-warning">
-              <strong>{item.title}</strong>
-              <p className="small" style={{ marginTop: 4, marginBottom: 0 }}>{item.detail}</p>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );

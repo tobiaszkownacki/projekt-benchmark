@@ -1,9 +1,9 @@
 import { Link, useSearchParams } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
-import { ErrorNote, Loading } from '../components/Empty';
+import { Empty, ErrorNote, Loading } from '../components/Empty';
 import { StatusPill } from '../components/StatusPill';
 import { decimal, integer, shortId, since, timestamp } from '../components/format';
-import { query } from '../api';
+import { ApiError, query } from '../api';
 import type { Run, User } from '../types';
 
 interface Payload { runs: Run[]; total: number; limit: number; offset: number }
@@ -34,10 +34,26 @@ export function Runs({ user, revision }: { user: User | null; revision: number }
     setParams(next, { replace: true });
   }
 
+  // The API answers 401 to an anonymous visitor: runs are visible only to
+  // their owner and administrators. The cookie decides, not `user`, which is
+  // still null while the session is being resolved.
+  if (runs.error instanceof ApiError && runs.error.status === 401) {
+    return (
+      <div className="page">
+        <div className="page-head"><h1>Runs</h1></div>
+        <Empty title="Log in to see your runs">
+          Runs are visible only to their owner. <Link to="/login">Log in</Link>
+        </Empty>
+      </div>
+    );
+  }
+
+  const isAdmin = user?.is_admin === true;
+
   return (
     <div className="page page-wide">
       <div className="page-head">
-        <h1>Runs</h1>
+        <h1>{isAdmin ? 'All runs' : 'My runs'}</h1>
         <p>
           A task waits in an external scheduler, so it has more states than “running”
           and “done.” Each state has its own message: queue position, SLURM job number,
@@ -46,7 +62,7 @@ export function Runs({ user, revision }: { user: User | null; revision: number }
       </div>
 
       <div className="controls section">
-        {user && (
+        {isAdmin && (
           <div className="segmented">
             <button className={!mine ? 'active' : ''} onClick={() => update('mine', '')}>
               All
@@ -97,6 +113,7 @@ export function Runs({ user, revision }: { user: User | null; revision: number }
                 <tr>
                   <th>Status</th>
                   <th>Name</th>
+                  {isAdmin && <th>Submitter</th>}
                   <th>Optimizer</th>
                   <th>Dataset / model</th>
                   <th className="num">Seed</th>
@@ -121,6 +138,9 @@ export function Runs({ user, revision }: { user: User | null; revision: number }
                         {run.run_name ?? shortId(run.task_id)}
                       </Link>
                     </td>
+                    {isAdmin && (
+                      <td className="small">{run.submitter_name ?? shortId(run.submitted_by)}</td>
+                    )}
                     <td className="mono small">{run.optimizer ?? 'N/A'}</td>
                     <td className="mono small">{run.dataset} / {run.model}</td>
                     <td className="num small">{run.seed ?? 'N/A'}</td>
