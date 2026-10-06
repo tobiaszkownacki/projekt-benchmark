@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
-import { ErrorNote, Loading, RunNotFound } from '../components/Empty';
+import { ArchiveLink, ErrorNote, Loading, RunNotFound } from '../components/Empty';
 import { bytes, timestamp } from '../components/format';
 import { ApiError, withBase } from '../api';
 import type { FileEntry, Run } from '../types';
@@ -221,7 +221,8 @@ export function RunFiles() {
           <button className="subtle" onClick={() => setShowHelp((v) => !v)}>
             Keyboard shortcuts (?)
           </button>
-          <a className="button" href={withBase(`/api/runs/${taskId}/archive.zip`)}>Download .zip</a>
+          <ArchiveLink href={withBase(`/api/runs/${taskId}/archive.zip`)}
+                       status={run.data?.artifact_status} />
         </div>
       </div>
 

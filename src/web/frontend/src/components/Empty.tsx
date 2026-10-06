@@ -36,3 +36,13 @@ export function RunNotFound() {
     </div>
   );
 }
+
+// The archive endpoint answers 404 until the run's files are on disk, so a
+// plain link would open a bare JSON error for queued, failed or running runs.
+export function ArchiveLink({ href, status }: { href: string; status: string | null | undefined }) {
+  if (status === 'ready') {
+    return <a className="button" href={href}>Download .zip</a>;
+  }
+  const reason = status === 'downloading' ? 'Files are still downloading' : 'No files for this run';
+  return <span className="small muted">{reason}</span>;
+}

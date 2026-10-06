@@ -4,7 +4,7 @@ import { useApi } from '../hooks/useApi';
 import { Chart } from '../components/Chart';
 import { Metric } from '../components/Metric';
 import { StatusPill } from '../components/StatusPill';
-import { Loading, RunNotFound } from '../components/Empty';
+import { ArchiveLink, Loading, RunNotFound } from '../components/Empty';
 import {
   bytes, decimal, duration, familyLabel, integer, percent, since, suiteLabel, timestamp,
 } from '../components/format';
@@ -84,9 +84,8 @@ export function RunDetail({ user, revision }: { user: User | null; revision: num
           </div>
           <div className="row">
             <Link className="button" to={`/runs/${item.task_id}/files`}>Files</Link>
-            <a className="button" href={withBase(`/api/runs/${item.task_id}/archive.zip`)}>
-              Download .zip
-            </a>
+            <ArchiveLink href={withBase(`/api/runs/${item.task_id}/archive.zip`)}
+                         status={item.artifact_status} />
           </div>
         </div>
       </div>
