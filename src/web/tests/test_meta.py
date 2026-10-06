@@ -46,3 +46,16 @@ def test_template_names_the_benchmark(client):
     assert response.status_code == 200
     assert "Optimizer template for Opti-Mark (The Golem Benchmark)." in response.text
     assert "Black-Box Benchmark" not in response.text
+
+
+def test_spa_document_is_revalidated_on_every_load(client, tmp_path, monkeypatch):
+    import app.main as main
+
+    index = tmp_path / "index.html"
+    index.write_text("<!doctype html>", encoding="utf-8")
+    monkeypatch.setattr(main, "_INDEX", index)
+
+    response = client.get("/docs")
+
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-cache"

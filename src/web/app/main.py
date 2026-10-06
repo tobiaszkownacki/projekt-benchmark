@@ -180,7 +180,10 @@ async def spa(full_path: str) -> Response:
         return FileResponse(candidate)
 
     if _INDEX.is_file():
-        return FileResponse(_INDEX)
+        # index.html names the hashed bundle of the current release. A cached
+        # copy keeps running the previous bundle against the new API, so the
+        # browser must revalidate it on every load.
+        return FileResponse(_INDEX, headers={"Cache-Control": "no-cache"})
     return JSONResponse(
         status_code=503,
         content={"message": "The frontend is not built. Run `npm run build`."},
