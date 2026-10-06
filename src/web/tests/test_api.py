@@ -6,7 +6,9 @@ other way: the SPA catch-all, which is the single most common way to break deep
 links, and the authorisation boundary on artifacts.
 """
 
+import hashlib
 import os
+import secrets
 import uuid
 
 import pytest
@@ -27,6 +29,28 @@ def client(tmp_path_factory):
 
     with TestClient(app) as test_client:
         yield test_client
+
+
+@pytest.fixture(scope="module")
+def admin():
+    """Bearer headers for an administrator, who may list and open every run."""
+    import psycopg
+
+    raw = "bmk_" + secrets.token_urlsafe(32)
+    with psycopg.connect(DATABASE_URL, autocommit=True) as conn:
+        user_id = conn.execute(
+            """
+            INSERT INTO users (email, auth_provider, role, password_hash)
+            VALUES (%s, 'email', 'admin', 'not-a-usable-hash')
+            RETURNING id
+            """,
+            (f"api-admin-{uuid.uuid4()}@example.test",),
+        ).fetchone()[0]
+        conn.execute(
+            "INSERT INTO api_tokens (user_id, name, token_sha256, prefix) VALUES (%s, 'test', %s, %s)",
+            (user_id, hashlib.sha256(raw.encode()).hexdigest(), raw[:10]),
+        )
+    return {"Authorization": f"Bearer {raw}"}
 
 
 def test_healthz_reports_the_database(client):
@@ -65,30 +89,30 @@ def test_leaderboard_formula_changes_the_ordering_key(client):
     assert by_accuracy["score_formula"]["direction"] == "desc"
 
 
-def test_runs_listing_paginates(client):
-    body = client.get("/api/runs?limit=5").json()
+def test_runs_listing_paginates(client, admin):
+    body = client.get("/api/runs?limit=5", headers=admin).json()
     assert len(body["runs"]) <= 5
     assert "total" in body
 
 
-def test_series_downsampling_reports_itself(client):
-    runs = client.get("/api/runs?status=completed&limit=1").json()["runs"]
+def test_series_downsampling_reports_itself(client, admin):
+    runs = client.get("/api/runs?status=COMPLETED&limit=1", headers=admin).json()["runs"]
     if not runs:
         pytest.skip("no completed runs in the database")
     task_id = runs[0]["task_id"]
 
-    body = client.get(f"/api/runs/{task_id}/series?points=10").json()
+    body = client.get(f"/api/runs/{task_id}/series?points=10", headers=admin).json()
     assert len(body["points"]) <= 10
     assert "original_points" in body
     if body["truncated"]:
         assert body["downsample"] == "lttb"
 
 
-def test_series_rejects_an_unknown_axis(client):
-    runs = client.get("/api/runs?status=completed&limit=1").json()["runs"]
+def test_series_rejects_an_unknown_axis(client, admin):
+    runs = client.get("/api/runs?status=COMPLETED&limit=1", headers=admin).json()["runs"]
     if not runs:
         pytest.skip("no completed runs in the database")
-    response = client.get(f"/api/runs/{runs[0]['task_id']}/series?x=wall_time")
+    response = client.get(f"/api/runs/{runs[0]['task_id']}/series?x=wall_time", headers=admin)
     assert response.status_code == 400
 
 
@@ -100,13 +124,13 @@ def test_malformed_uuid_is_rejected_before_the_filesystem(client):
     assert client.get("/api/runs/not-a-uuid/files").status_code == 422
 
 
-def test_artifact_traversal_is_refused(client):
-    runs = client.get("/api/runs?status=completed&limit=1").json()["runs"]
+def test_artifact_traversal_is_refused(client, admin):
+    runs = client.get("/api/runs?status=COMPLETED&limit=1", headers=admin).json()["runs"]
     if not runs:
         pytest.skip("no completed runs in the database")
     task_id = runs[0]["task_id"]
     for attack in ("../../etc/passwd", "/etc/passwd", "reports/../../../etc/passwd"):
-        response = client.get(f"/api/runs/{task_id}/files/raw", params={"path": attack})
+        response = client.get(f"/api/runs/{task_id}/files/raw", params={"path": attack}, headers=admin)
         assert response.status_code in (400, 404), attack
 
 

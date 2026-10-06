@@ -4,10 +4,10 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.security import CurrentUser, optional_user
+from app.security import CurrentUser, optional_user, require_user
 from app.services import runs as runs_service
 from app.services import series as series_service
-from app.services.authz import can_read_run
+from app.services.authz import can_read_run, visible_owner
 
 router = APIRouter(prefix="/api/runs", tags=["runs"])
 
@@ -33,12 +33,11 @@ async def list_runs(
     search: str | None = None,
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
-    user: CurrentUser | None = Depends(optional_user),
+    user: CurrentUser = Depends(require_user),
 ) -> dict:
-    if mine and user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Authentication required")
-
-    mine_for = user.id if (mine and user) else None
+    # Restricted in SQL rather than after the fetch, so that "total" and the
+    # pagination describe the runs this requester can actually open.
+    mine_for = user.id if mine else visible_owner(user)
     rows, total = await runs_service.listing(
         mine_for=mine_for,
         status=status_filter,
@@ -51,9 +50,8 @@ async def list_runs(
         limit=limit,
         offset=offset,
     )
-    visible = [r for r in rows if can_read_run(user, r["submitted_by"])]
     return {
-        "runs": [runs_service.serialise(r) for r in visible],
+        "runs": [runs_service.serialise(r) for r in rows],
         "total": total,
         "limit": limit,
         "offset": offset,
@@ -61,8 +59,8 @@ async def list_runs(
 
 
 @router.get("/filters")
-async def run_filters() -> dict:
-    return await runs_service.filter_options()
+async def run_filters(user: CurrentUser = Depends(require_user)) -> dict:
+    return await runs_service.filter_options(submitted_by=visible_owner(user))
 
 
 @router.get("/{task_id}")

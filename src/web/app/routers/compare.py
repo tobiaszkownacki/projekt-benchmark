@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import Response
 
 from app import db
-from app.security import CurrentUser, optional_user
+from app.security import CurrentUser, require_user
 from app.services import runs as runs_service
 from app.services import series as series_service
 from app.services.authz import can_read_run
@@ -45,9 +45,7 @@ def _parse_ids(raw: str) -> list[UUID]:
     return ids
 
 
-async def _collect(
-    ids: list[UUID], user: CurrentUser | None, x: str, metric: str, group_by: str
-) -> tuple[dict, list[dict]]:
+async def _collect(ids: list[UUID], user: CurrentUser, x: str, metric: str, group_by: str) -> tuple[dict, list[dict]]:
     rows = await db.fetch_all(
         f"""
         SELECT {runs_service.RUN_COLUMNS},
@@ -62,6 +60,8 @@ async def _collect(
         """,
         (ids,),
     )
+    # A run the requester may not read is dropped exactly like an unknown id,
+    # so "missing" cannot be used to probe whether someone else's run exists.
     visible = [r for r in rows if can_read_run(user, r["submitted_by"])]
 
     grouped: dict[str, list] = {}
@@ -94,7 +94,7 @@ async def compare(
     group_by: str = Query("optimizer"),
     points: int = Query(200, ge=20, le=1000),
     logx: bool = Query(False),
-    user: CurrentUser | None = Depends(optional_user),
+    user: CurrentUser = Depends(require_user),
 ) -> dict:
     if x not in series_service.X_AXES:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown x axis")
@@ -169,7 +169,7 @@ async def export_csv(
     group_by: str = Query("optimizer"),
     points: int = Query(200, ge=20, le=1000),
     logx: bool = Query(False),
-    user: CurrentUser | None = Depends(optional_user),
+    user: CurrentUser = Depends(require_user),
 ) -> Response:
     payload = await compare(runs, x, metric, group_by, points, logx, user)
 

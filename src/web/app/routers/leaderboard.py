@@ -1,8 +1,9 @@
 """Leaderboard and overview counters."""
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
 from app import db
+from app.security import CurrentUser, optional_user
 from app.services import leaderboard as leaderboard_service
 
 router = APIRouter(prefix="/api", tags=["leaderboard"])
@@ -16,6 +17,7 @@ async def leaderboard(
     suite: str | None = None,
     score: str = Query(leaderboard_service.DEFAULT_FORMULA),
     limit: int = Query(200, ge=1, le=500),
+    user: CurrentUser | None = Depends(optional_user),
 ) -> dict:
     return await leaderboard_service.query(
         dataset=dataset,
@@ -24,6 +26,7 @@ async def leaderboard(
         suite=suite,
         score=score,
         limit=limit,
+        user=user,
     )
 
 
