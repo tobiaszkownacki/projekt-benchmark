@@ -4,7 +4,7 @@ import { useApi } from '../hooks/useApi';
 import { Chart } from '../components/Chart';
 import { ErrorNote, Loading } from '../components/Empty';
 import { decimal, familyLabel, integer } from '../components/format';
-import { query } from '../api';
+import { query, withBase } from '../api';
 import type { AggregatedSeries, Run } from '../types';
 
 interface Difference {
@@ -60,9 +60,9 @@ export function Compare() {
     update('runs', [...next].join(','));
   }
 
-  const exportHref = `/api/compare/export.csv${query({
+  const exportHref = withBase(`/api/compare/export.csv${query({
     runs, x: axis, metric, group_by: groupBy, logx: logX, points: 240,
-  })}`;
+  })}`);
 
   return (
     <div className="page page-wide">

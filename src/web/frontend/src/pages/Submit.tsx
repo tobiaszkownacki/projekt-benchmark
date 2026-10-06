@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
 import { suiteLabel } from '../components/format';
-import { api, ApiError } from '../api';
+import { api, ApiError, withBase } from '../api';
 import type { User } from '../types';
 
 const BUILTINS = [
@@ -191,7 +191,7 @@ export function Submit({ user }: { user: User | null }) {
                            const file = e.target.files?.[0];
                            if (file) setSource(await file.text());
                          }} />
-                  <a className="small" href="/api/protocol/template" download>
+                  <a className="small" href={withBase('/api/protocol/template')} download>
                     Download template optimizer_template.py
                   </a>
                 </div>

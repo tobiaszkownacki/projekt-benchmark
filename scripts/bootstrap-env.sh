@@ -62,6 +62,7 @@ SESSION_SECRET=$(secret 64 48)
 # 8080, not 8000: the task API already claims \${API_PORT:-8000} and the two
 # would refuse to bind together on a default \`docker compose up\`.
 WEB_PORT=8080
+BASE_PATH=
 PUBLIC_RESULTS=1
 DAILY_SUBMISSION_LIMIT=3
 VALIDATOR_ENABLED=0

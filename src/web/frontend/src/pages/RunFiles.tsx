@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
 import { ErrorNote, Loading } from '../components/Empty';
 import { bytes, timestamp } from '../components/format';
+import { withBase } from '../api';
 import type { FileEntry, Run } from '../types';
 
 interface TreePayload {
@@ -138,7 +139,7 @@ export function RunFiles() {
     setContent(null); setContentError(null);
     if (!selected || !meta.data || meta.data.too_large) return;
     if (meta.data.preview === 'image' || meta.data.preview === null) return;
-    fetch(`/api/runs/${taskId}/files/raw?path=${encodeURIComponent(selected)}`)
+    fetch(withBase(`/api/runs/${taskId}/files/raw?path=${encodeURIComponent(selected)}`))
       .then(async (response) => {
         if (!response.ok) throw new Error(`Request failed (${response.status})`);
         return response.text();
@@ -219,7 +220,7 @@ export function RunFiles() {
           <button className="subtle" onClick={() => setShowHelp((v) => !v)}>
             Keyboard shortcuts (?)
           </button>
-          <a className="button" href={`/api/runs/${taskId}/archive.zip`}>Download .zip</a>
+          <a className="button" href={withBase(`/api/runs/${taskId}/archive.zip`)}>Download .zip</a>
         </div>
       </div>
 
@@ -330,7 +331,7 @@ export function RunFiles() {
                       Copy path
                     </button>
                     <a className="button tiny"
-                       href={`/api/runs/${taskId}/files/raw?path=${encodeURIComponent(selected)}`}
+                       href={withBase(`/api/runs/${taskId}/files/raw?path=${encodeURIComponent(selected)}`)}
                        download>
                       Download
                     </a>
@@ -348,7 +349,7 @@ export function RunFiles() {
 
                   {meta.data?.preview === 'image' && !meta.data.too_large && (
                     <img
-                      src={`/api/runs/${taskId}/files/raw?path=${encodeURIComponent(selected)}`}
+                      src={withBase(`/api/runs/${taskId}/files/raw?path=${encodeURIComponent(selected)}`)}
                       alt={selected}
                       style={{ maxWidth: '100%', border: '1px solid var(--border)' }}
                     />

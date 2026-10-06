@@ -8,7 +8,7 @@ import { Loading } from '../components/Empty';
 import {
   bytes, decimal, duration, familyLabel, integer, percent, since, suiteLabel, timestamp,
 } from '../components/format';
-import { query } from '../api';
+import { query, withBase } from '../api';
 import type { AggregatedSeries, Run, User } from '../types';
 
 const AXES = [
@@ -96,7 +96,9 @@ export function RunDetail({ user, revision }: { user: User | null; revision: num
           </div>
           <div className="row">
             <Link className="button" to={`/runs/${item.task_id}/files`}>Files</Link>
-            <a className="button" href={`/api/runs/${item.task_id}/archive.zip`}>Download .zip</a>
+            <a className="button" href={withBase(`/api/runs/${item.task_id}/archive.zip`)}>
+              Download .zip
+            </a>
           </div>
         </div>
       </div>
