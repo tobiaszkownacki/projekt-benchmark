@@ -40,6 +40,10 @@ def test_client_ip_does_not_trust_forwarding_from_direct_client():
     assert client_ip(request) == "198.51.100.9"
 
 
+def test_client_ip_does_not_count_a_proxy_without_forwarded_address():
+    assert client_ip(request_for(client=("127.0.0.1", 12345))) is None
+
+
 def test_page_view_requires_html_document_and_excludes_internal_traffic():
     assert is_page_view(request_for()) is True
     assert is_page_view(request_for(path="/api/auth/me")) is False

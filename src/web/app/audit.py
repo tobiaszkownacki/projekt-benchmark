@@ -61,6 +61,9 @@ def client_ip(request: Request) -> str | None:
         parsed = _parse_ip(request.headers.get("x-real-ip"))
         if parsed:
             return parsed
+        # Do not count the proxy itself as a visitor when the upstream layer
+        # did not preserve a client address.
+        return None
     return _parse_ip(peer)
 
 
