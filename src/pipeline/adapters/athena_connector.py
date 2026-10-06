@@ -28,18 +28,22 @@ class AthenaConnector(BaseConnector):
     def __init__(self) -> None:
         self.host = os.environ.get("ATHENA_HOST")
         self.user = os.environ.get("ATHENA_USER")
-        self.password = os.environ.get("ATHENA_PASSWORD")
+        self.password = os.environ.get("ATHENA_PASSWORD") or None
+        self.key_path = os.environ.get("ATHENA_KEY_PATH") or None
         self.account = os.environ.get("ATHENA_ACCOUNT")
         self.client = None
         self._scratch: str | None = None
 
     def __enter__(self) -> "AthenaConnector":
+        if not self.key_path and not self.password:
+            raise RuntimeError("neither ATHENA_KEY_PATH nor ATHENA_PASSWORD is set")
         self.client = paramiko.SSHClient()
         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.client.connect(
             self.host,
             username=self.user,
             password=self.password,
+            key_filename=self.key_path,
             look_for_keys=False,
             allow_agent=False,
         )
