@@ -9,9 +9,11 @@ empty executor_task_id before either had written one.
 import threading
 import uuid
 
+import pytest
+
 from fakes import RecordingExecutor, RecordingRepository
 
-from pipeline.executor import SCHEMA_VERSION, JobDescription, SubmitResult
+from pipeline.executor import RetryableSubmissionError, SCHEMA_VERSION, JobDescription, SubmitResult
 from pipeline.generic_services.generic_worker import GenericWorker
 from pipeline.task_repository import TaskStatus
 from shared.queue_topology import QueueTopology
@@ -121,3 +123,21 @@ def test_a_job_the_callback_recorded_first_is_kept():
     _worker(repo, adapter).handle(_message(task_id))
 
     assert adapter.cancelled == []
+
+
+class _RetryingExecutor(RecordingExecutor):
+    def submit_job(self, job: JobDescription) -> SubmitResult:
+        raise RetryableSubmissionError("sbatch: error: QOSMaxSubmitJobPerUserLimit")
+
+
+def test_a_transient_scheduler_limit_keeps_task_pending():
+    repo, adapter = RecordingRepository(), _RetryingExecutor()
+    task_id = str(uuid.uuid4())
+    repo.tasks[task_id] = TaskStatus(task_id, "PENDING")
+
+    with pytest.raises(RetryableSubmissionError, match="QOSMaxSubmitJobPerUserLimit"):
+        _worker(repo, adapter).handle(_message(task_id))
+
+    assert repo.failed == []
+    assert repo.tasks[task_id].task_status == "PENDING"
+    assert adapter.submitted == []

@@ -6,9 +6,22 @@ from pathlib import Path
 
 import paramiko
 
+from pipeline.executor import RetryableSubmissionError
 from shared.connectors.base import BaseConnector
 
 POLL_EVERY = int(os.environ.get("POLL_EVERY", 30))
+
+# These are scheduler admission failures, not invalid jobs. The task must stay
+# pending until the user can submit again under the account/QOS policy.
+_RETRYABLE_SUBMISSION_MARKERS = (
+    "QOSMaxSubmitJobPerUserLimit",
+    "QOSMaxSubmitJobPerAccountLimit",
+    "AssocMaxSubmitJobLimit",
+)
+
+
+def is_retryable_submission_error(message: str) -> bool:
+    return any(marker in message for marker in _RETRYABLE_SUBMISSION_MARKERS)
 
 
 class AthenaConnector(BaseConnector):
@@ -160,7 +173,10 @@ cd {workdir}
 
         stdout, stderr, exit_code = self.ssh_capture(f"cd {job_dir} && sbatch job.sh")
         if exit_code != 0:
-            raise RuntimeError(stderr or f"sbatch exited with status {exit_code}")
+            message = stderr or f"sbatch exited with status {exit_code}"
+            if is_retryable_submission_error(message):
+                raise RetryableSubmissionError(message)
+            raise RuntimeError(message)
 
         match = re.search(r"(\d+)", stdout)
         if not match:

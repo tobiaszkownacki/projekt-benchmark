@@ -4,6 +4,10 @@ from dataclasses import dataclass
 SCHEMA_VERSION = 1
 
 
+class RetryableSubmissionError(RuntimeError):
+    """The scheduler temporarily rejected a submission; keep the task pending."""
+
+
 @dataclass
 class SubmitResult:
     executor_task_id: str

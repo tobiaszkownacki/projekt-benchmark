@@ -1,7 +1,7 @@
 import logging
 
 from pipeline.consumer import run_consumer
-from pipeline.executor import JobDescription
+from pipeline.executor import JobDescription, RetryableSubmissionError
 from pipeline.task_repository import TaskRepository
 from shared.queue_topology import QueueTopology
 
@@ -34,6 +34,14 @@ class GenericWorker:
     def _submit(self, job: JobDescription) -> None:
         try:
             submit_result = self.adapter.submit_job(job)
+        except RetryableSubmissionError:
+            # Admission limits are transient. The consumer requeues this
+            # message; marking it FAILED here would lose a valid submission.
+            logger.warning(
+                "Submission temporarily rejected for task_id=%s; leaving it PENDING for retry",
+                job.task_id,
+            )
+            raise
         except Exception as exc:
             logger.exception(f"Failed to submit job for task_id={job.task_id} due to {exc}")
             self.task_repo.mark_failed(job.task_id, str(exc))
