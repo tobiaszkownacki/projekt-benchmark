@@ -31,7 +31,10 @@ export function PublicCurves({ height = 380, compact = false }: { height?: numbe
   const [cell, setCell] = useState('');
   const [axis, setAxis] = useState('database_reaches');
   const [metric, setMetric] = useState('loss');
-  const [logY, setLogY] = useState(false);
+  // Losses span orders of magnitude between methods (a diverging run sits
+  // at 10^3 next to converged ones at 10^-1), so a linear axis flattens
+  // every method but the worst one.
+  const [logY, setLogY] = useState(true);
 
   const [dataset, model, suite] = cell ? cell.split('|') : [];
   const data = useApi<Payload>(
@@ -42,7 +45,7 @@ export function PublicCurves({ height = 380, compact = false }: { height?: numbe
   if (data.data && data.data.cells.length === 0) return null;
 
   return (
-    <div className="section">
+    <div className="section" style={{ marginTop: 'var(--space-5)' }}>
       <div className="section-head"><h2>Convergence by method</h2></div>
       {!compact && (
         <p className="small muted">
@@ -69,7 +72,8 @@ export function PublicCurves({ height = 380, compact = false }: { height?: numbe
         </div>
         <div>
           <label htmlFor="pc-metric">Metric</label>
-          <select id="pc-metric" value={metric} onChange={(e) => setMetric(e.target.value)}>
+          <select id="pc-metric" value={metric}
+                  onChange={(e) => { setMetric(e.target.value); setLogY(e.target.value === 'loss'); }}>
             <option value="loss">Loss</option>
             <option value="accuracy">Accuracy</option>
           </select>
