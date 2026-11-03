@@ -49,13 +49,10 @@ This is the easiest approach, especially for NumPy/CuPy based optimizers.
         def step(self, evaluator: ModelEvaluator) -> bool:
             # The evaluator will give you params and gradients as NumPy arrays
             # because the base class specified NumpyNdarrayTensorEvaluatorDto.
-            loss, grad = evaluator.evaluate_with_grad()  # grad is a NumPy array
+            loss, grad = evaluator.evaluate_with_grad(self.params)  # grad is a NumPy array
 
             # ... your optimization logic ...
             self.params = self.params - self.my_arg * grad
-
-            # Give the updated parameters back to the evaluator
-            evaluator.set_params(self.params)
 
             # Return False to continue, True to stop
             return False

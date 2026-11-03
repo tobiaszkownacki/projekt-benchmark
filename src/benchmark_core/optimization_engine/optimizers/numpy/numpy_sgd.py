@@ -22,7 +22,7 @@ class NumpySGD(NumpyBenchmarkOptimizer):
         self.velocity = np.zeros_like(initial_params)
 
     def step(self, evaluator: ModelEvaluator) -> bool:
-        loss, grad = evaluator.evaluate_with_grad()
+        loss, grad = evaluator.evaluate_with_grad(self.params)
 
         if self.weight_decay > 0:
             grad = grad + self.weight_decay * self.params
@@ -33,5 +33,4 @@ class NumpySGD(NumpyBenchmarkOptimizer):
         else:
             self.params = self.params - self.lr * grad
 
-        evaluator.set_params(self.params)
         return False

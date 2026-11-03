@@ -14,20 +14,17 @@ class ExampleEvolutionaryOptimizer(BenchmarkOptimizer):
 
     def step(self, evaluator: ModelEvaluator) -> bool:
         # Evaluate current
-        evaluator.set_params(self.params)
-        current_loss = evaluator.evaluate()
+        current_loss = evaluator.evaluate(self.params)
 
         # Try mutation
         mutant = self.params + self.sigma * np.random.randn(len(self.params))
-        evaluator.set_params(mutant)
-        mutant_loss = evaluator.evaluate()
+        mutant_loss = evaluator.evaluate(mutant)
 
         # Select better
         if mutant_loss < current_loss:
             self.params = mutant
             self.best_loss = mutant_loss
         else:
-            evaluator.set_params(self.params)
             self.best_loss = current_loss
 
         return False  # Could add convergence check

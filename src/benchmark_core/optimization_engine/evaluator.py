@@ -1,9 +1,9 @@
 """
 This wraps the model, data batch, and loss function
 providing a simple interface allowing optimizers to:
-1. Evaluate the current parameters (forward pass)
+1. Evaluate supplied parameters (forward pass)
 2. Get gradients (backward pass)
-3. Read/write model parameters
+3. Keep model parameters hidden from the optimizer
 
 Metrics are tracked AUTOMATICALLY, the optimizer doesn't need to do anything.
 """
@@ -13,7 +13,7 @@ from collections.abc import Callable
 import torch
 from torch import Tensor
 from torch.nn import Module
-from torch.nn.utils import parameters_to_vector, vector_to_parameters
+from torch.nn.utils import vector_to_parameters
 
 from .evaluator_dtos import PyTorchTensorEvaluatorDto
 from .evaluator_dtos.evaluator_dto import T
@@ -26,12 +26,10 @@ class ModelEvaluator:
     It automatically tracks metrics such as database reaches and gradient computations.
 
     Key functionalities provided:
-    - `get_params() -> object`: Retrieves current model parameters, converted via DTO.
-    - `set_params(params: object) -> None`: Sets model parameters from a DTO-converted object.
-    - `evaluate() -> float`: Performs a forward pass and returns the loss.
-    - `evaluate_with_grad() -> Tuple[float, object]`: Performs a forward and backward pass, returning loss
+    - `evaluate(params: object) -> float`: Evaluates supplied parameters and returns the loss.
+    - `evaluate_with_grad(params: object) -> Tuple[float, object]`: Performs a forward and backward pass, returning loss
       and gradients (DTO-converted).
-    - `get_predictions() -> Tuple[object, object]`: Retrieves model predictions and targets (DTO-converted).
+    - `get_predictions(params: object) -> Tuple[object, object]`: Retrieves model predictions and targets (DTO-converted).
     - `batch_size() -> int`: Returns the number of samples in the current batch.
     - `param_count() -> int`: Returns the total number of model parameters.
     """
@@ -79,30 +77,19 @@ class ModelEvaluator:
         """Total number of model parameters"""
         return self._param_count
 
-    def get_params(self) -> object:
+    def _load_params(self, params: object) -> None:
         """
-        Retrieves the current model parameters as a flattened vector, converted to the specified
-        output DTO type.
-
-        Returns:
-            An object containing the flattened model parameters, conforming to the set output DTO.
-        """
-        return PyTorchTensorEvaluatorDto(parameters_to_vector(self._model.parameters())).to(self.type).data()
-
-    def set_params(self, params: object) -> None:
-        """
-        Sets the model parameters from a flattened vector provided as a DTO-converted object.
+        Maps a supplied flattened vector onto the model parameter tensors.
 
         Args:
-            params: An object containing the flattened parameters to set, conforming to the
-                    specified input DTO type.
+            params: Flattened parameters in the optimizer's declared DTO representation.
         """
         params_torch_flat = self.type(params).to(PyTorchTensorEvaluatorDto, device=self._device)
         vector_to_parameters(params_torch_flat.data(), self._model.parameters())
 
-    def evaluate(self) -> float:
+    def evaluate(self, params: object) -> float:
         """
-        Evaluate current parameters on the batch (forward pass only)
+        Evaluate supplied parameters on the batch (forward pass only).
 
         Returns:
             Loss value as float
@@ -110,6 +97,7 @@ class ModelEvaluator:
         Effect:
             Increments database_reaches by batch_size
         """
+        self._load_params(params)
         self._model.eval()
         with torch.no_grad():
             outputs = self._model(self._inputs)
@@ -119,9 +107,9 @@ class ModelEvaluator:
         self._metrics_callback(self._batch_size, 0)
         return loss.item()
 
-    def evaluate_with_grad(self) -> tuple[float, object]:
+    def evaluate_with_grad(self, params: object) -> tuple[float, object]:
         """
-        Evaluates the current parameters on the batch (forward pass) and computes
+        Evaluates supplied parameters on the batch (forward pass) and computes
         gradients (backward pass).
 
         Returns:
@@ -131,6 +119,7 @@ class ModelEvaluator:
             Increments database_reaches by batch_size.
             Increments gradient_count by 1.
         """
+        self._load_params(params)
         self._model.train()
         self._model.zero_grad()
 
@@ -144,9 +133,9 @@ class ModelEvaluator:
         self._metrics_callback(self._batch_size, 1)
         return loss.item(), grad.to(self.type).data()
 
-    def grad(self) -> object:
+    def grad(self, params: object) -> object:
         """
-        Computes gradients for the current parameters on the batch (performs forward and backward pass).
+        Computes gradients for supplied parameters on the batch (performs forward and backward pass).
 
         Returns:
             object: The DTO-converted flattened gradient vector.
@@ -155,6 +144,7 @@ class ModelEvaluator:
             Increments database_reaches by batch_size.
             Increments gradient_count by 1.
         """
+        self._load_params(params)
         self._model.train()
         self._model.zero_grad()
 
@@ -168,7 +158,7 @@ class ModelEvaluator:
         self._metrics_callback(self._batch_size, 1)
         return grad.to(self.type).data()
 
-    def get_predictions(self) -> tuple[object, object]:
+    def get_predictions(self, params: object) -> tuple[object, object]:
         """
         Retrieves the model's predictions and the actual targets for the current batch,
         both converted to the specified output DTO type.
@@ -177,6 +167,7 @@ class ModelEvaluator:
             Tuple[object, object]: A tuple containing the DTO-converted predictions
                                 and DTO-converted targets.
         """
+        self._load_params(params)
         self._model.eval()
         with torch.no_grad():
             outputs = self._model(self._inputs)

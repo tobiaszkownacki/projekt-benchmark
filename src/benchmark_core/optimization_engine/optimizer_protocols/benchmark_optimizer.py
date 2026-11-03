@@ -13,11 +13,11 @@ class BenchmarkOptimizer:
         Initialize optimizer with model parameters
 
         Args:
-            initial_params: Flattened model parameters as numpy array
+            initial_params: Flattened model parameters in the optimizer's array backend
             **config: Any additional configuration needed for the optimizer
         """
         self.config = config
-        self.params = initial_params
+        self.params = initial_params.copy()
 
     def step(self, evaluator: ModelEvaluator) -> bool:
         """
@@ -29,5 +29,6 @@ class BenchmarkOptimizer:
         """
         raise NotImplementedError("Implement step() in your optimizer")
 
-    def get_output_type() -> type[EvaluatorDto]:
+    @classmethod
+    def get_output_type(cls) -> type[EvaluatorDto]:
         raise NotImplementedError("Implement get_output_type() in your optimizer")
