@@ -1,5 +1,9 @@
 # Optimizer Benchmark Suite [![Flake8 Linting](https://github.com/Dnafivuq/golem_template/actions/workflows/lint.yml/badge.svg)](https://github.com/Dnafivuq/golem_template/actions/workflows/lint.yml) [![Pytest](https://github.com/Dnafivuq/golem_template/actions/workflows/test.yml/badge.svg)](https://github.com/Dnafivuq/golem_template/actions/workflows/test.yml) <a target="_blank" href="https://cookiecutter-data-science.drivendata.org/"><img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" /></a>
 
+## MLinPL 2026 Conference Poster
+
+<img src="poster.png" alt="Podgląd plakatu" width="50%">
+
 ## 1. Overview
 
 This repository contains a benchmark suite for testing, comparing, and analyzing various optimization algorithms (e.g., Adam, SGD, CMA-ES, Differential Evolution) on different datasets and neural network models using PyTorch. The framework tracks metrics like gradient evaluations, database reaches, and standard loss/accuracy over time, providing a comprehensive toolkit to evaluate the efficiency and convergence of both gradient-based and gradient-free optimizers. It is designed to be modular and independent dependency-wise, which yields simple addition of custom optimization algorithms, new datasets, and seamless swapping of neural network architectures for cross-comparison.
