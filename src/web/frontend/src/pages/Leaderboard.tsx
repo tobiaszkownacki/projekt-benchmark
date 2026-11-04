@@ -76,9 +76,7 @@ export function Leaderboard() {
       <div className="page-head">
         <h1>Leaderboard</h1>
         <p>
-          A single run is an anecdote. Evolutionary methods are
-          stochastic. The table shows the median and quartiles across seeds, with the run
-          count in its own column so the basis of the median is visible.
+          Summary of the best performing models from public runs, with available filters.
         </p>
       </div>
 
