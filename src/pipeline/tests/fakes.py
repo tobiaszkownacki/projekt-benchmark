@@ -1,0 +1,71 @@
+"""Stand-ins for the database and the cluster, shared by the pipeline tests."""
+
+import threading
+from collections.abc import Iterator
+from contextlib import contextmanager
+
+from pipeline.executor import ExecutorAdapter, FetchResult, JobDescription, SubmitResult
+from pipeline.task_repository import TaskRepository, TaskStatus
+
+
+class RecordingRepository(TaskRepository):
+    def __init__(self, tasks: dict[str, TaskStatus] | None = None) -> None:
+        self.tasks = tasks or {}
+        self.submitted: list[tuple[str, str]] = []
+        self.failed: list[tuple[str, str]] = []
+        self.errors: list[tuple[str, str]] = []
+        self._reservations: dict[str, threading.Lock] = {}
+        self._guard = threading.Lock()
+
+    @contextmanager
+    def reserve_submission(self, task_id: str) -> Iterator[bool]:
+        with self._guard:
+            lock = self._reservations.setdefault(task_id, threading.Lock())
+        with lock:
+            record = self.tasks.get(task_id)
+            yield record is not None and record.task_status == "PENDING" and not record.executor_task_id
+
+    def mark_submitted(self, task_id: str, executor_task_id: str) -> bool:
+        record = self.tasks.get(task_id)
+        if record is not None and record.executor_task_id:
+            return False
+        self.submitted.append((task_id, executor_task_id))
+        self.tasks[task_id] = TaskStatus(task_id, "SUBMITTED", executor_task_id)
+        return True
+
+    def mark_failed(self, task_id: str, error_message: str) -> None:
+        self.failed.append((task_id, error_message))
+
+    def set_error(self, task_id: str, error_message: str) -> None:
+        self.errors.append((task_id, error_message))
+
+    def mark_completed_by_executor_id(self, executor_task_id: str) -> bool:
+        return False
+
+    def get_by_executor_id(self, executor_task_id: str) -> TaskStatus | None:
+        for record in self.tasks.values():
+            if record.executor_task_id == executor_task_id:
+                return record
+        return None
+
+    def get_by_task_id(self, task_id: str) -> TaskStatus | None:
+        return self.tasks.get(task_id)
+
+
+class RecordingExecutor(ExecutorAdapter):
+    def __init__(self, executor_task_id: str = "job-1") -> None:
+        self.executor_task_id = executor_task_id
+        self.submitted: list[JobDescription] = []
+        self.fetched: list[str] = []
+        self.cancelled: list[str] = []
+
+    def submit_job(self, job: JobDescription) -> SubmitResult:
+        self.submitted.append(job)
+        return SubmitResult(executor_task_id=self.executor_task_id, std_out="")
+
+    def fetch_results(self, task_id: str, delete_after_download: bool = False) -> FetchResult:
+        self.fetched.append(task_id)
+        return FetchResult(files=[])
+
+    def cancel_job(self, executor_task_id: str) -> None:
+        self.cancelled.append(executor_task_id)

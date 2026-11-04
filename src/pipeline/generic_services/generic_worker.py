@@ -16,10 +16,22 @@ class GenericWorker:
         self.message_broker = message_broker
 
     def handle(self, message: dict):
-        job = JobDescription.from_message(message)
+        job = self._read(message)
         logger.info(
             f"Received task_id={job.task_id} dataset={job.dataset} optimizers={job.optimizers} run_name={job.run_name}"
         )
+        with self.task_repo.reserve_submission(job.task_id) as reserved:
+            if not reserved:
+                record = self.task_repo.get_by_task_id(job.task_id)
+                logger.info(
+                    f"task_id={job.task_id} is {record.task_status if record else 'unknown'} "
+                    f"with executor_task_id={record.executor_task_id if record else None}, "
+                    "so this delivery submits nothing"
+                )
+                return
+            self._submit(job)
+
+    def _submit(self, job: JobDescription) -> None:
         try:
             submit_result = self.adapter.submit_job(job)
         except Exception as exc:
@@ -27,8 +39,43 @@ class GenericWorker:
             self.task_repo.mark_failed(job.task_id, str(exc))
             raise
 
-        logger.info(f"task_id={job.task_id} submitted, executor_task_id={submit_result.executor_task_id}")
-        self.task_repo.mark_submitted(job.task_id, submit_result.executor_task_id)
+        if self.task_repo.mark_submitted(job.task_id, submit_result.executor_task_id):
+            logger.info(f"task_id={job.task_id} submitted, executor_task_id={submit_result.executor_task_id}")
+            return
+
+        current = self.task_repo.get_by_task_id(job.task_id)
+        if current is not None and current.executor_task_id == submit_result.executor_task_id:
+            logger.info(f"task_id={job.task_id} was recorded as {submit_result.executor_task_id} by the callback")
+            return
+
+        # The reservation should make this unreachable. If it is reached, the
+        # job just submitted is one nothing in the database points at.
+        logger.error(
+            f"task_id={job.task_id} was already {current.executor_task_id if current else 'unknown'} "
+            f"when {submit_result.executor_task_id} came back, so that job is cancelled"
+        )
+        try:
+            self.adapter.cancel_job(submit_result.executor_task_id)
+        except Exception:
+            logger.exception(f"{submit_result.executor_task_id} could not be cancelled, so it runs untracked")
+
+    def _read(self, message: dict) -> JobDescription:
+        """Decode, and leave a trace in the database when it cannot be done.
+
+        The message goes to the dead-letter queue either way, and nothing
+        consumes that queue. Without the row saying FAILED, a submission whose
+        message the worker cannot read waits in PENDING for good.
+        """
+        try:
+            return JobDescription.from_message(message)
+        except Exception as exc:
+            task_id = message.get("task_id")
+            if task_id is None:
+                logger.exception("Unreadable message names no task, so nothing can be marked failed")
+            else:
+                logger.exception(f"Cannot read the job message for task_id={task_id}")
+                self.task_repo.mark_failed(str(task_id), f"unreadable job message: {exc}")
+            raise
 
     def run(self) -> None:
         run_consumer(

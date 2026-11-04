@@ -18,7 +18,11 @@ class Downloader:
         self.message_broker = message_broker
 
     def handle(self, message: dict) -> None:
-        task_id = message["task_id"]
+        try:
+            task_id = message["task_id"]
+        except KeyError:
+            logger.exception("Unreadable message names no task, so nothing can be marked failed")
+            raise
         logger.info(f"Request for downloading task_id={task_id}")
 
         try:
