@@ -67,9 +67,7 @@ async def login(payload: Credentials, request: Request, response: Response) -> d
         await record_event("login_failure", request, status_code=status.HTTP_401_UNAUTHORIZED)
         raise invalid
     if not legacy_auth.verify_password(payload.password, account.password_hash):
-        await record_event(
-            "login_failure", request, user_id=account.id, status_code=status.HTTP_401_UNAUTHORIZED
-        )
+        await record_event("login_failure", request, user_id=account.id, status_code=status.HTTP_401_UNAUTHORIZED)
         raise invalid
     if not account.is_active:
         await record_event("login_failure", request, user_id=account.id, status_code=status.HTTP_403_FORBIDDEN)

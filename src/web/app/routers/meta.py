@@ -67,7 +67,7 @@ SANDBOX = {
     "memory": "--memory 2g",
     "cpu": "--cpus 1.0",
     "filesystem": "--read-only, --tmpfs /tmp",
-        "user": "unprivileged, --cap-drop ALL, no-new-privileges",
+    "user": "unprivileged, --cap-drop ALL, no-new-privileges",
     "timeout": f"{settings.validator_timeout} s",
 }
 

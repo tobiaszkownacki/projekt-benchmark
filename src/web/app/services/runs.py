@@ -31,8 +31,7 @@ _FROM = """
 
 
 _LEGACY_ERROR_MESSAGES = {
-    "Zgłoszenie odrzucone przez walidator protokołu.":
-        "Submission rejected by protocol validator.",
+    "Zgłoszenie odrzucone przez walidator protokołu.": "Submission rejected by protocol validator.",
 }
 
 

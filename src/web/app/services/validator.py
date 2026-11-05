@@ -128,7 +128,10 @@ async def validate_source(source: str) -> ValidationResult:
     if not settings.validator_enabled:
         return ValidationResult(
             ok=True,
-            log="Validator disabled by configuration (VALIDATOR_ENABLED=0).\nSubmission accepted without protocol validation.",
+            log=(
+                "Validator disabled by configuration (VALIDATOR_ENABLED=0).\n"
+                "Submission accepted without protocol validation."
+            ),
             family=family,
             version="disabled",
         )

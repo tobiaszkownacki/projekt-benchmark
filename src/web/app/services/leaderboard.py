@@ -23,7 +23,10 @@ SCORE_FORMULAS = {
         "label": "median final loss",
         "direction": "asc",
         "column": "final_loss",
-        "note": "Lower is better. No budget normalization: gradient evaluations and processed samples have no common currency.",
+        "note": (
+            "Lower is better. No budget normalization: gradient evaluations and processed samples "
+            "have no common currency."
+        ),
     },
     "accuracy_v1": {
         "id": "accuracy_v1",
@@ -256,9 +259,7 @@ async def public_curves(
 
     return {
         "cells": listing,
-        "selected": (
-            {"dataset": selected[0], "model": selected[1], "suite": selected[2]} if selected else None
-        ),
+        "selected": ({"dataset": selected[0], "model": selected[1], "suite": selected[2]} if selected else None),
         "x": x,
         "metric": metric,
         "min_runs": MIN_PUBLIC_RUNS,

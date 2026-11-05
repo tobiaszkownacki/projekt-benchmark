@@ -1,6 +1,5 @@
-from starlette.requests import Request
-
 from app.audit import client_ip, is_page_view
+from starlette.requests import Request
 
 
 def request_for(

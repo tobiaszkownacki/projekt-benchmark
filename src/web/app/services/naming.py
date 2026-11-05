@@ -31,7 +31,9 @@ METRIC_LABELS = {
     "wall_time_seconds": {
         "label": "wall-clock time",
         "short": "time",
-        "hint": "Intentionally excluded from the leaderboard because it depends on the hardware assigned by the scheduler.",
+        "hint": (
+            "Intentionally excluded from the leaderboard because it depends on the hardware assigned by the scheduler."
+        ),
     },
 }
 
