@@ -10,10 +10,9 @@ import threading
 import uuid
 
 import pytest
-
 from fakes import RecordingExecutor, RecordingRepository
 
-from pipeline.executor import RetryableSubmissionError, SCHEMA_VERSION, JobDescription, SubmitResult
+from pipeline.executor import SCHEMA_VERSION, JobDescription, RetryableSubmissionError, SubmitResult
 from pipeline.generic_services.generic_worker import GenericWorker
 from pipeline.task_repository import TaskStatus
 from shared.queue_topology import QueueTopology
