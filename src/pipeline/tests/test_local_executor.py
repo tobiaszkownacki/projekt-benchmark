@@ -22,7 +22,24 @@ def executor(tmp_path, monkeypatch):
     monkeypatch.setattr(local, "JOB_MODULE", "fake_job")
     monkeypatch.setenv("PYTHONPATH", HERE)
     monkeypatch.setenv("ARTIFACT_ROOT", str(tmp_path / "downloads"))
+    monkeypatch.setenv(local.ENABLE_VARIABLE, "1")
+    # The suite may run as root in a container; the guard is tested on its own below.
+    monkeypatch.setattr(local.os, "geteuid", lambda: 1000)
     return local.LocalExecutor(workspace=str(tmp_path / "workspace"))
+
+
+def test_the_executor_refuses_to_start_without_the_development_flag(tmp_path, monkeypatch):
+    monkeypatch.delenv(local.ENABLE_VARIABLE, raising=False)
+    monkeypatch.setattr(local.os, "geteuid", lambda: 1000)
+    with pytest.raises(RuntimeError, match=local.ENABLE_VARIABLE):
+        local.LocalExecutor(workspace=str(tmp_path))
+
+
+def test_the_executor_refuses_to_run_as_root(tmp_path, monkeypatch):
+    monkeypatch.setenv(local.ENABLE_VARIABLE, "1")
+    monkeypatch.setattr(local.os, "geteuid", lambda: 0)
+    with pytest.raises(RuntimeError, match="root"):
+        local.LocalExecutor(workspace=str(tmp_path))
 
 
 def _job(**overrides) -> JobDescription:

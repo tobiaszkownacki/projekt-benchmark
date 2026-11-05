@@ -15,6 +15,7 @@ from pipeline.executor import FetchResult, JobDescription, SubmitResult
 logger = logging.getLogger(__name__)
 
 JOB_MODULE = "tools.local_backend.run_job"
+ENABLE_VARIABLE = "LOCAL_EXECUTOR_ENABLED"
 JOB_PREFIX = "task_"
 JOB_FILE = "job.json"
 STATUS_FILE = "status.json"
@@ -42,6 +43,16 @@ class LocalExecutor(PollableExecutor):
     """
 
     def __init__(self, workspace: str | None = None) -> None:
+        # This executor runs participant code as a plain process on the machine
+        # that hosts the pipeline, with no container around it. It must never
+        # start by accident, and never with administrator rights.
+        if os.environ.get(ENABLE_VARIABLE) != "1":
+            raise RuntimeError(
+                f"The local executor runs optimizer code directly on this machine and is for development "
+                f"only. Set {ENABLE_VARIABLE}=1 to use it."
+            )
+        if hasattr(os, "geteuid") and os.geteuid() == 0:
+            raise RuntimeError("The local executor refuses to run optimizer code as root.")
         self.workspace = Path(workspace or os.environ.get("EXECUTOR_WORKSPACE", "/var/lib/executor-workspace"))
         self.download_dir = Path(os.environ.get("ARTIFACT_ROOT", "/downloads"))
 
