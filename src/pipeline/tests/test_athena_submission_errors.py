@@ -1,6 +1,6 @@
 import pytest
 
-from pipeline.adapters.athena_connector import is_retryable_submission_error
+from pipeline.executor import is_retryable_submission_error
 
 
 @pytest.mark.parametrize(

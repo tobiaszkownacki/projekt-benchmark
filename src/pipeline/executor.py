@@ -8,6 +8,19 @@ class RetryableSubmissionError(RuntimeError):
     """The scheduler temporarily rejected a submission; keep the task pending."""
 
 
+# These are scheduler admission failures, not invalid jobs. The task must stay
+# pending until the user can submit again under the account/QOS policy.
+_RETRYABLE_SUBMISSION_MARKERS = (
+    "QOSMaxSubmitJobPerUserLimit",
+    "QOSMaxSubmitJobPerAccountLimit",
+    "AssocMaxSubmitJobLimit",
+)
+
+
+def is_retryable_submission_error(message: str) -> bool:
+    return any(marker in message for marker in _RETRYABLE_SUBMISSION_MARKERS)
+
+
 @dataclass
 class SubmitResult:
     executor_task_id: str
