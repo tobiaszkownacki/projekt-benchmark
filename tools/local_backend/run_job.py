@@ -75,6 +75,8 @@ def main() -> int:
         _to_run_result(result).write_manifest(job_dir)
     except Exception:
         (job_dir / "error.txt").write_text(traceback.format_exc(), encoding="utf-8")
+        # Also on stderr, which is where the executor reads a failure from.
+        traceback.print_exc()
         _write_state(job_dir, "FAILED")
         return 1
 

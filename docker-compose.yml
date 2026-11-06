@@ -119,6 +119,17 @@ services:
     entrypoint: ["/bin/true"]
     restart: "no"
 
+  # Built only, never run as a service: the local executor starts one sandbox
+  # container from it per job. Production runs on Athena and does not use it.
+  local_job_image:
+    build:
+      context: .
+      dockerfile: Dockerfile.job
+    image: ${LOCAL_JOB_IMAGE:-benchmark-local-job:latest}
+    entrypoint: ["/bin/true"]
+    restart: "no"
+    profiles: ["local-executor"]
+
   web:
     build:
       context: .
