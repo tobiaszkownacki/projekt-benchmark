@@ -233,6 +233,28 @@ label { font-size: 12px; color: var(--text-2); display: block; margin-bottom: 2p
 .segmented button { border: none; border-radius: 0; border-right: 1px solid var(--border); }
 .segmented button:last-child { border-right: none; }
 
+/* ---- disclosure: the default view carries what a submission needs, and the
+ * rest stays one keystroke away rather than on screen ---- */
+
+.disclosure {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font: inherit;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text);
+}
+.disclosure:hover { background: none; text-decoration: underline; }
+.disclosure-marker { font-size: 10px; color: var(--text-3); }
+
+/* A parameter nobody can explain is a parameter nobody sets deliberately, so
+ * the sentence gets the same room as the control. */
+.params { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-4); }
+.params input, .params select { width: 100%; }
+.params .field-note { margin: var(--space-1) 0 0; font-size: 12px; color: var(--text-2); }
+
 /* ---- metric strip: summary before detail ---- */
 
 .metrics {

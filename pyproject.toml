@@ -41,7 +41,7 @@ ci = [
 # driver and password hashing for the dev accounts it creates.
 local-seed = [
     "bcrypt>=4.1",
-    "psycopg[binary]>=3.3.4",
+    "psycopg[binary,pool]>=3.3.4",
 ]
 
 [tool.ruff]

@@ -1,12 +1,17 @@
 import json
 import logging
+import os
+import time
 from collections.abc import Callable
 
+from pipeline.executor import RetryableSubmissionError
 from shared.connectors.base import MessageBrokerConnector
 from shared.connectors.rabbitmq import RabbitMQConnector, declare_topology
 from shared.queue_topology import QueueTopology
 
 logger = logging.getLogger(__name__)
+
+RETRY_DELAY_SECONDS = max(1, int(os.environ.get("SUBMISSION_RETRY_DELAY_SECONDS", "30")))
 
 
 def run_consumer(
@@ -28,6 +33,17 @@ def run_consumer(
 
         try:
             handler(payload)
+        except RetryableSubmissionError as exc:
+            # A scheduler admission limit is expected to clear. Delay before
+            # requeueing so the worker does not hot-loop against SLURM.
+            logger.warning(
+                "temporary submission rejection; requeueing in %ss: %s",
+                RETRY_DELAY_SECONDS,
+                exc,
+            )
+            time.sleep(RETRY_DELAY_SECONDS)
+            channel.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+            return
         except Exception:
             logger.exception("handler failed, dead-lettering")
             channel.basic_nack(delivery_tag=method.delivery_tag, requeue=False)

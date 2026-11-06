@@ -6,6 +6,7 @@ from pathlib import Path
 
 import paramiko
 
+from pipeline.executor import RetryableSubmissionError, is_retryable_submission_error
 from shared.connectors.base import BaseConnector
 
 POLL_EVERY = int(os.environ.get("POLL_EVERY", 30))
@@ -15,18 +16,22 @@ class AthenaConnector(BaseConnector):
     def __init__(self) -> None:
         self.host = os.environ.get("ATHENA_HOST")
         self.user = os.environ.get("ATHENA_USER")
-        self.password = os.environ.get("ATHENA_PASSWORD")
+        self.password = os.environ.get("ATHENA_PASSWORD") or None
+        self.key_path = os.environ.get("ATHENA_KEY_PATH") or None
         self.account = os.environ.get("ATHENA_ACCOUNT")
         self.client = None
         self._scratch: str | None = None
 
     def __enter__(self) -> "AthenaConnector":
+        if not self.key_path and not self.password:
+            raise RuntimeError("neither ATHENA_KEY_PATH nor ATHENA_PASSWORD is set")
         self.client = paramiko.SSHClient()
         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.client.connect(
             self.host,
             username=self.user,
             password=self.password,
+            key_filename=self.key_path,
             look_for_keys=False,
             allow_agent=False,
         )
@@ -160,13 +165,19 @@ cd {workdir}
 
         stdout, stderr, exit_code = self.ssh_capture(f"cd {job_dir} && sbatch job.sh")
         if exit_code != 0:
-            raise RuntimeError(stderr or f"sbatch exited with status {exit_code}")
+            message = stderr or f"sbatch exited with status {exit_code}"
+            if is_retryable_submission_error(message):
+                raise RetryableSubmissionError(message)
+            raise RuntimeError(message)
 
         match = re.search(r"(\d+)", stdout)
         if not match:
             raise RuntimeError(f"Could not parse job ID from sbatch output: {stdout!r}")
 
         return match.group(1), stderr
+
+    def cancel_job(self, job_id: str) -> None:
+        self.ssh(f"scancel {job_id}")
 
     def get_job_status(self, job_id: str) -> str:
         try:
@@ -210,14 +221,25 @@ cd {workdir}
 
         downloaded: list[str] = []
         with self.client.open_sftp() as sftp:
-            for entry in sftp.listdir_attr(remote_dir):
-                if stat.S_ISDIR(entry.st_mode):
-                    continue
-                local_file = local_path / entry.filename
-                sftp.get(f"{remote_dir}/{entry.filename}", str(local_file))
-                downloaded.append(str(local_file))
+            self._download_tree(sftp, remote_dir, local_path, downloaded)
 
         return downloaded
+
+    def _download_tree(self, sftp, remote_dir: str, local_dir: Path, downloaded: list[str]) -> None:
+        """Recursive, because the artifact browser serves a tree.
+
+        A flat copy dropped every subdirectory the plotting step writes, and
+        what it dropped was invisible: the download reported success.
+        """
+        local_dir.mkdir(parents=True, exist_ok=True)
+        for entry in sftp.listdir_attr(remote_dir):
+            remote_entry = f"{remote_dir}/{entry.filename}"
+            if stat.S_ISDIR(entry.st_mode):
+                self._download_tree(sftp, remote_entry, local_dir / entry.filename, downloaded)
+                continue
+            local_file = local_dir / entry.filename
+            sftp.get(remote_entry, str(local_file))
+            downloaded.append(str(local_file))
 
     def run_job(self, job: dict, local_script: str | None = None, local_dir: str = "./results") -> dict:
         """
