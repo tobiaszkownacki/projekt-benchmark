@@ -22,13 +22,16 @@ class GenericPoller:
                 f"{signal.new_completed_tasks_with_failure}"
             )
 
-        if not signal.new_completed_tasks_with_success:
+        # Failures are fetched too: the log is the most useful thing a failed
+        # run leaves behind, and it is the only artifact it leaves at all.
+        finished = signal.new_completed_tasks_with_success + signal.new_completed_tasks_with_failure
+        if not finished:
             return
         with self.message_broker(
             exchange=self.topology.main_exchange,
             routing_key=self.topology.downloader_queue,
         ) as publisher:
-            for task_id in signal.new_completed_tasks_with_success:
+            for task_id in finished:
                 publisher.publish({"task_id": task_id})
                 logger.info(f"Published task_id={task_id} to downloader queue")
 

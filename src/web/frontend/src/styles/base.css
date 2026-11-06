@@ -80,10 +80,14 @@ select:focus-visible, input:focus-visible, textarea:focus-visible {
   flex: none;
 }
 .wordmark:hover { text-decoration: none; }
-/* The institution is context, not identity: it is the first thing to go when
- * the bar runs out of room, so the navigation stays on one line. */
+/* The subtitle and the institution are context, not identity: they are the
+ * first things to go when the bar runs out of room, institution first, so the
+ * navigation stays on one line. */
 .wordmark span { color: var(--text-2); font-weight: 400; }
-@media (max-width: 1250px) { .wordmark span { display: none; } }
+.wordmark-sub { margin-left: var(--space-2); font-style: italic; }
+.wordmark-context { margin-left: 4px; }
+@media (max-width: 1400px) { .wordmark-context { display: none; } }
+@media (max-width: 1100px) { .wordmark-sub { display: none; } }
 
 .nav { display: flex; gap: 2px; flex-wrap: wrap; flex: 1; min-width: 0; }
 .nav a {
@@ -232,6 +236,28 @@ label { font-size: 12px; color: var(--text-2); display: block; margin-bottom: 2p
 .segmented { display: inline-flex; border: 1px solid var(--border-strong); border-radius: var(--radius); overflow: hidden; }
 .segmented button { border: none; border-radius: 0; border-right: 1px solid var(--border); }
 .segmented button:last-child { border-right: none; }
+
+/* ---- disclosure: the default view carries what a submission needs, and the
+ * rest stays one keystroke away rather than on screen ---- */
+
+.disclosure {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font: inherit;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text);
+}
+.disclosure:hover { background: none; text-decoration: underline; }
+.disclosure-marker { font-size: 10px; color: var(--text-3); }
+
+/* A parameter nobody can explain is a parameter nobody sets deliberately, so
+ * the sentence gets the same room as the control. */
+.params { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-4); }
+.params input, .params select { width: 100%; }
+.params .field-note { margin: var(--space-1) 0 0; font-size: 12px; color: var(--text-2); }
 
 /* ---- metric strip: summary before detail ---- */
 

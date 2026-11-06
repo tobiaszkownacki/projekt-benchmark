@@ -3,13 +3,15 @@ import { Link, NavLink } from 'react-router-dom';
 import type { User } from '../types';
 import { api } from '../api';
 
+// Runs and comparisons are visible only to their owner (and administrators),
+// so an anonymous visitor would find nothing behind those two links.
 const LINKS = [
-  { to: '/', label: 'Przegląd', end: true },
-  { to: '/leaderboard', label: 'Ranking' },
-  { to: '/runs', label: 'Uruchomienia' },
-  { to: '/compare', label: 'Porównanie' },
-  { to: '/submit', label: 'Zgłoszenie' },
-  { to: '/docs', label: 'Protokół' },
+  { to: '/', label: 'Overview', end: true },
+  { to: '/leaderboard', label: 'Leaderboard' },
+  { to: '/runs', label: 'Runs', signedIn: true },
+  { to: '/compare', label: 'Compare', signedIn: true },
+  { to: '/submit', label: 'Submit' },
+  { to: '/docs', label: 'Protocol' },
 ];
 
 type Theme = 'system' | 'light' | 'dark';
@@ -31,7 +33,7 @@ function ThemeToggle() {
   }, [theme]);
 
   const next: Record<Theme, Theme> = { system: 'light', light: 'dark', dark: 'system' };
-  const label: Record<Theme, string> = { system: 'Motyw: systemowy', light: 'Motyw: jasny', dark: 'Motyw: ciemny' };
+  const label: Record<Theme, string> = { system: 'Theme: system', light: 'Theme: light', dark: 'Theme: dark' };
 
   return (
     <button className="subtle tiny" onClick={() => setTheme(next[theme])} title={label[theme]}>
@@ -49,14 +51,15 @@ export function Layout({
 }) {
   return (
     <div className="shell">
-      <a className="skip-link" href="#main">Przejdź do treści</a>
+      <a className="skip-link" href="#main">Skip to content</a>
       <header className="masthead">
         <div className="masthead-inner">
           <Link to="/" className="wordmark">
-            Benchmark Czarnej Skrzynki <span>· Politechnika Warszawska</span>
+            Opti-Mark <span className="wordmark-sub">The Golem Benchmark</span>
+            <span className="wordmark-context">· Warsaw University of Technology</span>
           </Link>
-          <nav className="nav" aria-label="Nawigacja główna">
-            {LINKS.map((link) => (
+          <nav className="nav" aria-label="Main navigation">
+            {LINKS.filter((link) => user || !link.signedIn).map((link) => (
               <NavLink key={link.to} to={link.to} end={link.end}
                        className={({ isActive }) => (isActive ? 'active' : '')}>
                 {link.label}
@@ -65,10 +68,10 @@ export function Layout({
             {user?.is_admin && (
               <>
                 <NavLink to="/admin" end className={({ isActive }) => (isActive ? 'active' : '')}>
-                  Panel
+                  Admin
                 </NavLink>
                 <NavLink to="/admin/queue" className={({ isActive }) => (isActive ? 'active' : '')}>
-                  Kolejka
+                  Queue
                 </NavLink>
               </>
             )}
@@ -84,11 +87,11 @@ export function Layout({
                   className="subtle tiny"
                   onClick={async () => { await api.post('/api/auth/logout'); onUserChange(null); }}
                 >
-                  Wyloguj
+                  Log out
                 </button>
               </>
             ) : (
-              <Link className="button tiny" to="/login" style={{ padding: '2px 8px' }}>Zaloguj</Link>
+              <Link className="button tiny" to="/login" style={{ padding: '2px 8px' }}>Log in</Link>
             )}
           </div>
         </div>
@@ -99,9 +102,9 @@ export function Layout({
         color: 'var(--text-3)', fontSize: 12,
       }}>
         <div style={{ maxWidth: 1400, margin: '0 auto' }}>
-          Zakład Sztucznej Inteligencji, Wydział Elektroniki i Technik Informacyjnych ·{' '}
-          <Link to="/docs">kontrakt optymalizatora</Link> ·{' '}
-          <a href="/api/openapi">dokumentacja API</a>
+          Golem Artificial Intelligence Society · Department of Artificial Intelligence,
+          Faculty of Electronics and Information Technology ·{' '}
+          <Link to="/docs">optimizer contract</Link>
         </div>
       </footer>
     </div>

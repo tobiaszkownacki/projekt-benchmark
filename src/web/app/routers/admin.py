@@ -9,7 +9,7 @@ import asyncio
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 
 from app import db, legacy_auth
@@ -52,6 +52,54 @@ async def users(_: CurrentUser = Depends(require_admin)) -> dict:
     }
 
 
+@router.get("/audit")
+async def audit(
+    event_type: str | None = Query(default=None, pattern="^(page_view|login_success|login_failure)$"),
+    limit: int = Query(default=100, ge=1, le=1000),
+    _: CurrentUser = Depends(require_admin),
+) -> dict:
+    """Return the private visit/login audit for operators.
+
+    This is intentionally an API-only view: the public frontend has no route
+    for it. The summary makes conference traffic countable without requiring a
+    separate analytics service.
+    """
+    where = ""
+    params: list[object] = []
+    if event_type:
+        where = "WHERE e.event_type = %s"
+        params.append(event_type)
+
+    summary = await db.fetch_one(
+        f"""
+        SELECT COUNT(*) FILTER (WHERE e.event_type = 'page_view') AS page_views,
+               COUNT(DISTINCT e.client_ip) FILTER (WHERE e.event_type = 'page_view')
+                   AS unique_client_ips,
+               COUNT(*) FILTER (WHERE e.event_type = 'login_success') AS successful_logins,
+               COUNT(*) FILTER (WHERE e.event_type = 'login_failure') AS failed_logins,
+               MIN(e.occurred_at) AS first_event_at,
+               MAX(e.occurred_at) AS last_event_at
+          FROM web_audit_events e
+         {where}
+        """,
+        params,
+    )
+    rows = await db.fetch_all(
+        f"""
+        SELECT e.id, e.event_type, e.occurred_at, e.user_id,
+               u.email AS user_email, e.client_ip, e.path, e.method,
+               e.status_code, e.user_agent
+          FROM web_audit_events e
+          LEFT JOIN users u ON u.id = e.user_id
+         {where}
+         ORDER BY e.occurred_at DESC
+         LIMIT %s
+        """,
+        [*params, limit],
+    )
+    return {"summary": summary or {}, "events": rows}
+
+
 @router.post("/users/approve")
 async def approve(payload: ApprovalRequest, _: CurrentUser = Depends(require_admin)) -> dict:
     try:
@@ -92,7 +140,7 @@ async def budget(_: CurrentUser = Depends(require_admin)) -> dict:
 
 async def _rabbitmq() -> dict[str, Any]:
     if not settings.rabbitmq_management_url:
-        return {"available": False, "reason": "RABBITMQ_MANAGEMENT_URL nie jest ustawiony"}
+        return {"available": False, "reason": "RABBITMQ_MANAGEMENT_URL is not configured"}
     try:
         async with httpx.AsyncClient(
             timeout=4.0,
@@ -143,8 +191,8 @@ async def _orphans() -> list[dict]:
 
 @router.get("/queue")
 async def queue(_: CurrentUser = Depends(require_admin)) -> dict:
-    broker, orphans, pending_outbox, recent_outbox = await asyncio.gather(
-        _rabbitmq(), _orphans(), outbox.pending_count(), outbox.recent(25)
+    broker, orphans, pending_outbox, abandoned_outbox, recent_outbox = await asyncio.gather(
+        _rabbitmq(), _orphans(), outbox.pending_count(), outbox.abandoned_count(), outbox.recent(25)
     )
 
     slurm = await db.fetch_all(
@@ -169,7 +217,7 @@ async def queue(_: CurrentUser = Depends(require_admin)) -> dict:
 
     return {
         "rabbitmq": broker,
-        "outbox": {"pending": pending_outbox, "recent": recent_outbox},
+        "outbox": {"pending": pending_outbox, "abandoned": abandoned_outbox, "recent": recent_outbox},
         "slurm": {
             "jobs": slurm,
             # sinfo/sacct run inside the poller's container, which holds the
@@ -177,10 +225,10 @@ async def queue(_: CurrentUser = Depends(require_admin)) -> dict:
             # the cluster.
             "cluster_probe": {
                 "available": False,
-                "reason": "sinfo/sacct są dostępne wyłącznie z kontenera pollera "
-                "(tam są poświadczenia SSH). Do wystawienia przez "
-                "uzgodniony endpoint pollera, nie przez drugie "
-                "połączenie z klastrem.",
+                "reason": "sinfo/sacct are available only from the poller container "
+                "(that container holds the SSH credentials). Expose this through "
+                "an agreed poller endpoint rather than a second "
+                "cluster connection.",
             },
         },
         "orphans": orphans,

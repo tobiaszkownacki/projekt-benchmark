@@ -53,6 +53,14 @@ services:
       - .env
     environment:
       EXECUTOR: athena
+      ATHENA_HOST: ${ATHENA_HOST}
+      ATHENA_USER: ${ATHENA_USER}
+      ATHENA_ACCOUNT: ${ATHENA_ACCOUNT}
+      ATHENA_REMOTE_PATH: ${ATHENA_REMOTE_PATH}
+      ATHENA_KEY_PATH: /run/secrets/athena_key
+      ATHENA_WEBHOOK_URL: ${ATHENA_WEBHOOK_URL}
+    volumes:
+      - /srv/root/.ssh/id_ed25519_athena:/run/secrets/athena_key:ro
 
   athena_poller:
     build:
@@ -69,6 +77,14 @@ services:
       - .env
     environment:
       EXECUTOR: athena
+      ATHENA_HOST: ${ATHENA_HOST}
+      ATHENA_USER: ${ATHENA_USER}
+      ATHENA_ACCOUNT: ${ATHENA_ACCOUNT}
+      ATHENA_REMOTE_PATH: ${ATHENA_REMOTE_PATH}
+      ATHENA_KEY_PATH: /run/secrets/athena_key
+      ATHENA_WEBHOOK_URL: ${ATHENA_WEBHOOK_URL}
+    volumes:
+      - /srv/root/.ssh/id_ed25519_athena:/run/secrets/athena_key:ro
 
   athena_downloader:
     build:
@@ -85,7 +101,14 @@ services:
       - .env
     environment:
       EXECUTOR: athena
+      ATHENA_HOST: ${ATHENA_HOST}
+      ATHENA_USER: ${ATHENA_USER}
+      ATHENA_ACCOUNT: ${ATHENA_ACCOUNT}
+      ATHENA_REMOTE_PATH: ${ATHENA_REMOTE_PATH}
+      ATHENA_KEY_PATH: /run/secrets/athena_key
+      ATHENA_WEBHOOK_URL: ${ATHENA_WEBHOOK_URL}
     volumes:
+      - /srv/root/.ssh/id_ed25519_athena:/run/secrets/athena_key:ro
       - ./downloads:/downloads
 
   validator_image:
@@ -100,6 +123,9 @@ services:
     build:
       context: .
       dockerfile: src/web/Dockerfile
+      args:
+        # Keep the SPA and its API/download links on the same deployment prefix.
+        BASE_PATH: ${BASE_PATH:-}
     container_name: benchmark_web
     restart: unless-stopped
     depends_on:
@@ -113,15 +139,18 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       SESSION_SECRET: ${SESSION_SECRET}
+      # Caddy is the only trusted proxy in front of this container. The API
+      # uses its forwarding header to retain the visitor's public address.
+      TRUSTED_PROXY_CIDRS: "${TRUSTED_PROXY_CIDRS:-172.22.0.0/16,127.0.0.0/8,::1/128}"
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_MANAGEMENT_URL: http://rabbitmq:15672
-      PUBLIC_RESULTS: ${PUBLIC_RESULTS:-1}
+      # Names the queue a submission is written for, and has to match the
+      # pipeline services above.
+      EXECUTOR: athena
       DAILY_SUBMISSION_LIMIT: ${DAILY_SUBMISSION_LIMIT:-3}
       VALIDATOR_ENABLED: ${VALIDATOR_ENABLED:-1}
       VALIDATOR_IMAGE: ${VALIDATOR_IMAGE:-benchmark-validator:latest}
     ports:
-      # 8080, not 8000: main's task API claims ${API_PORT:-8000} and the two
-      # would refuse to bind together on a default `docker compose up`.
       - "${WEB_PORT:-8080}:8000"
     volumes:
       # Read-only on purpose. The downloader owns this directory; the web layer
@@ -157,6 +186,9 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       RABBITMQ_HOST: rabbitmq
+      # Decides which queues this process declares and drains, and has to match
+      # the pipeline services above.
+      EXECUTOR: athena
     command: ["python", "-m", "app.outbox_publisher"]
     # Both services share one image whose healthcheck probes the HTTP endpoint.
     # This one serves nothing, so it checks that the process is alive instead.

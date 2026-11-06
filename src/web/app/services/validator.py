@@ -109,8 +109,6 @@ _IN_CONTAINER_ENTRY = """
 import pathlib, runpy, sys
 sys.path.insert(0, "/app")
 sys.path.insert(0, "/app/src")
-from compat.benchmark_aliases import install
-install()
 submission = pathlib.Path("/tmp/optimizer.py")
 submission.write_bytes(sys.stdin.buffer.read())
 submission.chmod(0o444)
@@ -130,7 +128,10 @@ async def validate_source(source: str) -> ValidationResult:
     if not settings.validator_enabled:
         return ValidationResult(
             ok=True,
-            log="Walidator wyłączony konfiguracją (VALIDATOR_ENABLED=0).\nZgłoszenie przyjęte bez kontroli protokołu.",
+            log=(
+                "Validator disabled by configuration (VALIDATOR_ENABLED=0).\n"
+                "Submission accepted without protocol validation."
+            ),
             family=family,
             version="disabled",
         )
@@ -140,9 +141,9 @@ async def validate_source(source: str) -> ValidationResult:
         # accepting silently would hide that nothing was checked. Say so.
         return ValidationResult(
             ok=True,
-            log="Walidator niedostępny: brak polecenia `docker` na tym hoście.\n"
-            "Zgłoszenie przyjęte BEZ kontroli protokołu — kod nie został "
-            "sprawdzony.",
+            log="Validator unavailable: the `docker` command is missing on this host.\n"
+            "Submission accepted WITHOUT protocol validation. The code was not "
+            "checked.",
             family=family,
             version="unavailable",
         )
@@ -162,8 +163,8 @@ async def validate_source(source: str) -> ValidationResult:
         await process.wait()
         return ValidationResult(
             ok=False,
-            log=f"Walidacja przerwana po {settings.validator_timeout} s.\n"
-            "Optymalizator nie zakończył pojedynczego kroku w limicie czasu.",
+            log=f"Validation stopped after {settings.validator_timeout} s.\n"
+            "The optimizer did not finish a single step within the time limit.",
             family=family,
         )
 

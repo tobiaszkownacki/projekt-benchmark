@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 /** One number, its label, and the context that makes it mean something.
  *
- * The context line is not decoration: "12 480 gradientów" answers nothing on
+ * The context line is not decoration: "12 480 gradient evaluations" answers nothing on
  * its own, and "12 480 / limit 100 000" answers the question the reader
  * actually has. */
 export function Metric({

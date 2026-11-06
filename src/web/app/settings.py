@@ -4,6 +4,8 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from shared.queue_topology import QueueTopology
+
 
 def find_source_root() -> Path:
     """Locate the directory that contains ``src/benchmark_core``.
@@ -51,11 +53,13 @@ class Settings:
     session_cookie_path: str = field(default_factory=lambda: "/" + os.environ.get("ROOT_PATH", "").strip("/"))
     session_max_age: int = field(default_factory=lambda: _int("SESSION_MAX_AGE", 60 * 60 * 12))
     secure_cookies: bool = field(default_factory=lambda: _bool("SECURE_COOKIES", False))
-
-    # Read in exactly one place (services/authz.can_read_run), so switching
-    # between public and owner-only results is a configuration change rather
-    # than an audit of every endpoint.
-    public_results: bool = field(default_factory=lambda: _bool("PUBLIC_RESULTS", True))
+    trusted_proxy_cidrs: tuple[str, ...] = field(
+        default_factory=lambda: tuple(
+            part.strip()
+            for part in os.environ.get("TRUSTED_PROXY_CIDRS", "127.0.0.0/8,::1/128").split(",")
+            if part.strip()
+        )
+    )
 
     daily_submission_limit: int = field(default_factory=lambda: _int("DAILY_SUBMISSION_LIMIT", 3))
 
@@ -72,14 +76,37 @@ class Settings:
     rabbitmq_management_url: str = field(default_factory=lambda: os.environ.get("RABBITMQ_MANAGEMENT_URL", ""))
     rabbitmq_user: str = field(default_factory=lambda: os.environ.get("RABBITMQ_USER", ""))
     rabbitmq_password: str = field(default_factory=lambda: os.environ.get("RABBITMQ_PASSWORD", ""))
-    worker_queue: str = field(default_factory=lambda: os.environ.get("ATHENA_WORKER_QUEUE", "athena_worker_queue"))
-    main_exchange: str = field(default_factory=lambda: os.environ.get("MAIN_EXCHANGE", "main-exchange"))
+    # Which executor this deployment feeds. The queue names follow from it, so
+    # the web layer and the pipeline cannot disagree about where a job goes.
+    executor_name: str = field(default_factory=lambda: os.environ.get("EXECUTOR", ""))
 
     google_client_id: str = field(default_factory=lambda: os.environ.get("GOOGLE_CLIENT_ID", ""))
     google_client_secret: str = field(default_factory=lambda: os.environ.get("GOOGLE_CLIENT_SECRET", ""))
     microsoft_client_id: str = field(default_factory=lambda: os.environ.get("MICROSOFT_CLIENT_ID", ""))
     microsoft_client_secret: str = field(default_factory=lambda: os.environ.get("MICROSOFT_CLIENT_SECRET", ""))
     public_base_url: str = field(default_factory=lambda: os.environ.get("PUBLIC_BASE_URL", "http://localhost:8000"))
+
+    # Long enough to outlive a queue wait on a busy partition plus the run
+    # itself, short enough that a token left on shared cluster storage stops
+    # working before someone finds it.
+    webhook_token_ttl_hours: int = field(default_factory=lambda: _int("WEBHOOK_TOKEN_TTL_HOURS", 48))
+    # A callback may fire twice for one job: the trap runs on both SIGTERM and
+    # exit, and curl retries. Ten is a ceiling on replay, not a nonce.
+    webhook_token_max_uses: int = field(default_factory=lambda: _int("WEBHOOK_TOKEN_MAX_USES", 10))
+
+    @property
+    def topology(self) -> QueueTopology:
+        if not self.executor_name:
+            raise RuntimeError("EXECUTOR is not configured")
+        return QueueTopology(self.executor_name)
+
+    @property
+    def worker_queue(self) -> str:
+        return self.topology.worker_queue
+
+    @property
+    def main_exchange(self) -> str:
+        return self.topology.main_exchange
 
 
 settings = Settings()

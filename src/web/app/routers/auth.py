@@ -5,10 +5,11 @@ rather than a second implementation of the same rules -- see legacy_auth for why
 that is deliberate.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, EmailStr, Field
 
 from app import db, legacy_auth
+from app.audit import record_event
 from app.security import (
     CurrentUser,
     clear_session,
@@ -57,20 +58,24 @@ async def me(user: CurrentUser | None = Depends(optional_user)) -> dict:
 
 
 @router.post("/login")
-async def login(payload: Credentials, response: Response) -> dict:
+async def login(payload: Credentials, request: Request, response: Response) -> dict:
     account = await legacy_auth.get_by_email(payload.email)
     # One message for "no such account" and for "wrong password": distinguishing
     # them turns the login form into a way to enumerate who has registered.
-    invalid = HTTPException(status.HTTP_401_UNAUTHORIZED, "Nieprawidłowy e-mail lub hasło")
+    invalid = HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid email or password")
     if account is None or not account.password_hash:
+        await record_event("login_failure", request, status_code=status.HTTP_401_UNAUTHORIZED)
         raise invalid
     if not legacy_auth.verify_password(payload.password, account.password_hash):
+        await record_event("login_failure", request, user_id=account.id, status_code=status.HTTP_401_UNAUTHORIZED)
         raise invalid
     if not account.is_active:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Konto jest nieaktywne")
+        await record_event("login_failure", request, user_id=account.id, status_code=status.HTTP_403_FORBIDDEN)
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Account is inactive")
 
     await legacy_auth.update_last_login(account.id)
     issue_session(response, account.id)
+    await record_event("login_success", request, user_id=account.id, status_code=status.HTTP_200_OK)
     return {
         "user": {
             "id": str(account.id),
@@ -90,7 +95,7 @@ async def register(payload: Registration) -> dict:
     if problem:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, problem)
     if await legacy_auth.get_by_email(payload.email):
-        raise HTTPException(status.HTTP_409_CONFLICT, "Konto o tym adresie już istnieje")
+        raise HTTPException(status.HTTP_409_CONFLICT, "An account with this email already exists")
 
     account = await legacy_auth.create_email_user(
         email=payload.email,
@@ -104,7 +109,7 @@ async def register(payload: Registration) -> dict:
         "id": str(account.id),
         "email": account.email,
         "role": account.role,
-        "note": "Konto czeka na zatwierdzenie przez administratora.",
+        "note": "Account is awaiting administrator approval.",
     }
 
 

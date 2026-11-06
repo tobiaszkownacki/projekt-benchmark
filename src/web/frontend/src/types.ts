@@ -67,6 +67,8 @@ export interface LeaderboardRow {
   stop_reason_mode: string | null;
   task_ids: string[];
   score: number | null;
+  /** Whether the current requester may open these runs; absent means no. */
+  can_view?: boolean;
 }
 
 export interface ScoreFormula {

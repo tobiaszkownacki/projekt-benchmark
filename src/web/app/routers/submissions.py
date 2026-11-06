@@ -16,7 +16,7 @@ from psycopg.types.json import Jsonb
 from pydantic import BaseModel, Field
 
 from app import db
-from app.security import CurrentUser, optional_user, require_verified
+from app.security import CurrentUser, generate_webhook_token, optional_user, require_verified
 from app.services import outbox, validator
 from app.services.authz import can_read_run
 from app.settings import settings
@@ -76,9 +76,9 @@ async def quota(user: CurrentUser = Depends(require_verified)) -> dict:
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def submit(payload: SubmissionRequest, user: CurrentUser = Depends(require_verified)) -> dict:
     if payload.kind == "builtin" and not payload.builtin_name:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Brak nazwy optymalizatora")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Optimizer name is required")
     if payload.kind == "uploaded" and not payload.source_code:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Brak kodu optymalizatora")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Optimizer code is required")
 
     stop_condition: dict[str, Any] = {
         k: v
@@ -92,7 +92,7 @@ async def submit(payload: SubmissionRequest, user: CurrentUser = Depends(require
     if not stop_condition:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
-            "Podaj co najmniej jeden warunek stopu",
+            "Provide at least one stop condition",
         )
 
     seeds = payload.seeds[:16] or [2137]
@@ -100,7 +100,7 @@ async def submit(payload: SubmissionRequest, user: CurrentUser = Depends(require
     if len(seeds) > remaining:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
-            f"Dzienny limit zgłoszeń wyczerpany. Pozostało {remaining} z {settings.daily_submission_limit}.",
+            f"Daily submission limit exhausted. {remaining} of {settings.daily_submission_limit} remain.",
             headers={"Retry-After": "3600"},
         )
 
@@ -111,8 +111,8 @@ async def submit(payload: SubmissionRequest, user: CurrentUser = Depends(require
     else:
         outcome = validator.ValidationResult(
             ok=True,
-            log=f"Optymalizator wbudowany '{payload.builtin_name}' — "
-            f"walidacja protokołu pominięta, kod pochodzi z repozytorium.",
+            log=f"Built-in optimizer '{payload.builtin_name}'. "
+            f"protocol validation skipped because the code comes from the repository.",
             family=BUILTIN_FAMILIES.get(payload.builtin_name or "", "gradient"),
             version="builtin",
         )
@@ -178,7 +178,7 @@ async def submit(payload: SubmissionRequest, user: CurrentUser = Depends(require
                 """,
                     (
                         settings.worker_queue,
-                        "athena",
+                        settings.executor_name,
                         user.id,
                         payload.dataset,
                         run_name,
@@ -195,14 +195,30 @@ async def submit(payload: SubmissionRequest, user: CurrentUser = Depends(require
             ).fetchone()
 
             task_id = task["task_id"]
+
+            # Minted inside the submission's own transaction: until it commits
+            # the token does not exist, and neither does the message that
+            # carries it, so a callback cannot arrive before it can be verified.
+            raw_token, digest, prefix = generate_webhook_token()
+            await conn.execute(
+                """
+                INSERT INTO task_webhook_tokens (task_id, token_sha256, prefix, expires_at)
+                VALUES (%s, %s, %s, NOW() + make_interval(hours => %s))
+                """,
+                (task_id, digest, prefix, settings.webhook_token_ttl_hours),
+            )
+
             await outbox.enqueue(
                 conn,
                 outbox.task_message(
                     task_id,
-                    settings.worker_queue,
                     run_name=run_name,
                     dataset=payload.dataset,
-                    optimizer=optimizer_name,
+                    model=payload.model,
+                    optimizers=[optimizer_name],
+                    seed=seed,
+                    stop_condition=stop_condition,
+                    webhook_token=raw_token,
                 ),
             )
             created.append(str(task_id))

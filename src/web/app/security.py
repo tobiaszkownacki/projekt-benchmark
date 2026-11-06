@@ -16,6 +16,9 @@ from app import db
 from app.settings import settings
 
 _TOKEN_PREFIX = "bmk_"
+# Different on purpose: a token seen in a log says which door it opens before
+# anyone looks it up.
+_WEBHOOK_PREFIX = "bmw_"
 
 
 @dataclass(frozen=True)
@@ -70,11 +73,23 @@ def _read_session(request: Request) -> UUID | None:
         return None
 
 
-def generate_api_token() -> tuple[str, str, str]:
+def mint_token(prefix: str) -> tuple[str, str, str]:
     """Return (plaintext, sha256, prefix). Only the digest is ever stored."""
-    raw = _TOKEN_PREFIX + secrets.token_urlsafe(32)
+    raw = prefix + secrets.token_urlsafe(32)
     digest = hashlib.sha256(raw.encode()).hexdigest()
-    return raw, digest, raw[: len(_TOKEN_PREFIX) + 6]
+    return raw, digest, raw[: len(prefix) + 6]
+
+
+def generate_api_token() -> tuple[str, str, str]:
+    return mint_token(_TOKEN_PREFIX)
+
+
+def generate_webhook_token() -> tuple[str, str, str]:
+    return mint_token(_WEBHOOK_PREFIX)
+
+
+def token_digest(raw: str) -> str:
+    return hashlib.sha256(raw.encode()).hexdigest()
 
 
 async def _user_from_bearer(request: Request) -> dict | None:
