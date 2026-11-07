@@ -1,0 +1,37 @@
+# The image the local executor starts one sandbox container from per job.
+# It holds the engine and the CPU runner, nothing of the web layer or the
+# pipeline. The container is started without network, capabilities or a
+# writable root, so everything the job needs has to be in here.
+FROM python:3.12-slim
+
+RUN pip install --no-cache-dir uv
+
+WORKDIR /app
+
+COPY pyproject.toml uv.lock ./
+
+# CPU-only PyTorch at the locked version, and no CuPy: a local job never sees
+# a GPU, and the CUDA stack would make the image several gigabytes larger.
+RUN uv export --no-hashes --frozen --no-dev --no-emit-project -o requirements.txt \
+    && TORCH=$(sed -nE 's/^torch==([^ ;]+).*/\1/p' requirements.txt) \
+    && TORCHVISION=$(sed -nE 's/^torchvision==([^ ;]+).*/\1/p' requirements.txt) \
+    && uv pip install --system --index-url https://download.pytorch.org/whl/cpu \
+        "torch==${TORCH}+cpu" "torchvision==${TORCHVISION}+cpu" \
+    && grep -vE '^(torch|torchvision|triton|cupy-cuda[0-9a-z]+|nvidia-[a-z0-9-]+)==' requirements.txt \
+        > requirements-cpu.txt \
+    && uv pip install --system -r requirements-cpu.txt \
+    && rm requirements.txt requirements-cpu.txt
+
+COPY src/benchmark_core /app/src/benchmark_core
+COPY src/shared /app/src/shared
+COPY tools/local_backend /app/tools/local_backend
+
+ENV PYTHONPATH=/app:/app/src \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# The executor always passes an unprivileged --user; this only keeps the image
+# from defaulting to root when it is started any other way.
+USER 65534:65534
+
+ENTRYPOINT ["python", "-m", "tools.local_backend.run_job"]

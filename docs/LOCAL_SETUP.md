@@ -143,6 +143,21 @@ curl -s localhost:15672/api/queues -u "$RABBITMQ_USER:$RABBITMQ_PASSWORD" \
 `consumers: 0` is the whole story. The rows already showing "running on Athena"
 or "downloading" are seeded fixtures, not live cluster state.
 
+**Running jobs without the cluster.** The pipeline services started with
+`EXECUTOR=local` run each job on this machine instead, in a sandbox container
+from the `benchmark-local-job` image: no network, no capabilities, read-only
+root, an unprivileged user, limits on memory, CPU, processes, time and output
+size, and only the job's own directory mounted. Whether a job succeeded comes
+from the container's exit code, its error from the container's log. Build the
+image once with
+`docker compose --profile local-executor build local_job_image`. The services
+need the `docker` CLI and the workspace (`EXECUTOR_WORKSPACE`, by default
+`/var/lib/executor-workspace`); if they run in a container, mount the workspace
+and set `EXECUTOR_HOST_WORKSPACE` to its path on the host. Limits:
+`LOCAL_JOB_MEMORY` (4g), `LOCAL_JOB_CPUS` (2), `LOCAL_JOB_TIME_LIMIT` (3600 s),
+`LOCAL_JOB_MAX_OUTPUT_MB` (1024; checked on every poll, so a job writing very
+fast can pass it briefly before it is stopped).
+
 **Uploaded optimizers are checked before they are queued.** Compose builds the
 `benchmark-validator:latest` image and the web service starts a short-lived,
 restricted container for each validation. The web container reaches the host

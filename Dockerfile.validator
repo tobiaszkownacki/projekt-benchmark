@@ -9,9 +9,10 @@ COPY pyproject.toml uv.lock ./
 
 RUN uv export --no-hashes --frozen -o requirements.txt && uv pip install --system -r requirements.txt
 
-COPY src/ /app/src/
-
-RUN chown -R sandboxuser:sandboxuser /app
+# Only the engine: the sandbox runs participant code, so the web layer and
+# its dependencies stay out, and a recursive chown on a large tree stalls
+# on some storage drivers.
+COPY --chown=sandboxuser:sandboxuser src/benchmark_core /app/src/benchmark_core
 
 ENV PYTHONPATH=/app:/app/src \
     PYTHONDONTWRITEBYTECODE=1 \
