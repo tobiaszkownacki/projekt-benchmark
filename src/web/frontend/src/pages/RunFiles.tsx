@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
-import { ErrorNote, Loading } from '../components/Empty';
+import { ArchiveLink, ErrorNote, Loading, RunNotFound } from '../components/Empty';
 import { bytes, timestamp } from '../components/format';
-import { withBase } from '../api';
+import { ApiError, withBase } from '../api';
 import type { FileEntry, Run } from '../types';
 
 interface TreePayload {
@@ -191,6 +191,7 @@ export function RunFiles() {
   }, [onKeyDown]);
 
   if (tree.loading || run.loading) return <div className="page"><Loading what="files" /></div>;
+  if (run.error instanceof ApiError && run.error.status === 404) return <RunNotFound />;
   if (run.error) return <div className="page"><ErrorNote error={run.error} /></div>;
 
   const status = tree.data?.artifact_status ?? 'absent';
@@ -220,7 +221,8 @@ export function RunFiles() {
           <button className="subtle" onClick={() => setShowHelp((v) => !v)}>
             Keyboard shortcuts (?)
           </button>
-          <a className="button" href={withBase(`/api/runs/${taskId}/archive.zip`)}>Download .zip</a>
+          <ArchiveLink href={withBase(`/api/runs/${taskId}/archive.zip`)}
+                       status={run.data?.artifact_status} />
         </div>
       </div>
 

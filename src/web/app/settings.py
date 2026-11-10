@@ -54,11 +54,6 @@ class Settings:
     session_max_age: int = field(default_factory=lambda: _int("SESSION_MAX_AGE", 60 * 60 * 12))
     secure_cookies: bool = field(default_factory=lambda: _bool("SECURE_COOKIES", False))
 
-    # Read in exactly one place (services/authz.can_read_run), so switching
-    # between public and owner-only results is a configuration change rather
-    # than an audit of every endpoint.
-    public_results: bool = field(default_factory=lambda: _bool("PUBLIC_RESULTS", True))
-
     daily_submission_limit: int = field(default_factory=lambda: _int("DAILY_SUBMISSION_LIMIT", 3))
 
     preview_limit_bytes: int = field(default_factory=lambda: _int("PREVIEW_LIMIT_BYTES", 2 * 1024 * 1024))

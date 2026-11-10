@@ -10,7 +10,11 @@ Aggregation is median with quartiles, never the best run: evolutionary methods
 are stochastic, and ranking by best result rewards luck.
 """
 
+from uuid import UUID
+
 from app import db
+from app.security import CurrentUser
+from app.services.authz import can_read_run
 
 SCORE_FORMULAS = {
     "loss_v1": {
@@ -52,7 +56,8 @@ SELECT
     percentile_cont(0.5)  WITHIN GROUP (ORDER BY r.gradient_count)   AS grad_median,
     percentile_cont(0.5)  WITHIN GROUP (ORDER BY r.database_reaches) AS reach_median,
     MODE() WITHIN GROUP (ORDER BY r.stop_reason::text)            AS stop_reason_mode,
-    ARRAY_AGG(t.task_id::text ORDER BY r.final_loss)              AS task_ids
+    ARRAY_AGG(ARRAY[t.task_id::text, t.submitted_by::text]
+              ORDER BY r.final_loss)                              AS task_owners
 FROM tasks t
 JOIN results r ON r.task_id = t.task_id
 WHERE t.task_status = 'COMPLETED'
@@ -67,6 +72,7 @@ async def query(
     suite: str | None = None,
     score: str = DEFAULT_FORMULA,
     limit: int = 200,
+    user: CurrentUser | None = None,
 ) -> dict:
     formula = SCORE_FORMULAS.get(score) or SCORE_FORMULAS[DEFAULT_FORMULA]
 
@@ -97,6 +103,14 @@ async def query(
     ranked.sort(key=score_of, reverse=(formula["direction"] == "desc"))
     ranked = ranked[:limit]
 
+    def readable_ids(row: dict) -> list[str]:
+        # The aggregate counts every run; only the identifiers the requester
+        # can open are handed out, so the ranking is not a directory of
+        # other people's private runs.
+        return [task_id for task_id, owner in row["task_owners"] if can_read_run(user, UUID(owner))]
+
+    readable = [readable_ids(row) for row in ranked]
+
     return {
         "score_formula": formula,
         "available_formulas": list(SCORE_FORMULAS.values()),
@@ -126,7 +140,10 @@ async def query(
                 "gradient_count": {"median": row["grad_median"]},
                 "database_reaches": {"median": row["reach_median"]},
                 "stop_reason_mode": row["stop_reason_mode"],
-                "task_ids": row["task_ids"][:32],
+                "task_ids": readable[index][:32],
+                # True when at least one run behind the row opens for this
+                # requester; always false for an anonymous visitor.
+                "can_view": bool(readable[index]),
                 "score": score_of(row),
             }
             for index, row in enumerate(ranked)

@@ -179,14 +179,16 @@ async def series_row(task_id: UUID) -> dict | None:
     )
 
 
-async def filter_options() -> dict:
+async def filter_options(submitted_by: UUID | None = None) -> dict:
     rows = await db.fetch_all(
         """
         SELECT DISTINCT dataset, model_name, optimizer_name,
                family::text AS family, suite::text AS suite,
                task_status::text AS task_status
           FROM tasks
-        """
+         WHERE %s::uuid IS NULL OR submitted_by = %s
+        """,
+        (submitted_by, submitted_by),
     )
     return {
         "datasets": sorted({r["dataset"] for r in rows if r["dataset"]}),

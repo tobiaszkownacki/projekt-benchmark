@@ -54,7 +54,10 @@ export function Leaderboard() {
   }, [board.data, sort]);
 
   const compareLink = useMemo(() => {
-    const ids = rows.slice(0, 6).flatMap((r) => r.task_ids.slice(0, 8));
+    // Runs are private to their owner, so only rows the requester may open
+    // contribute to the comparison.
+    const ids = rows.filter((r) => r.can_view === true).slice(0, 6)
+      .flatMap((r) => r.task_ids.slice(0, 8));
     return ids.length ? `/compare?runs=${ids.join(',')}&group_by=optimizer` : null;
   }, [rows]);
 
@@ -173,10 +176,12 @@ export function Leaderboard() {
                         : row.n_runs}
                     </td>
                     <td>
-                      <Link className="small"
-                            to={`/compare?runs=${row.task_ids.slice(0, 12).join(',')}&group_by=run`}>
-                        curves
-                      </Link>
+                      {row.can_view === true && (
+                        <Link className="small"
+                              to={`/compare?runs=${row.task_ids.slice(0, 12).join(',')}&group_by=run`}>
+                          curves
+                        </Link>
+                      )}
                     </td>
                   </tr>
                 ))}
