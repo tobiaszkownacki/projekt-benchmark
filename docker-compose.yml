@@ -150,6 +150,9 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       SESSION_SECRET: ${SESSION_SECRET}
+      # Caddy is the only trusted proxy in front of this container. The API
+      # uses its forwarding header to retain the visitor's public address.
+      TRUSTED_PROXY_CIDRS: "${TRUSTED_PROXY_CIDRS:-172.22.0.0/16,127.0.0.0/8,::1/128}"
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_MANAGEMENT_URL: http://rabbitmq:15672
       # Names the queue a submission is written for, and has to match the

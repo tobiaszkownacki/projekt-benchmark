@@ -9,7 +9,7 @@ import asyncio
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 
 from app import db, legacy_auth
@@ -50,6 +50,54 @@ async def users(_: CurrentUser = Depends(require_admin)) -> dict:
         ],
         "users": everyone,
     }
+
+
+@router.get("/audit")
+async def audit(
+    event_type: str | None = Query(default=None, pattern="^(page_view|login_success|login_failure)$"),
+    limit: int = Query(default=100, ge=1, le=1000),
+    _: CurrentUser = Depends(require_admin),
+) -> dict:
+    """Return the private visit/login audit for operators.
+
+    This is intentionally an API-only view: the public frontend has no route
+    for it. The summary makes conference traffic countable without requiring a
+    separate analytics service.
+    """
+    where = ""
+    params: list[object] = []
+    if event_type:
+        where = "WHERE e.event_type = %s"
+        params.append(event_type)
+
+    summary = await db.fetch_one(
+        f"""
+        SELECT COUNT(*) FILTER (WHERE e.event_type = 'page_view') AS page_views,
+               COUNT(DISTINCT e.client_ip) FILTER (WHERE e.event_type = 'page_view')
+                   AS unique_client_ips,
+               COUNT(*) FILTER (WHERE e.event_type = 'login_success') AS successful_logins,
+               COUNT(*) FILTER (WHERE e.event_type = 'login_failure') AS failed_logins,
+               MIN(e.occurred_at) AS first_event_at,
+               MAX(e.occurred_at) AS last_event_at
+          FROM web_audit_events e
+         {where}
+        """,
+        params,
+    )
+    rows = await db.fetch_all(
+        f"""
+        SELECT e.id, e.event_type, e.occurred_at, e.user_id,
+               u.email AS user_email, e.client_ip, e.path, e.method,
+               e.status_code, e.user_agent
+          FROM web_audit_events e
+          LEFT JOIN users u ON u.id = e.user_id
+         {where}
+         ORDER BY e.occurred_at DESC
+         LIMIT %s
+        """,
+        [*params, limit],
+    )
+    return {"summary": summary or {}, "events": rows}
 
 
 @router.post("/users/approve")

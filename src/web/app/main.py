@@ -17,6 +17,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from app import db
+from app.audit import record_page_view
 from app.migrations import apply_migrations
 from app.routers import (
     admin,
@@ -148,6 +149,13 @@ async def security_headers(request: Request, call_next):
             f"script-src {_SCRIPT_SRC}; connect-src 'self'; font-src 'self'; "
             "object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
         )
+    return response
+
+
+@app.middleware("http")
+async def audit_page_views(request: Request, call_next):
+    response = await call_next(request)
+    await record_page_view(request, response.status_code)
     return response
 
 
