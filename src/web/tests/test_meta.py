@@ -16,6 +16,38 @@ def client(tmp_path_factory):
     return TestClient(app)
 
 
+def test_api_carries_the_official_name(client):
+    from app.main import app
+
+    assert app.title == "Opti-Mark (The Golem Benchmark)"
+
+
+def test_protocol_no_longer_lists_contract_limitations(client):
+    body = client.get("/api/protocol").json()
+
+    assert "known_limitations" not in body
+    assert set(body) == {"evaluator_api", "examples", "sandbox", "stop_reasons"}
+
+
+def test_protocol_serves_every_example(client):
+    examples = client.get("/api/protocol").json()["examples"]
+
+    assert set(examples) == {"gradient", "evolutionary", "protocol", "base"}
+    for name, example in examples.items():
+        assert example["present"] is True, name
+        response = client.get(f"/api/protocol/example/{name}")
+        assert response.status_code == 200, name
+        assert response.text.strip(), name
+
+
+def test_template_names_the_benchmark(client):
+    response = client.get("/api/protocol/template")
+
+    assert response.status_code == 200
+    assert "Optimizer template for Opti-Mark (The Golem Benchmark)." in response.text
+    assert "Black-Box Benchmark" not in response.text
+
+
 def test_spa_document_is_revalidated_on_every_load(client, tmp_path, monkeypatch):
     import app.main as main
 

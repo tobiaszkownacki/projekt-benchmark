@@ -5,6 +5,10 @@ import { ErrorNote, Loading } from '../components/Empty';
 import { decimal, duration, familyLabel, integer } from '../components/format';
 import type { LeaderboardRow, ScoreFormula } from '../types';
 
+// The counters are hidden for now. The backend keeps counting either way, so
+// switching this back on restores the section with current numbers.
+const SHOW_OVERVIEW_COUNTERS = false;
+
 interface Counters {
   submissions: number; runs: number; completed: number; failed: number;
   active: number; participants: number; datasets: number; optimizers: number;
@@ -12,7 +16,7 @@ interface Counters {
 }
 
 export function Overview() {
-  const counters = useApi<Counters>('/api/overview');
+  const counters = useApi<Counters>(SHOW_OVERVIEW_COUNTERS ? '/api/overview' : null);
   const board = useApi<{ rows: LeaderboardRow[]; score_formula: ScoreFormula }>(
     '/api/leaderboard?limit=10',
   );
@@ -20,7 +24,7 @@ export function Overview() {
   return (
     <div className="page">
       <div className="page-head">
-        <h1>Black-Box Benchmark</h1>
+        <h1>Opti-Mark</h1>
         <p>
           Participants submit only a mathematical definition of an optimizer and never
           see the model or dataset. The network is reduced to a flat
@@ -34,8 +38,8 @@ export function Overview() {
         </p>
       </div>
 
-      {counters.error && <ErrorNote error={counters.error} />}
-      {counters.data && (
+      {SHOW_OVERVIEW_COUNTERS && counters.error && <ErrorNote error={counters.error} />}
+      {SHOW_OVERVIEW_COUNTERS && counters.data && (
         <div className="section">
           <div className="metrics">
             <Metric label="Submissions" value={integer(counters.data.submissions)}
@@ -65,46 +69,40 @@ export function Overview() {
           <div className="empty">No completed runs yet.</div>
         )}
         {board.data && board.data.rows.length > 0 && (
-          <>
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th className="num">#</th>
-                    <th>Optimizer</th>
-                    <th>Family</th>
-                    <th>Dataset</th>
-                    <th>Model</th>
-                    <th className="num">Final loss (median)</th>
-                    <th className="num">Accuracy</th>
-                    <th className="num">Gradient evaluations</th>
-                    <th className="num">Processed samples</th>
-                    <th className="num">n</th>
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th className="num">#</th>
+                  <th>Optimizer</th>
+                  <th>Family</th>
+                  <th>Dataset</th>
+                  <th>Model</th>
+                  <th className="num">Final loss (median)</th>
+                  <th className="num">Accuracy</th>
+                  <th className="num">Gradient evaluations</th>
+                  <th className="num">Processed samples</th>
+                  <th className="num">n</th>
+                </tr>
+              </thead>
+              <tbody>
+                {board.data.rows.map((row) => (
+                  <tr key={`${row.optimizer}-${row.dataset}-${row.model}-${row.suite}`}>
+                    <td className="num">{row.rank}</td>
+                    <td className="mono">{row.optimizer}</td>
+                    <td className="small">{familyLabel(row.family)}</td>
+                    <td className="mono small">{row.dataset}</td>
+                    <td className="mono small">{row.model}</td>
+                    <td className="num">{decimal(row.final_loss.median)}</td>
+                    <td className="num">{decimal(row.final_accuracy.median, 2)}%</td>
+                    <td className="num">{integer(row.gradient_count.median)}</td>
+                    <td className="num">{integer(row.database_reaches.median)}</td>
+                    <td className="num">{row.n_runs}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {board.data.rows.map((row) => (
-                    <tr key={`${row.optimizer}-${row.dataset}-${row.model}-${row.suite}`}>
-                      <td className="num">{row.rank}</td>
-                      <td className="mono">{row.optimizer}</td>
-                      <td className="small">{familyLabel(row.family)}</td>
-                      <td className="mono small">{row.dataset}</td>
-                      <td className="mono small">{row.model}</td>
-                      <td className="num">{decimal(row.final_loss.median)}</td>
-                      <td className="num">{decimal(row.final_accuracy.median, 2)}%</td>
-                      <td className="num">{integer(row.gradient_count.median)}</td>
-                      <td className="num">{integer(row.database_reaches.median)}</td>
-                      <td className="num">{row.n_runs}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="note" style={{ marginTop: 'var(--space-3)' }}>
-              Aggregate: <strong>{board.data.score_formula.label}</strong>.{' '}
-              {board.data.score_formula.note}
-            </div>
-          </>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

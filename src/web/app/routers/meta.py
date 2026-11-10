@@ -62,40 +62,6 @@ EVALUATOR_API = [
     {"method": "param_count", "returns": "int", "effect": "N/A", "note": "Property. Number of model parameters."},
 ]
 
-# Documented rather than hidden. These are limitations of the contract a
-# participant is asked to write against, and finding them by trial and error
-# during a competition would be worse for everyone than reading them here.
-KNOWN_LIMITATIONS = [
-    {
-        "title": "step() does not know how much budget remains",
-        "detail": "The harness stops the loop. An evolutionary optimizer that "
-        "would like to cool its sigma based on the remaining budget has no "
-        "way to do so. Standard suites (CEC, COCO) expose remaining_budget.",
-    },
-    {
-        "title": "No evaluate_population()",
-        "detail": "A population method with lambda=20 performs twenty "
-        "separate forward passes in one step() instead of a single batched pass. "
-        "The cost is paid by exactly the family of methods this project studies.",
-    },
-    {
-        "title": "Randomness is not controlled",
-        "detail": "The examples use global np.random without a seed. The harness "
-        "should inject a seeded generator into the constructor.",
-    },
-    {
-        "title": "get_output_type() without @classmethod",
-        "detail": "The base class declares it without self and without a decorator. "
-        "Calling it on an instance will fail because of the argument count.",
-    },
-    {
-        "title": "Two different StopReason definitions",
-        "detail": "runner.py and metrics/stop_metrics.py declare enums with the same "
-        "name and different values. The database follows whichever one reaches the "
-        "result.",
-    },
-]
-
 SANDBOX = {
     "network": "--network none",
     "memory": "--memory 2g",
@@ -123,7 +89,6 @@ async def protocol() -> dict:
     return {
         "evaluator_api": EVALUATOR_API,
         "examples": available,
-        "known_limitations": KNOWN_LIMITATIONS,
         "sandbox": SANDBOX,
         "stop_reasons": naming.STOP_REASONS,
     }
@@ -141,7 +106,7 @@ async def protocol_example(name: str) -> PlainTextResponse:
     )
 
 
-_TEMPLATE = '''"""Optimizer template for the Black-Box Benchmark.
+_TEMPLATE = '''"""Optimizer template for Opti-Mark (The Golem Benchmark).
 
 You write only the optimizer mathematics. You see neither the model nor the dataset:
 the network is reduced to a flat parameter vector and objective function.

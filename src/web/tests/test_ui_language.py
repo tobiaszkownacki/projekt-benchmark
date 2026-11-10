@@ -23,7 +23,8 @@ def test_document_declares_english_metadata():
     markup = (FRONTEND_ROOT / "index.html").read_text(encoding="utf-8")
 
     assert '<html lang="en">' in markup
-    assert "<title>Black-Box Benchmark</title>" in markup
+    assert "<title>Opti-Mark (The Golem Benchmark)</title>" in markup
+    assert '<meta name="application-name" content="Opti-Mark (The Golem Benchmark)" />' in markup
     assert 'content="A platform for testing, analyzing, and comparing machine-learning optimizers."' in markup
 
 

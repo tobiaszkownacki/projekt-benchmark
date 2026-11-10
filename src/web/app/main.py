@@ -58,7 +58,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(
-    title="Black-Box Benchmark",
+    title="Opti-Mark (The Golem Benchmark)",
     description="Control plane for the black-box optimizer benchmark",
     version="0.1.0",
     lifespan=lifespan,

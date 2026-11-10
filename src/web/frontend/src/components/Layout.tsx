@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import type { User } from '../types';
-import { api, withBase } from '../api';
+import { api } from '../api';
 
 const LINKS = [
   { to: '/', label: 'Overview', end: true },
@@ -53,7 +53,8 @@ export function Layout({
       <header className="masthead">
         <div className="masthead-inner">
           <Link to="/" className="wordmark">
-            Black-Box Benchmark <span>· Warsaw University of Technology</span>
+            Opti-Mark <span className="wordmark-sub">The Golem Benchmark</span>
+            <span className="wordmark-context">· Warsaw University of Technology</span>
           </Link>
           <nav className="nav" aria-label="Main navigation">
             {LINKS.map((link) => (
@@ -99,9 +100,9 @@ export function Layout({
         color: 'var(--text-3)', fontSize: 12,
       }}>
         <div style={{ maxWidth: 1400, margin: '0 auto' }}>
-          Department of Artificial Intelligence, Faculty of Electronics and Information Technology ·{' '}
-          <Link to="/docs">optimizer contract</Link> ·{' '}
-          <a href={withBase('/api/openapi')}>API documentation</a>
+          Golem Artificial Intelligence Society · Department of Artificial Intelligence,
+          Faculty of Electronics and Information Technology ·{' '}
+          <Link to="/docs">optimizer contract</Link>
         </div>
       </footer>
     </div>

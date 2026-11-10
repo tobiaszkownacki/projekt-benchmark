@@ -187,18 +187,6 @@ export function Leaderboard() {
           {rows.length === 0 && (
             <div className="empty">No results match the selected filters.</div>
           )}
-
-          <div className="note note-accent" style={{ marginTop: 'var(--space-4)' }}>
-            <p>
-              <strong>The aggregate is configurable, not hard-coded.</strong>{' '}
-              Active formula: {board.data.score_formula.label}. {board.data.score_formula.note}
-            </p>
-            <p className="small" style={{ marginBottom: 0 }}>
-              Gradient-based and gradient-free methods consume budget in different
-              units, so no formula combines gradient evaluations with processed samples. The dimensions are shown side by side rather than collapsed into one
-              number.
-            </p>
-          </div>
         </>
       )}
     </div>
