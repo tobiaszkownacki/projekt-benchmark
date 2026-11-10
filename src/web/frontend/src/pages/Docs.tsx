@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useApi } from '../hooks/useApi';
 import { Loading } from '../components/Empty';
+import { withBase } from '../api';
 
 interface ApiRow { method: string; returns: string; effect: string; note: string }
 interface Limitation { title: string; detail: string }
@@ -17,7 +18,7 @@ function CodeBlock({ name, label }: { name: string; label: string }) {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/protocol/example/${name}`)
+    fetch(withBase(`/api/protocol/example/${name}`))
       .then((r) => (r.ok ? r.text() : Promise.reject(new Error(String(r.status)))))
       .then(setCode)
       .catch(() => setCode(null));
@@ -139,7 +140,7 @@ export function Docs() {
       <div className="section">
         <div className="section-head">
           <h2>Complete examples</h2>
-          <a className="small" href="/api/protocol/template" download>
+          <a className="small" href={withBase('/api/protocol/template')} download>
             Download template
           </a>
         </div>

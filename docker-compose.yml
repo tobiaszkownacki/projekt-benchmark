@@ -134,6 +134,9 @@ services:
     build:
       context: .
       dockerfile: src/web/Dockerfile
+      args:
+        # Keep the SPA and its API/download links on the same deployment prefix.
+        BASE_PATH: ${BASE_PATH:-}
     container_name: benchmark_web
     restart: unless-stopped
     depends_on:

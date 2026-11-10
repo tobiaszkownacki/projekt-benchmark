@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import type { User } from '../types';
-import { api } from '../api';
+import { api, withBase } from '../api';
 
 const LINKS = [
   { to: '/', label: 'Overview', end: true },
@@ -101,7 +101,7 @@ export function Layout({
         <div style={{ maxWidth: 1400, margin: '0 auto' }}>
           Department of Artificial Intelligence, Faculty of Electronics and Information Technology ·{' '}
           <Link to="/docs">optimizer contract</Link> ·{' '}
-          <a href="/api/openapi">API documentation</a>
+          <a href={withBase('/api/openapi')}>API documentation</a>
         </div>
       </footer>
     </div>
