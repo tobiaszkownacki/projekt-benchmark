@@ -1,9 +1,9 @@
 import { Link, useSearchParams } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
-import { ErrorNote, Loading } from '../components/Empty';
+import { Empty, ErrorNote, Loading } from '../components/Empty';
 import { StatusPill } from '../components/StatusPill';
 import { decimal, integer, shortId, since, timestamp } from '../components/format';
-import { query } from '../api';
+import { ApiError, query } from '../api';
 import type { Run, User } from '../types';
 
 interface Payload { runs: Run[]; total: number; limit: number; offset: number }
@@ -34,51 +34,67 @@ export function Runs({ user, revision }: { user: User | null; revision: number }
     setParams(next, { replace: true });
   }
 
+  // The API answers 401 to an anonymous visitor: runs are visible only to
+  // their owner and administrators. The cookie decides, not `user`, which is
+  // still null while the session is being resolved.
+  if (runs.error instanceof ApiError && runs.error.status === 401) {
+    return (
+      <div className="page">
+        <div className="page-head"><h1>Runs</h1></div>
+        <Empty title="Log in to see your runs">
+          Runs are visible only to their owner. <Link to="/login">Log in</Link>
+        </Empty>
+      </div>
+    );
+  }
+
+  const isAdmin = user?.is_admin === true;
+
   return (
     <div className="page page-wide">
       <div className="page-head">
-        <h1>Uruchomienia</h1>
+        <h1>{isAdmin ? 'All runs' : 'My runs'}</h1>
         <p>
-          Zadanie czeka w cudzym schedulerze, więc ma więcej stanów niż „trwa”
-          i „gotowe”. Każdy ma własny komunikat — pozycję w kolejce, numer zadania
-          SLURM, czas oczekiwania albo powód niepowodzenia.
+          A task waits in an external scheduler, so it has more states than “running”
+          and “done.” Each state has its own message: queue position, SLURM job number,
+          wait time, or failure reason.
         </p>
       </div>
 
       <div className="controls section">
-        {user && (
+        {isAdmin && (
           <div className="segmented">
             <button className={!mine ? 'active' : ''} onClick={() => update('mine', '')}>
-              Wszystkie
+              All
             </button>
             <button className={mine ? 'active' : ''} onClick={() => update('mine', '1')}>
-              Moje
+              Mine
             </button>
           </div>
         )}
         <div>
-          <label htmlFor="r-status">Stan</label>
+          <label htmlFor="r-status">Status</label>
           <select id="r-status" value={status} onChange={(e) => update('status', e.target.value)}>
-            <option value="">wszystkie</option>
+            <option value="">all</option>
             {filters.data?.statuses.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
-          <label htmlFor="r-dataset">Zbiór</label>
+          <label htmlFor="r-dataset">Dataset</label>
           <select id="r-dataset" value={dataset} onChange={(e) => update('dataset', e.target.value)}>
-            <option value="">wszystkie</option>
+            <option value="">all</option>
             {filters.data?.datasets.map((d) => <option key={d} value={d}>{d}</option>)}
           </select>
         </div>
         <div>
-          <label htmlFor="r-opt">Optymalizator</label>
+          <label htmlFor="r-opt">Optimizer</label>
           <select id="r-opt" value={optimizer} onChange={(e) => update('optimizer', e.target.value)}>
-            <option value="">wszystkie</option>
+            <option value="">all</option>
             {filters.data?.optimizers.map((o) => <option key={o} value={o}>{o}</option>)}
           </select>
         </div>
         <div>
-          <label htmlFor="r-q">Nazwa lub identyfikator</label>
+          <label htmlFor="r-q">Name or ID</label>
           <input id="r-q" defaultValue={search} placeholder="cma-es-wine…"
                  onKeyDown={(e) => {
                    if (e.key === 'Enter') update('q', (e.target as HTMLInputElement).value);
@@ -86,7 +102,7 @@ export function Runs({ user, revision }: { user: User | null; revision: number }
         </div>
       </div>
 
-      {runs.loading && <Loading what="uruchomienia" />}
+      {runs.loading && <Loading what="runs" />}
       {runs.error && <ErrorNote error={runs.error} />}
 
       {runs.data && (
@@ -95,17 +111,18 @@ export function Runs({ user, revision }: { user: User | null; revision: number }
             <table>
               <thead>
                 <tr>
-                  <th>Stan</th>
-                  <th>Nazwa</th>
-                  <th>Optymalizator</th>
-                  <th>Zbiór / model</th>
-                  <th className="num">Ziarno</th>
-                  <th className="num">Strata</th>
-                  <th className="num">Gradienty</th>
-                  <th className="num">Próbki</th>
-                  <th>Powód stopu</th>
-                  <th className="num">W kolejce</th>
-                  <th>Utworzone</th>
+                  <th>Status</th>
+                  <th>Name</th>
+                  {isAdmin && <th>Submitter</th>}
+                  <th>Optimizer</th>
+                  <th>Dataset / model</th>
+                  <th className="num">Seed</th>
+                  <th className="num">Loss</th>
+                  <th className="num">Gradient evaluations</th>
+                  <th className="num">Processed samples</th>
+                  <th>Stop reason</th>
+                  <th className="num">Queue time</th>
+                  <th>Created</th>
                   <th>ID</th>
                 </tr>
               </thead>
@@ -121,17 +138,20 @@ export function Runs({ user, revision }: { user: User | null; revision: number }
                         {run.run_name ?? shortId(run.task_id)}
                       </Link>
                     </td>
-                    <td className="mono small">{run.optimizer ?? '—'}</td>
+                    {isAdmin && (
+                      <td className="small">{run.submitter_name ?? shortId(run.submitted_by)}</td>
+                    )}
+                    <td className="mono small">{run.optimizer ?? 'N/A'}</td>
                     <td className="mono small">{run.dataset} / {run.model}</td>
-                    <td className="num small">{run.seed ?? '—'}</td>
+                    <td className="num small">{run.seed ?? 'N/A'}</td>
                     <td className="num">{decimal(run.metrics?.final_loss ?? null)}</td>
                     <td className="num">{integer(run.metrics?.gradient_count ?? null)}</td>
                     <td className="num">{integer(run.metrics?.database_reaches ?? null)}</td>
-                    <td className="small mono">{run.stop_reason ?? '—'}</td>
+                    <td className="small mono">{run.stop_reason ?? 'N/A'}</td>
                     <td className="num small">
                       {/* Time between queueing and starting: the number a user
                           actually wants when a run "has not done anything". */}
-                      {run.queued_at ? since(run.queued_at, run.started_at) : '—'}
+                      {run.queued_at ? since(run.queued_at, run.started_at) : 'N/A'}
                     </td>
                     <td className="small mono">{timestamp(run.created_at)}</td>
                     <td className="tiny mono dim">{shortId(run.task_id)}</td>
@@ -142,21 +162,21 @@ export function Runs({ user, revision }: { user: User | null; revision: number }
           </div>
 
           {runs.data.runs.length === 0 && (
-            <div className="empty">Brak uruchomień spełniających kryteria.</div>
+            <div className="empty">No runs match these filters.</div>
           )}
 
           <div className="spread" style={{ marginTop: 'var(--space-3)' }}>
             <span className="small muted mono">
-              {runs.data.runs.length} z {runs.data.total}
+              {runs.data.runs.length} of {runs.data.total}
             </span>
             <div className="row">
               <button disabled={offset === 0}
                       onClick={() => update('offset', String(Math.max(0, offset - 50)))}>
-                Poprzednie
+                Previous
               </button>
               <button disabled={offset + 50 >= runs.data.total}
                       onClick={() => update('offset', String(offset + 50))}>
-                Następne
+                Next
               </button>
             </div>
           </div>

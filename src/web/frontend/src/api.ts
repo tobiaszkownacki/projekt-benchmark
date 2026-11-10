@@ -36,7 +36,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const message =
       (body && typeof body === 'object' && 'message' in body
         ? String((body as { message: unknown }).message)
-        : null) ?? `Błąd ${response.status}`;
+        : null) ?? `Request failed (${response.status})`;
     throw new ApiError(response.status, message, body);
   }
   return body as T;

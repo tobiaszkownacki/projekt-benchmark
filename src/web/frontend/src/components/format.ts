@@ -1,30 +1,30 @@
 /** Formatting helpers.
  *
  * Numbers are returned with their unit and surrounding context rather than as
- * bare digits. Polish digit grouping uses a narrow no-break space. */
+ * bare digits. English digit grouping uses a narrow no-break space. */
 
-// U+202F narrow no-break space: the Polish digit group separator. Written as
+// U+202F narrow no-break space: the English digit group separator. Written as
 // an escape so it is visible in review and does not trip the linter.
 const GROUP = '\u202f';
 
 export function integer(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '—';
-  return Math.round(value).toLocaleString('pl-PL').replace(/[\u00a0\u2007\u202f ]/g, GROUP);
+  if (value === null || value === undefined) return 'N/A';
+  return Math.round(value).toLocaleString('en-US').replace(/[\u00a0\u2007\u202f ]/g, GROUP);
 }
 
 export function decimal(value: number | null | undefined, digits = 4): string {
-  if (value === null || value === undefined || Number.isNaN(value)) return '—';
+  if (value === null || value === undefined || Number.isNaN(value)) return 'N/A';
   if (!Number.isFinite(value)) return '∞';
   return value.toFixed(digits);
 }
 
 export function percent(value: number | null | undefined, digits = 2): string {
-  if (value === null || value === undefined) return '—';
+  if (value === null || value === undefined) return 'N/A';
   return `${value.toFixed(digits)}%`;
 }
 
 export function bytes(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '—';
+  if (value === null || value === undefined) return 'N/A';
   const units = ['B', 'kB', 'MB', 'GB'];
   let size = value;
   let unit = 0;
@@ -33,7 +33,7 @@ export function bytes(value: number | null | undefined): string {
 }
 
 export function duration(seconds: number | null | undefined): string {
-  if (seconds === null || seconds === undefined) return '—';
+  if (seconds === null || seconds === undefined) return 'N/A';
   if (seconds < 60) return `${seconds.toFixed(1)} s`;
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes} min ${Math.round(seconds % 60)} s`;
@@ -42,10 +42,10 @@ export function duration(seconds: number | null | undefined): string {
 }
 
 export function timestamp(value: string | null | undefined): string {
-  if (!value) return '—';
+  if (!value) return 'N/A';
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleString('pl-PL', {
+  if (Number.isNaN(date.getTime())) return 'N/A';
+  return date.toLocaleString('en-US', {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
@@ -54,10 +54,10 @@ export function timestamp(value: string | null | undefined): string {
 /** Elapsed time in words. Used for queue waits, which is a number people care
  *  about far more than the absolute timestamp it is derived from. */
 export function since(value: string | null | undefined, until?: string | null): string {
-  if (!value) return '—';
+  if (!value) return 'N/A';
   const start = new Date(value).getTime();
   const end = until ? new Date(until).getTime() : Date.now();
-  if (Number.isNaN(start) || Number.isNaN(end)) return '—';
+  if (Number.isNaN(start) || Number.isNaN(end)) return 'N/A';
   return duration(Math.max(0, (end - start) / 1000));
 }
 
@@ -66,13 +66,13 @@ export function shortId(id: string): string {
 }
 
 export function familyLabel(family: string | null): string {
-  if (family === 'gradient') return 'gradientowa';
-  if (family === 'gradient_free') return 'bezgradientowa';
-  return '—';
+  if (family === 'gradient') return 'gradient-based';
+  if (family === 'gradient_free') return 'gradient-free';
+  return 'N/A';
 }
 
 export function suiteLabel(suite: string | null): string {
-  if (suite === 'final') return 'finałowy';
-  if (suite === 'test') return 'testowy';
-  return '—';
+  if (suite === 'final') return 'final';
+  if (suite === 'test') return 'test';
+  return 'N/A';
 }

@@ -9,56 +9,58 @@ describing the same state three different ways.
 
 METRIC_LABELS = {
     "gradient_count": {
-        "label": "wyliczone gradienty",
-        "short": "gradienty",
-        "hint": "Liczba obliczeń gradientu. Rośnie o 1 przy każdym evaluate_with_grad() i grad().",
+        "label": "gradient evaluations",
+        "short": "gradient evaluations",
+        "hint": "Number of gradient evaluations. Increases by 1 for each evaluate_with_grad() and grad().",
     },
     "database_reaches": {
-        "label": "przetworzone próbki",
-        "short": "próbki",
-        "hint": "Liczba próbek pobranych ze zbioru danych. Rośnie o batch_size przy każdym przejściu w przód.",
+        "label": "processed samples",
+        "short": "processed samples",
+        "hint": "Number of samples read from the dataset. Increases by batch_size on each forward pass.",
     },
     "final_loss": {
-        "label": "strata końcowa",
-        "short": "strata",
-        "hint": "Wartość funkcji straty w ostatniej zapisanej epoce.",
+        "label": "final loss",
+        "short": "loss",
+        "hint": "Loss value in the last recorded epoch.",
     },
     "final_accuracy": {
-        "label": "dokładność końcowa",
-        "short": "dokładność",
-        "hint": "Odsetek poprawnych klasyfikacji w ostatniej zapisanej epoce.",
+        "label": "final accuracy",
+        "short": "accuracy",
+        "hint": "Share of correct classifications in the last recorded epoch.",
     },
     "wall_time_seconds": {
-        "label": "czas zegarowy",
-        "short": "czas",
-        "hint": "Świadomie nieużywany do rankingu — zależy od tego, jaki sprzęt akurat przydzielił scheduler.",
+        "label": "wall-clock time",
+        "short": "time",
+        "hint": (
+            "Intentionally excluded from the leaderboard because it depends on the hardware assigned by the scheduler."
+        ),
     },
 }
 
 STOP_REASONS = {
     "GRADIENT_LIMIT": {
-        "label": "wyczerpany limit gradientów",
-        "note": "Budżet się skończył, optymalizator nie zgłosił zbieżności.",
+        "label": "gradient evaluation budget exhausted",
+        "note": "The budget was exhausted; the optimizer did not report convergence.",
         "converged": False,
     },
     "DATABASE_LIMIT": {
-        "label": "wyczerpany limit próbek",
-        "note": "Budżet się skończył, optymalizator nie zgłosił zbieżności.",
+        "label": "processed sample budget exhausted",
+        "note": "The budget was exhausted; the optimizer did not report convergence.",
         "converged": False,
     },
     "EPOCH_LIMIT": {
-        "label": "wyczerpany limit epok",
-        "note": "Budżet się skończył, optymalizator nie zgłosił zbieżności.",
+        "label": "epoch budget exhausted",
+        "note": "The budget was exhausted; the optimizer did not report convergence.",
         "converged": False,
     },
     "MAX_STEPS": {
-        "label": "wyczerpany limit kroków",
-        "note": "Budżet się skończył, optymalizator nie zgłosił zbieżności.",
+        "label": "step budget exhausted",
+        "note": "The budget was exhausted; the optimizer did not report convergence.",
         "converged": False,
     },
     "OPTIMIZER_CONVERGED": {
-        "label": "optymalizator zgłosił zbieżność",
-        "note": "step() zwrócił True przed wyczerpaniem budżetu.",
+        "label": "optimizer reported convergence",
+        "note": "step() returned True before the budget was exhausted.",
         "converged": True,
     },
 }
@@ -67,48 +69,48 @@ STOP_REASONS = {
 # and "done", and each one owes the user a different sentence.
 RUN_STATES = {
     "queued_broker": {
-        "label": "w kolejce systemu",
-        "detail": "Zgłoszenie czeka na wysłanie do klastra.",
+        "label": "queued for publishing",
+        "detail": "The submission is waiting to be sent to the cluster.",
         "tone": "pending",
     },
     "queued_slurm": {
-        "label": "w kolejce na Atenie",
-        "detail": "Zadanie ma numer w SLURM i czeka na węzeł.",
+        "label": "queued on Athena",
+        "detail": "The task has an SLURM job ID and is waiting for a node.",
         "tone": "pending",
     },
     "running": {
-        "label": "liczy się na Atenie",
-        "detail": "Zadanie zajmuje węzeł obliczeniowy.",
+        "label": "running on Athena",
+        "detail": "The task is using a compute node.",
         "tone": "active",
     },
     "downloading": {
-        "label": "pobieranie wyników z klastra",
-        "detail": "Obliczenia się skończyły, artefakty jeszcze się kopiują.",
+        "label": "downloading results from the cluster",
+        "detail": "Computation has finished; artifacts are still being copied.",
         "tone": "active",
     },
     "completed": {
-        "label": "zakończone",
-        "detail": "Wyniki i artefakty są kompletne.",
+        "label": "completed",
+        "detail": "Results and artifacts are complete.",
         "tone": "success",
     },
     "completed_no_artifacts": {
-        "label": "zakończone — brak artefaktów",
-        "detail": "Obliczenia się powiodły, ale downloader nie znalazł plików.",
+        "label": "completed without artifacts",
+        "detail": "Computation succeeded, but the downloader found no files.",
         "tone": "warning",
     },
     "failed": {
-        "label": "nieudane",
-        "detail": "Zadanie zakończyło się błędem.",
+        "label": "failed",
+        "detail": "The task ended with an error.",
         "tone": "error",
     },
     "failed_no_artifacts": {
-        "label": "nieudane — brak artefaktów",
-        "detail": "Zadanie zawiodło i nie zostawiło plików do obejrzenia.",
+        "label": "failed without artifacts",
+        "detail": "The task failed and left no files to inspect.",
         "tone": "error",
     },
     "rejected": {
-        "label": "odrzucone przy walidacji",
-        "detail": "Zgłoszenie nie przeszło kontroli protokołu i nie trafiło do kolejki.",
+        "label": "rejected during validation",
+        "detail": "The submission failed protocol validation and was not queued.",
         "tone": "error",
     },
 }

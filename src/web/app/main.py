@@ -17,6 +17,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from app import db
+from app.audit import record_page_view
 from app.migrations import apply_migrations
 from app.routers import (
     admin,
@@ -58,7 +59,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(
-    title="Benchmark Czarnej Skrzynki",
+    title="Opti-Mark (The Golem Benchmark)",
     description="Control plane for the black-box optimizer benchmark",
     version="0.1.0",
     lifespan=lifespan,
@@ -151,6 +152,13 @@ async def security_headers(request: Request, call_next):
     return response
 
 
+@app.middleware("http")
+async def audit_page_views(request: Request, call_next):
+    response = await call_next(request)
+    await record_page_view(request, response.status_code)
+    return response
+
+
 if settings.static_root.is_dir():
     app.mount(
         "/assets",
@@ -180,8 +188,11 @@ async def spa(full_path: str) -> Response:
         return FileResponse(candidate)
 
     if _INDEX.is_file():
-        return FileResponse(_INDEX)
+        # index.html names the hashed bundle of the current release. A cached
+        # copy keeps running the previous bundle against the new API, so the
+        # browser must revalidate it on every load.
+        return FileResponse(_INDEX, headers={"Cache-Control": "no-cache"})
     return JSONResponse(
         status_code=503,
-        content={"message": "Frontend nie jest zbudowany. Uruchom `npm run build`."},
+        content={"message": "The frontend is not built. Run `npm run build`."},
     )
