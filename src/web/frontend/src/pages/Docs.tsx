@@ -7,7 +7,6 @@ interface ApiRow { method: string; returns: string; effect: string; note: string
 interface Protocol {
   evaluator_api: ApiRow[];
   examples: Record<string, { filename: string; present: boolean; repo_path: string | null }>;
-  sandbox: Record<string, string>;
   stop_reasons: Record<string, { label: string; note: string; converged: boolean }>;
 }
 
@@ -58,11 +57,9 @@ export function Docs() {
       <div className="page-head">
         <h1>Optimizer contract</h1>
         <p>
-          You write only the mathematical definition of an optimizer. You do not see
-          the model or dataset. The network is reduced to a flat
-          parameter vector and objective function. This lets gradient-based and evolutionary
-          methods use the same interface, and budget use cannot be
-          reported by the optimizer: the evaluator counts it.
+          You only need to write a simple Python class that implements the{' '}
+          <span className="mono">step()</span> method. 
+          Only NumPy/CuPy library knowledge is required. Use NumPy for CPU execution or CuPy for GPU acceleration.
         </p>
       </div>
 
@@ -78,11 +75,10 @@ export function Docs() {
         ...              # any logic
         return False     # True = converged, stop`}</pre>
         <p className="small muted" style={{ marginTop: 'var(--space-3)' }}>
-          Inheritance is optional. <span className="mono">BenchmarkableOptimizer</span>{' '}
-          is a <span className="mono">Protocol</span> with{' '}
-          <span className="mono">@runtime_checkable</span>, so a compatible
-          method needs <span className="mono">step()</span> and{' '}
-          <span className="mono">get_output_type()</span>.
+          Inheritance is optional. <span className="mono">BenchmarkableOptimizer</span>{' '} is a <span className="mono">Protocol</span> with{' '}
+          <span className="mono">@runtime_checkable</span>, so a compatible method needs <span className="mono">step()</span> and{' '}
+          <span className="mono">get_output_type()</span>. The runner supplies the model's initialized weights as the flat{' '}
+          <span className="mono">initial_params</span> vector. The optimizer owns its parameter vectors from then on.
         </p>
       </div>
 
@@ -109,9 +105,8 @@ export function Docs() {
           </table>
         </div>
         <div className="note" style={{ marginTop: 'var(--space-3)' }}>
-          The counter-effect column is the most important part. It is the only place
-          where you can see the cost of each call. The counter is maintained by the system,
-          not your code.
+          Pass the parameter vector you want to test directly to each evaluator method.
+          No separate parameter synchronization call is needed.
         </div>
       </div>
 
@@ -143,29 +138,12 @@ export function Docs() {
           </a>
         </div>
         <p className="small muted">
-          Loaded directly from files in the repository rather than copied into this
-          page. If an example changes in the code, it changes here too.
+          These examples demonstrate explicit candidate evaluation for gradient and non-gradient optimizers.
         </p>
         <div className="stack">
           <CodeBlock name="gradient" label="optimizer_protocols/example_gradient_optimizer.py" />
           <CodeBlock name="evolutionary" label="optimizer_protocols/example_evolutionary_optimizer.py" />
         </div>
-      </div>
-
-      <div className="section">
-        <div className="section-head"><h2>Validator sandbox</h2></div>
-        <p>
-          Submitted code runs in an isolated container before it enters the
-          queue. The reason is practical: a task that fails on the cluster
-          consumes grant time, which is a limited resource.
-        </p>
-        <dl className="kv">
-          {Object.entries(data?.sandbox ?? {}).map(([key, value]) => (
-            <div key={key} style={{ display: 'contents' }}>
-              <dt>{key}</dt><dd>{value}</dd>
-            </div>
-          ))}
-        </dl>
       </div>
     </div>
   );

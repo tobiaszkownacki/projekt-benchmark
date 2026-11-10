@@ -229,8 +229,7 @@ export function RunDetail({ user, revision }: { user: User | null; revision: num
             )}
           </div></div>
           <div className="small muted" style={{ marginTop: 'var(--space-2)' }}>
-            The x-axis is budget, not wall-clock time. The time depends on the node
-            assigned by the scheduler, not on optimizer quality.
+            X-axis represents the budget consumed.
           </div>
         </div>
       )}

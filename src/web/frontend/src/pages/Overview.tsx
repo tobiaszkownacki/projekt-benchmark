@@ -27,14 +27,9 @@ export function Overview() {
       <div className="page-head">
         <h1>Opti-Mark</h1>
         <p>
-          Participants submit only a mathematical definition of an optimizer and never
-          see the model or dataset. The network is reduced to a flat
-          parameter vector and objective function, while the evaluator tracks budget use on
-          the system side rather than the submission.
+          The black-box optimization benchmark for both gradient-based and evolutionary methods with available compute and hand picked neural network problems.
         </p>
         <p>
-          This lets gradient-based and evolutionary methods use the same
-          interface and be compared on a shared budget axis.{' '}
           <Link to="/docs">See the optimizer contract</Link>.
         </p>
       </div>

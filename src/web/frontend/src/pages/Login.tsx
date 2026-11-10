@@ -88,14 +88,6 @@ export function Login({ onUserChange }: { onUserChange: (user: User | null) => v
           </div>
         </div>
       </form>
-
-      <div className="note" style={{ marginTop: 'var(--space-4)' }}>
-        <p className="small" style={{ marginBottom: 0 }}>
-          Google and Microsoft sign-in is available in the existing panel and has
-          moved to the control plane, but it requires a public callback URL that
-          this environment does not have, so it is not enabled here.
-        </p>
-      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+  import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
 import { Chart } from '../components/Chart';
@@ -85,9 +85,7 @@ export function Compare() {
       <div className="page-head">
         <h1>Comparison</h1>
         <p>
-          Overlaid convergence curves with medians and interquartile bands across
-          seeds. The set of runs is encoded in the URL,
-          so this view can be shared as a link.
+          Overlaid convergence curves with medians and interquartile bands across seeds.
         </p>
       </div>
 
@@ -170,8 +168,7 @@ export function Compare() {
 
       {!runs && (
         <div className="empty">
-          No runs selected. Use the “Select runs” button
-          or open this view from the <Link to="/leaderboard">leaderboard</Link>.
+          No runs selected. Use the “Select runs” button or open this view from the <Link to="/leaderboard">leaderboard</Link>.
         </div>
       )}
 
@@ -239,7 +236,7 @@ export function Compare() {
               </div>
             )}
             <div className="note section" style={{ marginTop: 'var(--space-3)' }}>
-              <strong>No p-values are shown deliberately.</strong>
+              <strong>No p-values are shown.</strong>
               <p className="small" style={{ marginTop: 6, marginBottom: 0 }}>
                 {data.data.statistical_test.note}
               </p>
