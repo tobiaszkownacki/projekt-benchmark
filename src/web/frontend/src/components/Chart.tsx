@@ -340,17 +340,23 @@ export function Chart({
               fill="none" stroke="var(--border-strong)" strokeWidth="1" />
       </svg>
 
-      {hover && visible.length > 0 && (
+      {/* The readout stays on screen: with the pointer outside the plot it
+          shows where every curve ends, so the panel never appears and
+          disappears and the content below it does not jump. */}
+      {visible.length > 0 && (
         <div className="panel" style={{ padding: 'var(--space-2) var(--space-3)', marginTop: 8 }}>
           <div className="tiny muted mono" style={{ marginBottom: 4 }}>
-            {xLabel} ≈ {integer(visible[0].x[hover.index])}
+            {hover
+              ? <>{xLabel} ≈ {integer(visible[0].x[hover.index])}</>
+              : <>{xLabel}: end of each curve (hover the chart to read other points)</>}
           </div>
           <table style={{ fontSize: 12 }}>
             <tbody>
               {visible.map((entry) => {
                 const index = series.findIndex((s) => s.label === entry.label);
-                const median = entry.median[hover.index];
-                const n = entry.n_at_x[hover.index];
+                const at = hover ? hover.index : entry.x.length - 1;
+                const median = entry.median[at] ?? null;
+                const n = entry.n_at_x[at];
                 return (
                   <tr key={entry.label}>
                     <td style={{ borderBottom: 'none', padding: '1px 8px 1px 0' }}>

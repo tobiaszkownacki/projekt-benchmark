@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
 import { Metric } from '../components/Metric';
+import { PublicCurves } from '../components/PublicCurves';
 import { ErrorNote, Loading } from '../components/Empty';
 import { decimal, duration, familyLabel, integer } from '../components/format';
 import type { LeaderboardRow, ScoreFormula } from '../types';
@@ -105,6 +106,8 @@ export function Overview() {
           </div>
         )}
       </div>
+
+      <PublicCurves height={320} compact />
     </div>
   );
 }

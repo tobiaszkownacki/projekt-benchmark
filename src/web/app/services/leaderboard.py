@@ -14,6 +14,7 @@ from uuid import UUID
 
 from app import db
 from app.security import CurrentUser
+from app.services import series as series_service
 from app.services.authz import can_read_run
 
 SCORE_FORMULAS = {
@@ -164,4 +165,104 @@ async def filter_options() -> dict:
         "models": sorted({r["model_name"] for r in rows if r["model_name"]}),
         "families": sorted({r["family"] for r in rows if r["family"]}),
         "suites": sorted({r["suite"] for r in rows if r["suite"]}),
+    }
+
+
+# A public curve is a median over runs. Over one or two runs that "median" is
+# somebody's private run drawn on a public page, so smaller groups are listed
+# with their size but get no curve.
+MIN_PUBLIC_RUNS = 3
+
+_CURVE_SQL = """
+SELECT t.dataset, t.model_name, t.suite::text AS suite,
+       t.optimizer_name, t.family::text AS family,
+       s.loss, s.accuracy, s.epochs,
+       s.gradient_count, s.database_reaches
+  FROM tasks t
+  JOIN results r ON r.task_id = t.task_id
+  JOIN result_series s ON s.task_id = t.task_id
+ WHERE t.task_status = 'COMPLETED'
+   AND t.optimizer_name IS NOT NULL
+   AND t.dataset IS NOT NULL
+   AND t.model_name IS NOT NULL
+"""
+
+
+async def public_curves(
+    dataset: str | None = None,
+    model: str | None = None,
+    suite: str | None = None,
+    x: str = "database_reaches",
+    metric: str = "loss",
+    points: int = 160,
+) -> dict:
+    """Convergence curves per optimizer for one problem, open to everyone.
+
+    Only the aggregate leaves the server: median and interquartile band per
+    optimizer, with the run count. No run identifier, owner, seed or single
+    run's series is part of the response, so the curves add information to the
+    public ranking without exposing the runs behind it.
+    """
+    rows = await db.fetch_all(_CURVE_SQL)
+
+    cells: dict[tuple[str, str, str], dict[str, list[dict]]] = {}
+    for row in rows:
+        key = (row["dataset"], row["model_name"], row["suite"])
+        cells.setdefault(key, {}).setdefault(row["optimizer_name"], []).append(row)
+
+    def eligible(groups: dict[str, list[dict]]) -> int:
+        return sum(1 for runs in groups.values() if len(runs) >= MIN_PUBLIC_RUNS)
+
+    listing = sorted(
+        (
+            {
+                "dataset": d,
+                "model": m,
+                "suite": s,
+                "n_optimizers": eligible(groups),
+                "n_runs": sum(len(r) for r in groups.values()),
+            }
+            for (d, m, s), groups in cells.items()
+            if eligible(groups) > 0
+        ),
+        key=lambda c: (c["dataset"], c["model"], c["suite"]),
+    )
+
+    selected = None
+    if dataset and model:
+        wanted = (dataset, model, suite or "test")
+        if wanted in cells and eligible(cells[wanted]) > 0:
+            selected = wanted
+    if selected is None and listing:
+        # Default to the problem with the most methods side by side.
+        best = max(listing, key=lambda c: (c["n_optimizers"], c["n_runs"]))
+        selected = (best["dataset"], best["model"], best["suite"])
+
+    series: list[dict] = []
+    withheld: list[dict] = []
+    if selected is not None:
+        for name, group in sorted(cells[selected].items()):
+            if len(group) < MIN_PUBLIC_RUNS:
+                withheld.append({"label": name, "n_runs": len(group)})
+                continue
+            pairs = [series_service.series_points(r, x, metric) for r in group]
+            aggregated = series_service.aggregate(
+                label=name,
+                runs=pairs,
+                family=group[0]["family"],
+                points=points,
+            )
+            if aggregated.n_runs >= MIN_PUBLIC_RUNS:
+                series.append(aggregated.to_dict())
+            else:
+                withheld.append({"label": name, "n_runs": len(group)})
+
+    return {
+        "cells": listing,
+        "selected": ({"dataset": selected[0], "model": selected[1], "suite": selected[2]} if selected else None),
+        "x": x,
+        "metric": metric,
+        "min_runs": MIN_PUBLIC_RUNS,
+        "series": series,
+        "withheld": withheld,
     }

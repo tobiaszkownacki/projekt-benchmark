@@ -4,6 +4,7 @@ import { useApi } from '../hooks/useApi';
 import { ErrorNote, Loading } from '../components/Empty';
 import { decimal, familyLabel, integer, suiteLabel } from '../components/format';
 import { query } from '../api';
+import { PublicCurves } from '../components/PublicCurves';
 import type { LeaderboardRow, ScoreFormula } from '../types';
 
 interface Filters {
@@ -194,6 +195,8 @@ export function Leaderboard() {
           )}
         </>
       )}
+
+      <PublicCurves />
     </div>
   );
 }

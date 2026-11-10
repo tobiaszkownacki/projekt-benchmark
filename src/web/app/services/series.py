@@ -136,10 +136,16 @@ def build_grid(runs: Iterable[Sequence[tuple[float, float]]], points: int, logar
 
         log_lo, log_hi = math.log10(lo), math.log10(hi)
         step = (log_hi - log_lo) / (points - 1)
-        return [10 ** (log_lo + i * step) for i in range(points)]
+        grid = [10 ** (log_lo + i * step) for i in range(points)]
+    else:
+        step = (hi - lo) / (points - 1)
+        grid = [lo + i * step for i in range(points)]
 
-    step = (hi - lo) / (points - 1)
-    return [lo + i * step for i in range(points)]
+    # Accumulated rounding leaves the last point a hair below the largest
+    # budget, and the step lookup then reports the previous value: every curve
+    # would end one sample early. Pin the ends to the measured budgets.
+    grid[0], grid[-1] = lo, hi
+    return grid
 
 
 @dataclass

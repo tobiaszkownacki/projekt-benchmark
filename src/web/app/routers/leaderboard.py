@@ -1,10 +1,11 @@
 """Leaderboard and overview counters."""
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app import db
 from app.security import CurrentUser, optional_user
 from app.services import leaderboard as leaderboard_service
+from app.services import series as series_service
 
 router = APIRouter(prefix="/api", tags=["leaderboard"])
 
@@ -27,6 +28,30 @@ async def leaderboard(
         score=score,
         limit=limit,
         user=user,
+    )
+
+
+@router.get("/leaderboard/curves")
+async def leaderboard_curves(
+    dataset: str | None = None,
+    model: str | None = None,
+    suite: str | None = None,
+    x: str = Query("database_reaches"),
+    metric: str = Query("loss"),
+    points: int = Query(160, ge=20, le=400),
+) -> dict:
+    """Public, aggregate-only convergence curves; see the service docstring."""
+    if x not in series_service.X_AXES:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown x axis")
+    if metric not in series_service.METRICS:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown metric")
+    return await leaderboard_service.public_curves(
+        dataset=dataset,
+        model=model,
+        suite=suite,
+        x=x,
+        metric=metric,
+        points=points,
     )
 
 
