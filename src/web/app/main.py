@@ -58,7 +58,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(
-    title="Benchmark Czarnej Skrzynki",
+    title="Black-Box Benchmark",
     description="Control plane for the black-box optimizer benchmark",
     version="0.1.0",
     lifespan=lifespan,
@@ -183,5 +183,5 @@ async def spa(full_path: str) -> Response:
         return FileResponse(_INDEX)
     return JSONResponse(
         status_code=503,
-        content={"message": "Frontend nie jest zbudowany. Uruchom `npm run build`."},
+        content={"message": "The frontend is not built. Run `npm run build`."},
     )

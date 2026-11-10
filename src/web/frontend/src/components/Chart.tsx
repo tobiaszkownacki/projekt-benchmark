@@ -123,7 +123,7 @@ export function Chart({
   }, [visible, zoom, logX, logY, showBand, series]);
 
   if (!domain) {
-    return <div className="empty">Brak danych do narysowania.</div>;
+    return <div className="empty">No data to plot.</div>;
   }
 
   const scaleX = makeScale(domain.xMin, domain.xMax, PADDING.left, PADDING.left + plotWidth, logX);
@@ -186,7 +186,7 @@ export function Chart({
     markup = markup.replace(/var\((--[a-z0-9-]+)\)/g, (_m, name) =>
       computed.getPropertyValue(name).trim() || '#000000');
     const blob = new Blob([markup], { type: 'image/svg+xml' });
-    download(URL.createObjectURL(blob), 'wykres.svg');
+    download(URL.createObjectURL(blob), 'chart.svg');
   }
 
   function exportPng() {
@@ -207,7 +207,7 @@ export function Chart({
       context.fillRect(0, 0, canvas.width, canvas.height);
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
       URL.revokeObjectURL(blobUrl);
-      download(canvas.toDataURL('image/png'), 'wykres.png');
+      download(canvas.toDataURL('image/png'), 'chart.png');
     };
     image.src = blobUrl;
   }
@@ -225,7 +225,7 @@ export function Chart({
         viewBox={`0 0 ${width} ${height}`}
         style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none' }}
         role="img"
-        aria-label={`${yLabel} w funkcji: ${xLabel}`}
+        aria-label={`${yLabel} as a function of: ${xLabel}`}
         onMouseMove={(event) => {
           const index = pointerIndex(event);
           if (index === null) { setHover(null); return; }
@@ -361,7 +361,7 @@ export function Chart({
                     </td>
                     <td style={{ borderBottom: 'none', padding: '1px 8px 1px 0' }}>{entry.label}</td>
                     <td className="num" style={{ borderBottom: 'none', padding: '1px 8px 1px 0' }}>
-                      {median === null ? '—' : decimal(median, 4)}
+                      {median === null ? 'N/A' : decimal(median, 4)}
                     </td>
                     <td className="num tiny muted" style={{ borderBottom: 'none' }}>
                       {/* n at this budget, because it changes along the axis and
@@ -395,8 +395,8 @@ export function Chart({
                 })}
                 style={{ opacity: off ? 0.4 : 1, fontSize: 12, padding: '2px 6px' }}
                 title={flat
-                  ? 'Ta metoda nie zużywa tej waluty budżetu — brak krzywej na tej osi'
-                  : (off ? 'Pokaż serię' : 'Ukryj serię')}
+                  ? 'This method does not consume this budget currency, so no curve is shown on this axis'
+                  : (off ? 'Show series' : 'Hide series')}
               >
                 <svg width="20" height="8" style={{ verticalAlign: 'middle', marginRight: 5 }}>
                   <line x1="0" y1="4" x2="20" y2="4" strokeWidth="2"
@@ -407,7 +407,7 @@ export function Chart({
                 <span className="tiny muted mono" style={{ marginLeft: 5 }}>n={entry.n_runs}</span>
                 {flat && (
                   <span className="tiny" style={{ marginLeft: 5, color: 'var(--warning)' }}>
-                    brak na tej osi
+                    no data on this axis
                   </span>
                 )}
               </button>
@@ -415,14 +415,14 @@ export function Chart({
           })}
         </div>
         <div className="row" style={{ gap: 'var(--space-2)' }}>
-          {zoom && <button className="subtle" onClick={() => setZoom(null)}>Pełny zakres</button>}
+          {zoom && <button className="subtle" onClick={() => setZoom(null)}>Full range</button>}
           <button className="subtle" onClick={exportSvg}>SVG</button>
           <button className="subtle" onClick={exportPng}>PNG</button>
         </div>
       </div>
       <div className="tiny dim" style={{ marginTop: 4 }}>
-        Przeciągnij po wykresie, żeby przybliżyć. Podwójne kliknięcie wraca do pełnego zakresu.
-        Kreskowana część wstęgi oznacza budżet, na którym część przebiegów już się zakończyła.
+        Drag across the chart to zoom. Double-click to return to the full range.
+        The hatched part of the band marks the budget where some runs have already ended.
       </div>
     </div>
   );
