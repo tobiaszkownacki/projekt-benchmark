@@ -28,7 +28,7 @@ class NumpyAdamW(NumpyBenchmarkOptimizer):
         self.t = 0
 
     def step(self, evaluator: ModelEvaluator) -> bool:
-        loss, grad = evaluator.evaluate_with_grad()
+        loss, grad = evaluator.evaluate_with_grad(self.params)
         self.t += 1
 
         # Adam update
@@ -47,6 +47,5 @@ class NumpyAdamW(NumpyBenchmarkOptimizer):
         else:
             self.params = self.params - self.lr * step_val
 
-        evaluator.set_params(self.params)
-
+        
         return False

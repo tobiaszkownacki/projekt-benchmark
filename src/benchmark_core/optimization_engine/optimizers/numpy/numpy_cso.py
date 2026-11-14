@@ -33,7 +33,7 @@ class NumpyCSO(NumpyBenchmarkOptimizer):
                 empirical_phi = 0.14 * np.log10(self.pop_size) - 0.30
                 self.phi = max(0.0, empirical_phi)
         else:
-            self.phi = phi🚧
+            self.phi = phi
 
         # 1. Define Bounds
         if "bounds" in config:
@@ -64,12 +64,10 @@ class NumpyCSO(NumpyBenchmarkOptimizer):
         # Initial Evaluation (First Step only)
         if not self._initialized:
             for i in range(self.pop_size):
-                evaluator.set_params(self.population[i])
-                self.fitness[i] = evaluator.evaluate()
+                self.fitness[i] = evaluator.evaluate(self.population[i])
             
             best_idx = np.argmin(self.fitness)
             self.params = self.population[best_idx].copy()
-            evaluator.set_params(self.params)
             self._initialized = True
             return False
 
@@ -107,12 +105,10 @@ class NumpyCSO(NumpyBenchmarkOptimizer):
         
         # 5. Evaluation (Evaluate ONLY the losers)
         for idx in losers:
-            evaluator.set_params(self.population[idx])
-            self.fitness[idx] = evaluator.evaluate()
+            self.fitness[idx] = evaluator.evaluate(self.population[idx])
 
         # Update global best for the protocol tracking
         best_idx = np.argmin(self.fitness)
         self.params = self.population[best_idx].copy()
-        evaluator.set_params(self.params)
-
+        
         return False

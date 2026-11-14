@@ -31,7 +31,7 @@ class NumpyAdam(NumpyBenchmarkOptimizer):
         self.t = 0
 
     def step(self, evaluator: ModelEvaluator) -> bool:
-        loss, grad = evaluator.evaluate_with_grad()
+        loss, grad = evaluator.evaluate_with_grad(self.params)
         self.t += 1
 
         # Weight decay
@@ -46,6 +46,5 @@ class NumpyAdam(NumpyBenchmarkOptimizer):
         v_hat = self.v / (1 - self.beta2**self.t)
 
         self.params = self.params - self.lr * m_hat / (np.sqrt(v_hat) + self.eps)
-        evaluator.set_params(self.params)
-
+        
         return False

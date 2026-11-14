@@ -63,13 +63,11 @@ class NumpyDifferentialEvolution(NumpyBenchmarkOptimizer):
         # Initial Evaluation (First Step only)
         if not self._initialized:
             for i in range(self.pop_size):
-                evaluator.set_params(self.population[i])
-                self.fitness[i] = evaluator.evaluate()
+                self.fitness[i] = evaluator.evaluate(self.population[i])
 
             # Set the "current best" for the benchmark protocol to track
             best_idx = np.argmin(self.fitness)
             self.params = self.population[best_idx]
-            evaluator.set_params(self.params)
             self._initialized = True
             return False
 
@@ -100,8 +98,7 @@ class NumpyDifferentialEvolution(NumpyBenchmarkOptimizer):
 
         # 3. Greedy selection with trial evaluation
         for i in range(self.pop_size):
-            evaluator.set_params(u_trials[i])
-            f_trial = evaluator.evaluate()
+            f_trial = evaluator.evaluate(u_trials[i])
 
             if f_trial <= self.fitness[i]:
                 self.population[i] = u_trials[i]
@@ -110,6 +107,5 @@ class NumpyDifferentialEvolution(NumpyBenchmarkOptimizer):
         # 4. Update global best for the protocol
         best_idx = np.argmin(self.fitness)
         self.params = self.population[best_idx]
-        evaluator.set_params(self.params)
-
+        
         return False

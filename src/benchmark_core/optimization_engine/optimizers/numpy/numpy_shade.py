@@ -58,12 +58,10 @@ class NumpySHADE(NumpyBenchmarkOptimizer):
     def step(self, evaluator: ModelEvaluator) -> bool:
         if not self._initialized:
             for i in range(self.pop_size):
-                evaluator.set_params(self.population[i])
-                self.fitness[i] = evaluator.evaluate()
+                self.fitness[i] = evaluator.evaluate(self.population[i])
             
             best_idx = np.argmin(self.fitness)
             self.params = self.population[best_idx]
-            evaluator.set_params(self.params)
             self._initialized = True
             return False
 
@@ -146,8 +144,7 @@ class NumpySHADE(NumpyBenchmarkOptimizer):
         new_archive_items = []
         
         for i in range(N):
-            evaluator.set_params(u_trials[i])
-            f_trial = evaluator.evaluate()
+            f_trial = evaluator.evaluate(u_trials[i])
             
             # x_i,G+1 = u_i,G if f(u_i,G) <= f(x_i,G)
             if f_trial <= self.fitness[i]:
@@ -187,6 +184,5 @@ class NumpySHADE(NumpyBenchmarkOptimizer):
         # Update global best for the protocol
         best_idx = np.argmin(self.fitness)
         self.params = self.population[best_idx]
-        evaluator.set_params(self.params)
-
+        
         return False

@@ -141,8 +141,7 @@ class NumpyDES(NumpyBenchmarkOptimizer):
         if self.Lamarckism:
             # Lamarckism: Evaluate repaired individuals directly
             for i in range(self.lambda_):
-                evaluator.set_params(P_repaired[:, i])
-                fits[i] = evaluator.evaluate()
+                fits[i] = evaluator.evaluate(P_repaired[:, i])
         else:
             # Darwinian: Evaluate valid points and penalize out of bounds
             for i in range(self.lambda_):
@@ -151,8 +150,7 @@ class NumpyDES(NumpyBenchmarkOptimizer):
                 # in R, I think, it evaluated if a point is out on ALL dimensions, here it checks
                 # if its out in even one and punishes it
                 if np.array_equal(P[:, i], P_repaired[:, i]):
-                    evaluator.set_params(P[:, i])
-                    fits[i] = evaluator.evaluate()
+                    fits[i] = evaluator.evaluate(P[:, i])
                 else:
                     # penalization
                     dist_sq = np.sum((P[:, i] - P_repaired[:, i]) ** 2)
@@ -175,8 +173,7 @@ class NumpyDES(NumpyBenchmarkOptimizer):
             best_idx = np.argmin(self.fitness)
             self.best_fit = self.fitness[best_idx]
             self.params = self.population[:, best_idx].copy()
-            evaluator.set_params(self.params)
-
+            
             self._initialized = True
             return False
 
@@ -262,13 +259,11 @@ class NumpyDES(NumpyBenchmarkOptimizer):
 
         self.cumMean = 0.8 * self.cumMean + 0.2 * self.newMean
         cumMeanRepaired = self._bounce_back_boundary(self.cumMean[:, None])[:, 0]
-        evaluator.set_params(cumMeanRepaired)
-        fn_cum = evaluator.evaluate()
+        fn_cum = evaluator.evaluate(cumMeanRepaired)
 
         if fn_cum < self.best_fit:
             self.best_fit = fn_cum
             self.params = cumMeanRepaired.copy()
 
-        evaluator.set_params(self.params)
-
+        
         return False
