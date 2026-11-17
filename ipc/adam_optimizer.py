@@ -40,4 +40,4 @@ class AdamOptimizer:
 
         self.params = self.params - self.lr * m_hat / (torch.sqrt(v_hat) + self.eps)
         
-        return False
+        return loss < 1e-6
