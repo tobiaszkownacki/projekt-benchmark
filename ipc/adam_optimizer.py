@@ -3,6 +3,7 @@ from torch import Tensor
 
 from model_evaluator import ModelEvaluator
 
+
 class AdamOptimizer:
     def __init__(
         self,
@@ -39,5 +40,6 @@ class AdamOptimizer:
         v_hat = self.v / (1 - self.beta2**self.t)
 
         self.params = self.params - self.lr * m_hat / (torch.sqrt(v_hat) + self.eps)
-        
+
         return loss < 1e-6
+

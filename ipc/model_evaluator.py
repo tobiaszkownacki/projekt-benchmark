@@ -10,21 +10,29 @@ class ModelEvaluator:
     def __init__(
         self,
         model: Module,
-        inputs: Tensor,
-        targets: Tensor,
         criterion: Callable,
         device: torch.device,
         metrics_callback: Callable[[int, int], None],
+        inputs: Tensor | None = None,
+        targets: Tensor | None = None,
     ):
         self._model = model
-        self._inputs = inputs.to(device)
-        self._targets = targets.to(device)
         self._criterion = criterion
         self._device = device
         self._metrics_callback = metrics_callback
-        self._batch_size = targets.size(0)
+        self._inputs: Tensor | None = None
+        self._targets: Tensor | None = None
+        self._batch_size = 0
         self._param_shapes = [p.shape for p in model.parameters()]
         self._param_count = sum(p.numel() for p in model.parameters())
+
+        if inputs is not None and targets is not None:
+            self.set_batch(inputs, targets)
+
+    def set_batch(self, inputs: Tensor, targets: Tensor) -> None:
+        self._inputs = inputs.to(self._device)
+        self._targets = targets.to(self._device)
+        self._batch_size = targets.size(0)
 
     @property
     def batch_size(self) -> int:
