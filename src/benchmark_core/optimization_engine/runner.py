@@ -168,7 +168,7 @@ class BenchmarkRunner:
         model = self.model_factory()
         model.to(self.device)
 
-        initial_params = parameters_to_vector(model.parameters()).detach().cpu().clone()
+        initial_params = parameters_to_vector(model.parameters()).detach().clone()
 
         # metric counters
         gradient_count = 0
@@ -259,7 +259,7 @@ class BenchmarkRunner:
                     step_count += 1
 
                     vector_to_parameters(
-                        shared["params"].to(self.device),
+                        shared["params"],
                         model.parameters(),
                     )
 

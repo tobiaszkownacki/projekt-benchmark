@@ -55,6 +55,9 @@ def optimizer_worker(
         except (BrokenPipeError, OSError):
             pass
     finally:
+        evaluator = None
+        optimizer = None
+        shared = None
         pipe.close()
 
 
@@ -92,14 +95,14 @@ def handle_ipc_operation(msg, parent_opt: Connection, evaluator: ModelEvaluator,
     match msg:
         case Operation.GRAD:
             gradient = evaluator.grad(shared["params"])
-            shared["grad"].copy_(gradient.detach().cpu())
+            shared["grad"].copy_(gradient.detach())
         case Operation.LOSS:
             loss_val = evaluator.evaluate(shared["params"])
             shared["loss"][0] = loss_val
         case Operation.LOSS_GRAD:
             loss_val, gradient = evaluator.evaluate_with_grad(shared["params"])
             shared["loss"][0] = loss_val
-            shared["grad"].copy_(gradient.detach().cpu())
+            shared["grad"].copy_(gradient.detach())
         case _:
             raise RuntimeError(f"Unexpected optimizer reply: {msg}")
     parent_opt.send(OperationResponse.OK)

@@ -18,11 +18,10 @@ class RemoteEvaluator:
         self.type = output_type
 
     def _to_tensor(self, params: object) -> Tensor:
-        return self.type(params).to(PyTorchTensorEvaluatorDto, device=torch.device("cpu")).data().detach().cpu()
+        return self.type(params).to(PyTorchTensorEvaluatorDto, device=self.shared["params"].device).data()
 
     def _from_tensor(self, tensor: Tensor) -> object:
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        return PyTorchTensorEvaluatorDto(tensor.to(device)).to(self.type).data()
+        return PyTorchTensorEvaluatorDto(tensor).to(self.type).data()
 
     def _request(self, operation_code: Operation, params: object) -> None:
         self.shared["params"].copy_(self._to_tensor(params))
