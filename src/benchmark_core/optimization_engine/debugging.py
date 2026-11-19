@@ -73,3 +73,6 @@ class VerboseSharedDict:
         else:
             self._data[key] = value
         print(f"{self._tag()} SHARED[{key!r}] = {value}", flush=True)
+
+    def clear(self):
+        self._data.clear()

@@ -57,7 +57,7 @@ def optimizer_worker(
     finally:
         evaluator = None
         optimizer = None
-        shared = None
+        shared.clear()
         pipe.close()
 
 
