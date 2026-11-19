@@ -12,7 +12,6 @@ class ExampleGradientOptimizer(BenchmarkOptimizer):
         self.lr = lr
 
     def step(self, evaluator: ModelEvaluator) -> bool:
-        loss, grad = evaluator.evaluate_with_grad()
+        loss, grad = evaluator.evaluate_with_grad(self.params)
         self.params = self.params - self.lr * grad
-        evaluator.set_params(self.params)
         return False  # Never converges on its own

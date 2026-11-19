@@ -39,14 +39,11 @@ To add a new optimization algorithm to the benchmark suite:
         def step(self, evaluator: ModelEvaluator) -> bool:
             # Get loss and gradients from the evaluator.
             # The data format (NumPy, CuPy) will match your chosen base class.
-            loss, grad = evaluator.evaluate_with_grad()  # 'grad' will be a NumPy array here
+            loss, grad = evaluator.evaluate_with_grad(self.params)  # 'grad' will be a NumPy array here
 
             # --- Your custom optimization logic goes here ---
             self.params = self.params - self.custom_param * grad
             # ------------------------------------------------
-
-            # Update the model parameters in the evaluator
-            evaluator.set_params(self.params)
 
             # Return True if the optimizer has converged and should stop, False otherwise
             return False

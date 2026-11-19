@@ -251,7 +251,7 @@ def main():
             print_status(
                 "Integration with ModelEvaluator (metrics tracking)",
                 False,
-                "Warning: Optimizer did not call evaluate() or evaluate_with_grad()!",
+                "Warning: Optimizer did not call evaluate(params) or evaluate_with_grad(params)!",
             )
 
         opt_internal_params = getattr(opt_instance, "params", initial_params)

@@ -19,5 +19,6 @@ class CupyBenchmarkOptimizer(BenchmarkOptimizer):
         """
         raise NotImplementedError("Implement step() in your optimizer")
 
-    def get_output_type() -> type[EvaluatorDto]:
+    @classmethod
+    def get_output_type(cls) -> type[EvaluatorDto]:
         return CupyNdarrayTensorEvaluatorDto

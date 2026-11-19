@@ -15,10 +15,10 @@ class BenchmarkableOptimizer(Protocol):
 
         Args:
             ModelEvaluator, which provides:
-                - evaluate() -> float: Get loss (forward pass)
-                - evaluate_with_grad() -> (loss, grad): Get loss and gradients
-                - get_params() -> np.ndarray: Get current parameters
-                - set_params(params): Set new parameters
+                - evaluate(params) -> float: Evaluate a parameter vector
+                - evaluate_with_grad(params) -> (loss, grad): Evaluate and get gradients
+                - grad(params) -> ndarray: Get gradients
+                - get_predictions(params) -> (predictions, targets)
                 - batch_size: Number of samples in current batch
                 - param_count: Total number of parameters
 
@@ -29,5 +29,6 @@ class BenchmarkableOptimizer(Protocol):
         Note:
             Metrics (database_reaches, gradient_count) are tracked
             automatically when you call evaluator methods
+            The optimizer owns its parameter vectors, the evaluator does not expose them.
         """
         ...

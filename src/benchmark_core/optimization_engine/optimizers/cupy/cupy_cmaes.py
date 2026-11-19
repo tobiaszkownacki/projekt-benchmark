@@ -36,14 +36,12 @@ class CupyCMAES(NumpyBenchmarkOptimizer):
         # Evaluate each (this accumulates database_reaches)
         losses = []
         for c in candidates:
-            evaluator.set_params(c)
-            losses.append(evaluator.evaluate())
+            losses.append(evaluator.evaluate(c))
 
         # Tell results
         self.es.tell(candidates, losses)
 
         # Set best params
         self.params = self.es.result.xbest
-        evaluator.set_params(self.params)
-
+        
         return self.es.stop()

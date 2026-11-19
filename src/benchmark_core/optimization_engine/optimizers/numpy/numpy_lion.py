@@ -24,7 +24,7 @@ class NumpyLion(NumpyBenchmarkOptimizer):
         self.m = np.zeros_like(initial_params)
 
     def step(self, evaluator: ModelEvaluator) -> bool:
-        loss, grad = evaluator.evaluate_with_grad()
+        loss, grad = evaluator.evaluate_with_grad(self.params)
 
         # 1. Parameter update (interp momentum & gradient)
         # c_t = beta1 * m_{t-1} + (1 - beta1) * g_t
@@ -42,5 +42,4 @@ class NumpyLion(NumpyBenchmarkOptimizer):
         # m_t = beta2 * m_{t-1} + (1 - beta2) * g_t
         self.m = self.beta2 * self.m + (1 - self.beta2) * grad
 
-        evaluator.set_params(self.params)
         return False

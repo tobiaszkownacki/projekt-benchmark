@@ -29,7 +29,7 @@ class CupyRMSProp(CupyBenchmarkOptimizer):
         self.b = np.zeros_like(initial_params)  # Momentum buffer
 
     def step(self, evaluator: ModelEvaluator) -> bool:
-        loss, grad = evaluator.evaluate_with_grad()
+        loss, grad = evaluator.evaluate_with_grad(self.params)
 
         if self.weight_decay > 0:
             grad = grad + self.weight_decay * self.params
@@ -48,6 +48,5 @@ class CupyRMSProp(CupyBenchmarkOptimizer):
             step_val = grad / avg
 
         self.params = self.params - self.lr * step_val
-        evaluator.set_params(self.params)
-
+        
         return False

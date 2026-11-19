@@ -2,13 +2,13 @@
 Simple runner script with very basic argparse
 
 Usage:
-    python -m benchmark_core.optimization_engine.run_benchmark --dataset digits --optimizer my_optimizer
-    or: uv run -m benchmark_core.optimization_engine.run_benchmark --dataset digits --optimizer my_optimizer
+    python -m benchmark_core.optimization_engine.run_benchmark --dataset fashion_mnist --model light --optimizer my_optimizer
+    or: uv run -m benchmark_core.optimization_engine.run_benchmark --dataset fashion_mnist --model light --optimizer my_optimizer
 
 or with comparison and plotting:
-    python -m benchmark_core.optimization_engine.run_benchmark --dataset wine_quality --optimizer adam sgd cma-es \
+    python -m benchmark_core.optimization_engine.run_benchmark --dataset fashion_mnist --model light --optimizer adam sgd cma-es \
         --max-epochs 10 --max-gradients 100000 --plot
-    or: uv run -m benchmark_core.optimization_engine.run_benchmark --dataset wine_quality --optimizer adam sgd cma-es \
+    or: uv run -m benchmark_core.optimization_engine.run_benchmark --dataset fashion_mnist --model light --optimizer adam sgd cma-es \
         --max-epochs 10 --max-gradients 100000 --plot
 """
 
@@ -17,7 +17,7 @@ import importlib
 import sys
 from pathlib import Path
 
-from benchmark_core.datasets import DATA_SETS
+from benchmark_core.registry import DATA_SETS
 from benchmark_core.optimization_engine import BenchmarkRunner, StopCondition
 from benchmark_core.optimization_engine.optimizers import BUILTIN_OPTIMIZERS
 from benchmark_core.plotting.benchmark_analyzer import BenchmarkAnalyzer
@@ -50,8 +50,8 @@ def main():
     parser.add_argument(
         "--model",
         nargs="+",
-        default=["default"],
-        help="Model architecture(s) to use (default: ['default'])",
+        default=["light"],
+        help="Model architecture(s) to use (default: ['light'])",
     )
     parser.add_argument("--optimizer", nargs="+", help="Path to custom optimizer file or builtin name")
     parser.add_argument("--max-gradients", type=int, default=5000)
