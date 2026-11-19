@@ -1,6 +1,6 @@
 import multiprocessing as mp
-from multiprocessing.connection import Connection
 import os
+from multiprocessing.connection import Connection
 
 import torch
 

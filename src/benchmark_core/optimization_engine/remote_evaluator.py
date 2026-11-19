@@ -1,6 +1,5 @@
 from multiprocessing.connection import Connection
 
-import torch
 from torch import Tensor
 
 from .evaluator_dtos import PyTorchTensorEvaluatorDto

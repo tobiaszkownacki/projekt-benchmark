@@ -1,14 +1,13 @@
 import importlib.util
 import multiprocessing as mp
-from multiprocessing.connection import Connection
 import traceback
+from multiprocessing.connection import Connection
 
 import torch
 from torch import Tensor
 
 from benchmark_core.optimization_engine.debugging import VerbosePipe, VerboseSharedDict
 from benchmark_core.optimization_engine.evaluator import ModelEvaluator
-from benchmark_core.optimization_engine.evaluator_dtos import PyTorchTensorEvaluatorDto
 from benchmark_core.optimization_engine.models import Operation, OperationResponse
 from benchmark_core.optimization_engine.optimizer_protocols import BenchmarkableOptimizer
 from benchmark_core.optimization_engine.remote_evaluator import RemoteEvaluator
