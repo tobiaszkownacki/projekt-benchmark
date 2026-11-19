@@ -37,32 +37,39 @@ class ModelEvaluator:
     def __init__(
         self,
         model: Module,
-        inputs: Tensor,
-        targets: Tensor,
         criterion: Callable,
         device: torch.device,
         metrics_callback: Callable[[int, int], None],
+        inputs: Tensor | None = None,
+        targets: Tensor | None = None,
     ):
         """
         Initializes the ModelEvaluator.
 
         Args:
             model: The neural network model (torch.nn.Module).
-            inputs: The input data batch (torch.Tensor).
-            targets: The target data batch (torch.Tensor).
             criterion: The loss function (callable).
             device: The device to run the computations on (e.g., 'cpu' or 'cuda').
             metrics_callback: A callback function to track metrics (e.g., database reaches, gradient count).
+            inputs: Optional initial input data batch (torch.Tensor).
+            targets: Optional initial target data batch (torch.Tensor).
         """
         self._model = model
-        self._inputs = inputs.to(device)
-        self._targets = targets.to(device)
         self._criterion = criterion
         self._device = device
         self._metrics_callback = metrics_callback
-        self._batch_size = targets.size(0)
+        self._inputs = None
+        self._targets = None
+        self._batch_size = 0
+        if inputs is not None and targets is not None:
+            self.set_batch(inputs, targets)
         self._param_shapes = [p.shape for p in model.parameters()]
         self._param_count = sum(p.numel() for p in model.parameters())
+
+    def set_batch(self, inputs: Tensor, targets: Tensor) -> None:
+        self._inputs = inputs.to(self._device)
+        self._targets = targets.to(self._device)
+        self._batch_size = targets.size(0)
 
     def set_output_type(self, output_type: type[T]):
         self.type = output_type
@@ -85,7 +92,7 @@ class ModelEvaluator:
             params: Flattened parameters in the optimizer's declared DTO representation.
         """
         params_torch_flat = self.type(params).to(PyTorchTensorEvaluatorDto, device=self._device)
-        vector_to_parameters(params_torch_flat.data(), self._model.parameters())
+        vector_to_parameters(params_torch_flat.data().to(self._device), self._model.parameters())
 
     def evaluate(self, params: object) -> float:
         """
