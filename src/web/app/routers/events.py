@@ -11,6 +11,7 @@ without anything polling the API.
 import asyncio
 import json
 import logging
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
@@ -23,6 +24,20 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["events"])
 
 HEARTBEAT_SECONDS = 15
+
+
+def visible_event(payload: dict, user: CurrentUser | None) -> bool:
+    """Whether a task_changed notification may reach this subscriber.
+
+    The owner arrives as text from the JSON payload; compared as text it never
+    equals the UUID on the user, and an event with no owner at all is not
+    evidence that it is public.
+    """
+    try:
+        owner = UUID(str(payload["submitted_by"]))
+    except (KeyError, TypeError, ValueError):
+        return bool(user and user.is_admin)
+    return can_read_run(user, owner)
 
 
 @router.get("/events")
@@ -45,8 +60,7 @@ async def events(request: Request, user: CurrentUser | None = Depends(optional_u
 
                 # Filtered here, using the same policy the REST endpoints use.
                 # Two copies of an authorisation rule is one copy too many.
-                owner = payload.get("submitted_by")
-                if owner and not can_read_run(user, owner):
+                if not visible_event(payload, user):
                     continue
 
                 body = json.dumps(payload, default=str)

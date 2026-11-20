@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "lint": "eslint src",
+    "lint": "eslint src && npm run lint:prefix",
+    "lint:prefix": "node scripts/check-path-prefix.mjs",
+    "check:prefix-build": "node scripts/check-path-prefix.mjs dist /benchmark/",
     "lint:css": "node scripts/check-visual-constraints.mjs"
   },
   "dependencies": {

@@ -31,69 +31,35 @@ EVALUATOR_API = [
         "method": "evaluate()",
         "returns": "float",
         "effect": "database_reaches += batch_size",
-        "note": "Przejście w przód. Metody bezgradientowe używają tylko tego.",
+        "note": "Forward pass. Gradient-free methods use only this.",
     },
     {
         "method": "evaluate_with_grad()",
         "returns": "(float, ndarray)",
         "effect": "database_reaches += batch_size, gradient_count += 1",
-        "note": "Przejście w przód i w tył.",
+        "note": "Forward and backward pass.",
     },
     {
         "method": "grad()",
         "returns": "ndarray",
         "effect": "database_reaches += batch_size, gradient_count += 1",
-        "note": "Sam gradient, bez zwracania straty.",
+        "note": "Gradient only; does not return the loss.",
     },
-    {"method": "get_params()", "returns": "ndarray", "effect": "—", "note": "Spłaszczony wektor parametrów."},
+    {"method": "get_params()", "returns": "ndarray", "effect": "N/A", "note": "Flattened parameter vector."},
     {
         "method": "set_params(params)",
         "returns": "None",
-        "effect": "—",
-        "note": "Zapisuje parametry z powrotem do modelu.",
+        "effect": "N/A",
+        "note": "Writes parameters back to the model.",
     },
     {
         "method": "get_predictions()",
         "returns": "(preds, targets)",
         "effect": "database_reaches += batch_size",
-        "note": "Predykcje i etykiety.",
+        "note": "Predictions and labels.",
     },
-    {"method": "batch_size", "returns": "int", "effect": "—", "note": "Właściwość. Rozmiar bieżącej paczki."},
-    {"method": "param_count", "returns": "int", "effect": "—", "note": "Właściwość. Liczba parametrów modelu."},
-]
-
-# Documented rather than hidden. These are limitations of the contract a
-# participant is asked to write against, and finding them by trial and error
-# during a competition would be worse for everyone than reading them here.
-KNOWN_LIMITATIONS = [
-    {
-        "title": "step() nie wie, ile budżetu zostało",
-        "detail": "Pętlę zatrzymuje harness. Optymalizator ewolucyjny, który "
-        "chciałby chłodzić sigmę w funkcji pozostałego budżetu, nie ma "
-        "jak. Standardowe suity (CEC, COCO) wystawiają remaining_budget.",
-    },
-    {
-        "title": "Brak evaluate_population()",
-        "detail": "Metoda populacyjna z lambda=20 wykonuje w jednym step() "
-        "dwadzieścia osobnych przejść w przód zamiast jednego wsadowego. "
-        "Podatek płaci dokładnie ta rodzina metod, którą projekt bada.",
-    },
-    {
-        "title": "Losowość nie jest kontrolowana",
-        "detail": "Przykłady używają globalnego np.random bez ziarna. Harness "
-        "powinien wstrzykiwać zaziarnowany generator do konstruktora.",
-    },
-    {
-        "title": "get_output_type() bez @classmethod",
-        "detail": "W klasie bazowej zadeklarowana bez self i bez dekoratora. "
-        "Wywołanie na instancji rozjedzie się na liczbie argumentów.",
-    },
-    {
-        "title": "Dwie różne definicje StopReason",
-        "detail": "runner.py i metrics/stop_metrics.py deklarują enum o tej samej "
-        "nazwie i różnych wartościach. Baza podąża za tym, który trafia "
-        "do wyniku.",
-    },
+    {"method": "batch_size", "returns": "int", "effect": "N/A", "note": "Property. Current batch size."},
+    {"method": "param_count", "returns": "int", "effect": "N/A", "note": "Property. Number of model parameters."},
 ]
 
 SANDBOX = {
@@ -101,7 +67,7 @@ SANDBOX = {
     "memory": "--memory 2g",
     "cpu": "--cpus 1.0",
     "filesystem": "--read-only, --tmpfs /tmp",
-    "user": "nieuprzywilejowany, --cap-drop ALL, no-new-privileges",
+    "user": "unprivileged, --cap-drop ALL, no-new-privileges",
     "timeout": f"{settings.validator_timeout} s",
 }
 
@@ -123,7 +89,6 @@ async def protocol() -> dict:
     return {
         "evaluator_api": EVALUATOR_API,
         "examples": available,
-        "known_limitations": KNOWN_LIMITATIONS,
         "sandbox": SANDBOX,
         "stop_reasons": naming.STOP_REASONS,
     }
@@ -141,13 +106,13 @@ async def protocol_example(name: str) -> PlainTextResponse:
     )
 
 
-_TEMPLATE = '''"""Szablon optymalizatora dla Benchmarku Czarnej Skrzynki.
+_TEMPLATE = '''"""Optimizer template for Opti-Mark (The Golem Benchmark).
 
-Piszesz wyłącznie matematykę optymalizatora. Nie widzisz ani modelu, ani zbioru
-danych: sieć jest sprowadzona do płaskiego wektora parametrow i funkcji celu.
+You write only the optimizer mathematics. You see neither the model nor the dataset:
+the network is reduced to a flat parameter vector and objective function.
 
-Liczniki budżetu prowadzi ewaluator, nie Ty. Każde wywołanie evaluate() kosztuje
-batch_size próbek, każde evaluate_with_grad() dodatkowo jeden gradient.
+The evaluator tracks budget counters, not you. Each evaluate() call costs
+batch_size samples, and each evaluate_with_grad() additionally costs one gradient evaluation.
 """
 
 import numpy as np
@@ -159,16 +124,16 @@ from benchmark_core.optimization_engine.optimizer_protocols import NumpyBenchmar
 class MyOptimizer(NumpyBenchmarkOptimizer):
 
     def __init__(self, initial_params, lr: float = 0.01, **config):
-        # Pierwszy argument pozycyjny MUSI nazywać się initial_params.
+        # The first positional argument MUST be named initial_params.
         super().__init__(initial_params, **config)
         self.params = np.asarray(initial_params, dtype=np.float64)
         self.lr = lr
 
     def step(self, evaluator: ModelEvaluator) -> bool:
-        """Jeden krok optymalizacji.
+        """One optimization step.
 
-        Zwróć True, jeśli uznajesz, że osiągnąłeś zbieżność i chcesz zakończyć.
-        Zwróć False, żeby harness kontynuował aż do wyczerpania budżetu.
+        Return True when you consider the optimizer converged and want to stop.
+        Return False to let the harness continue until the budget is exhausted.
         """
         loss, gradient = evaluator.evaluate_with_grad()
 

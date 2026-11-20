@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
-import { ErrorNote, Loading } from '../components/Empty';
+import { ArchiveLink, ErrorNote, Loading, RunNotFound } from '../components/Empty';
 import { bytes, timestamp } from '../components/format';
+import { ApiError, withBase } from '../api';
 import type { FileEntry, Run } from '../types';
 
 interface TreePayload {
@@ -61,20 +62,20 @@ function flatten(nodes: Node[], expanded: Set<string>, depth = 0): Array<Node & 
 
 const EMPTY_STATES: Record<string, { title: string; detail: string }> = {
   absent: {
-    title: 'Artefakty jeszcze nie istnieją',
-    detail: 'Pojawią się po zakończeniu obliczeń i pobraniu wyników z klastra.',
+    title: 'Artifacts are not available yet',
+    detail: 'They will appear after computation finishes and results are retrieved from the cluster.',
   },
   downloading: {
-    title: 'Wyniki są pobierane z klastra',
-    detail: 'Obliczenia się zakończyły, downloader jeszcze kopiuje pliki.',
+    title: 'Results are being retrieved from the cluster',
+    detail: 'Computation has finished; the downloader is still copying files.',
   },
   empty: {
-    title: 'Downloader nie znalazł żadnych plików',
-    detail: 'Zadanie zakończyło się, ale katalog raportów na Atenie był pusty.',
+    title: 'The downloader found no files',
+    detail: 'The task finished, but the report directory on Athena was empty.',
   },
   error: {
-    title: 'Pobieranie artefaktów zakończyło się błędem',
-    detail: 'Sprawdź komunikat błędu na stronie uruchomienia.',
+    title: 'Artifact retrieval failed',
+    detail: 'Check the error message on the run page.',
   },
 };
 
@@ -138,9 +139,9 @@ export function RunFiles() {
     setContent(null); setContentError(null);
     if (!selected || !meta.data || meta.data.too_large) return;
     if (meta.data.preview === 'image' || meta.data.preview === null) return;
-    fetch(`/api/runs/${taskId}/files/raw?path=${encodeURIComponent(selected)}`)
+    fetch(withBase(`/api/runs/${taskId}/files/raw?path=${encodeURIComponent(selected)}`))
       .then(async (response) => {
-        if (!response.ok) throw new Error(`Błąd ${response.status}`);
+        if (!response.ok) throw new Error(`Request failed (${response.status})`);
         return response.text();
       })
       .then(setContent)
@@ -189,7 +190,8 @@ export function RunFiles() {
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [onKeyDown]);
 
-  if (tree.loading || run.loading) return <div className="page"><Loading what="pliki" /></div>;
+  if (tree.loading || run.loading) return <div className="page"><Loading what="files" /></div>;
+  if (run.error instanceof ApiError && run.error.status === 404) return <RunNotFound />;
   if (run.error) return <div className="page"><ErrorNote error={run.error} /></div>;
 
   const status = tree.data?.artifact_status ?? 'absent';
@@ -198,38 +200,39 @@ export function RunFiles() {
   return (
     <div className="page page-wide">
       <div className="breadcrumb" style={{ marginBottom: 'var(--space-3)' }}>
-        <Link to="/runs">Uruchomienia</Link>
+        <Link to="/runs">Runs</Link>
         <span className="sep">›</span>
         <Link className="mono" to={`/runs/${taskId}`}>
           {run.data?.run_name ?? taskId}
         </Link>
         <span className="sep">›</span>
-        <span>Pliki</span>
+        <span>Files</span>
       </div>
 
       <div className="spread" style={{ marginBottom: 'var(--space-4)' }}>
         <div>
-          <h1>Artefakty uruchomienia</h1>
+          <h1>Run artifacts</h1>
           <p className="small muted" style={{ marginTop: 4, marginBottom: 0 }}>
-            Katalog <span className="mono">/downloads/{taskId}</span> — wyłącznie
-            pliki tego przebiegu.
+            Directory <span className="mono">/downloads/{taskId}</span>. Only
+            files from this run.
           </p>
         </div>
         <div className="row">
           <button className="subtle" onClick={() => setShowHelp((v) => !v)}>
-            Skróty klawiszowe (?)
+            Keyboard shortcuts (?)
           </button>
-          <a className="button" href={`/api/runs/${taskId}/archive.zip`}>Pobierz .zip</a>
+          <ArchiveLink href={withBase(`/api/runs/${taskId}/archive.zip`)}
+                       status={run.data?.artifact_status} />
         </div>
       </div>
 
       {showHelp && (
         <div className="note section">
-          <strong>Skróty</strong>
+          <strong>Shortcuts</strong>
           <div className="small mono" style={{ marginTop: 6, lineHeight: 1.8 }}>
-            ↑ ↓ — poprzedni / następny plik · ← → — zwiń / rozwiń katalog ·
-            Enter — otwórz · / — szukaj · y — kopiuj ścieżkę ·
-            g / G — początek / koniec podglądu · ? — ta ściąga
+            ↑ ↓: previous / next file; ← →: collapse / expand directory.
+            Enter: open; /: search; y: copy path.
+            g / G: start / end of preview; ?: this guide
           </div>
         </div>
       )}
@@ -300,8 +303,8 @@ export function RunFiles() {
               borderTop: '1px solid var(--border)', borderBottom: 'none',
               justifyContent: 'flex-start',
             }}>
-              {tree.data.file_count} plików · {bytes(tree.data.total_bytes)}
-              {selectableRows.length !== tree.data.file_count && ` · ${selectableRows.length} po filtrze`}
+              {tree.data.file_count} files · {bytes(tree.data.total_bytes)}
+              {selectableRows.length !== tree.data.file_count && ` · ${selectableRows.length} after filtering`}
             </div>
           </div>
 
@@ -309,7 +312,7 @@ export function RunFiles() {
             {!selected ? (
               <div className="panel-body">
                 <div className="empty" style={{ border: 'none' }}>
-                  Wybierz plik z drzewa po lewej.
+                  Select a file from the tree on the left.
                 </div>
               </div>
             ) : (
@@ -327,12 +330,12 @@ export function RunFiles() {
                   <div className="row" style={{ gap: 'var(--space-2)' }}>
                     <button className="subtle tiny"
                             onClick={() => navigator.clipboard?.writeText(selected)}>
-                      Kopiuj ścieżkę
+                      Copy path
                     </button>
                     <a className="button tiny"
-                       href={`/api/runs/${taskId}/files/raw?path=${encodeURIComponent(selected)}`}
+                       href={withBase(`/api/runs/${taskId}/files/raw?path=${encodeURIComponent(selected)}`)}
                        download>
-                      Pobierz
+                      Download
                     </a>
                   </div>
                 </div>
@@ -340,15 +343,15 @@ export function RunFiles() {
                   {meta.error && <ErrorNote error={meta.error} />}
                   {meta.data?.too_large && (
                     <div className="note note-warning">
-                      Plik przekracza limit podglądu ({bytes(meta.data.preview_limit_bytes)}).
-                      Dostępny tylko do pobrania.
+                      File exceeds the preview limit ({bytes(meta.data.preview_limit_bytes)}).
+                      Available for download only.
                     </div>
                   )}
                   {contentError && <div className="note note-error">{contentError}</div>}
 
                   {meta.data?.preview === 'image' && !meta.data.too_large && (
                     <img
-                      src={`/api/runs/${taskId}/files/raw?path=${encodeURIComponent(selected)}`}
+                      src={withBase(`/api/runs/${taskId}/files/raw?path=${encodeURIComponent(selected)}`)}
                       alt={selected}
                       style={{ maxWidth: '100%', border: '1px solid var(--border)' }}
                     />
@@ -370,8 +373,8 @@ export function RunFiles() {
                   )}
                   {meta.data && meta.data.preview === null && !meta.data.too_large && (
                     <div className="note">
-                      Ten typ pliku nie ma podglądu. Serwowany wyłącznie jako pobranie,
-                      z nagłówkiem <span className="mono">Content-Disposition: attachment</span>.
+                      This file type has no preview. It is available only as a download,
+                      with the header <span className="mono">Content-Disposition: attachment</span>.
                     </div>
                   )}
                 </div>
@@ -392,7 +395,7 @@ function CsvTable({ text }: { text: string }) {
   const lines = text.split('\n').filter((line) => line.trim().length > 0);
   const limit = 500;
   const rows = lines.slice(0, limit + 1).map((line) => line.split(','));
-  if (rows.length === 0) return <div className="empty">Pusty plik.</div>;
+  if (rows.length === 0) return <div className="empty">Empty file.</div>;
   const [head, ...body] = rows;
 
   return (
@@ -411,7 +414,7 @@ function CsvTable({ text }: { text: string }) {
       </div>
       {lines.length > limit + 1 && (
         <div className="tiny dim" style={{ marginTop: 6 }}>
-          Pokazano pierwsze {limit} z {lines.length - 1} wierszy. Pełny plik przez „Pobierz”.
+          Showing the first {limit} of {lines.length - 1} rows. Download the full file with “Download”.
         </div>
       )}
     </>

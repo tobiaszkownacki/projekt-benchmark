@@ -30,6 +30,16 @@ _FROM = """
 """
 
 
+_LEGACY_ERROR_MESSAGES = {
+    "Zgłoszenie odrzucone przez walidator protokołu.": "Submission rejected by protocol validator.",
+}
+
+
+def display_error_message(message: str | None) -> str | None:
+    """Keep historical system-generated run errors consistent with the UI language."""
+    return _LEGACY_ERROR_MESSAGES.get(message, message)
+
+
 def serialise(row: dict) -> dict:
     """Shape one run for the API, including the derived state label.
 
@@ -68,7 +78,7 @@ def serialise(row: dict) -> dict:
         "started_at": row.get("started_at"),
         "completed_at": row.get("completed_at"),
         "updated_at": row.get("updated_at"),
-        "error_message": row.get("error_message"),
+        "error_message": display_error_message(row.get("error_message")),
         "runner_version": row.get("runner_version"),
         "gpu_model": row.get("gpu_model"),
         "metrics": {
@@ -169,14 +179,16 @@ async def series_row(task_id: UUID) -> dict | None:
     )
 
 
-async def filter_options() -> dict:
+async def filter_options(submitted_by: UUID | None = None) -> dict:
     rows = await db.fetch_all(
         """
         SELECT DISTINCT dataset, model_name, optimizer_name,
                family::text AS family, suite::text AS suite,
                task_status::text AS task_status
           FROM tasks
-        """
+         WHERE %s::uuid IS NULL OR submitted_by = %s
+        """,
+        (submitted_by, submitted_by),
     )
     return {
         "datasets": sorted({r["dataset"] for r in rows if r["dataset"]}),
