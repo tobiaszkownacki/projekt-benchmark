@@ -13,29 +13,14 @@ or with comparison and plotting:
 """
 
 import argparse
-import importlib
 import sys
 from pathlib import Path
 
-from benchmark_core.registry import DATA_SETS
+from benchmark_core.datasets import DATA_SETS
 from benchmark_core.optimization_engine import BenchmarkRunner, StopCondition
 from benchmark_core.optimization_engine.optimizers import BUILTIN_OPTIMIZERS
 from benchmark_core.plotting.benchmark_analyzer import BenchmarkAnalyzer
 from shared.run_result import RunResult
-
-
-def load_custom_optimizer(path: str):
-    spec = importlib.util.spec_from_file_location("custom_optimizer", path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-
-    # Find the optimizer class (first class that has 'step' method)
-    for name in dir(module):
-        obj = getattr(module, name)
-        if isinstance(obj, type) and hasattr(obj, "step") and name != "BenchmarkOptimizer":
-            return obj
-
-    raise ValueError(f"No optimizer class found in {path}")
 
 
 def main():
@@ -65,6 +50,11 @@ def main():
         help="Generate benchmark plots after run",
     )
     parser.add_argument("--task-id", default=None, help="Task id - outputs land in reports/task_<id>")
+    parser.add_argument(
+        "--verbose-ipc",
+        action="store_true",
+        help="Enable verbose IPC pipe and shared memory logging",
+    )
     args = parser.parse_args()
     report_dir = f"reports/task_{args.task_id}" if args.task_id else "reports"
     if not args.optimizer:
@@ -76,8 +66,7 @@ def main():
         if name in BUILTIN_OPTIMIZERS:
             optimizers[name] = BUILTIN_OPTIMIZERS[name]
         elif Path(name).exists():
-            cls = load_custom_optimizer(name)
-            optimizers[name] = (cls, {})
+            optimizers[name] = (str(Path(name).resolve()), {})
         else:
             print(f"Optimizer not found: {name}")
             print(f"Available: {list(BUILTIN_OPTIMIZERS.keys())}")
@@ -100,6 +89,7 @@ def main():
             batch_size=args.batch_size,
             random_seed=args.seed,
             report_dir=report_dir,
+            verbose_ipc=args.verbose_ipc,
         )
 
         model_results = runner.compare(optimizers)
