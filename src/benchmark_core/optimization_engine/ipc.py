@@ -19,7 +19,11 @@ def load_custom_optimizer(path: str):
     spec.loader.exec_module(module)
     for name in dir(module):
         obj = getattr(module, name)
-        if isinstance(obj, type) and hasattr(obj, "step") and name != "BenchmarkOptimizer":
+        if (
+            isinstance(obj, type)
+            and hasattr(obj, "step")
+            and name not in ("BenchmarkOptimizer", "NumpyBenchmarkOptimizer", "CupyBenchmarkOptimizer")
+        ):
             return obj
     raise ValueError(f"No optimizer class found in {path}")
 
