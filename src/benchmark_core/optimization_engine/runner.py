@@ -16,7 +16,7 @@ from typing import Any
 import numpy as np
 import torch
 from torch.nn import CrossEntropyLoss
-from torch.nn.utils import parameters_to_vector
+from torch.nn.utils import parameters_to_vector, vector_to_parameters
 from torch.utils.data import DataLoader
 
 from benchmark_core.custom_logging import Log
@@ -24,6 +24,12 @@ from benchmark_core.datasets import DATA_SETS, MODELS
 from benchmark_core.metrics.stop_metrics import StopReason
 from benchmark_core.optimization_engine.evaluator import ModelEvaluator
 from benchmark_core.optimization_engine.evaluator_dtos import PyTorchTensorEvaluatorDto
+from benchmark_core.optimization_engine.ipc import (
+    create_ipc_worker,
+    handle_ipc_operation,
+    shutdown_ipc_worker,
+)
+from benchmark_core.optimization_engine.models import Operation
 from benchmark_core.optimization_engine.optimizer_protocols import BenchmarkableOptimizer
 
 
@@ -114,6 +120,7 @@ class BenchmarkRunner:
         log_interval: int = 10,
         device: str | None = None,
         report_dir: str = "reports",
+        verbose_ipc: bool = False,
     ):
         if dataset_name not in DATA_SETS:
             raise ValueError(f"Unknown dataset: {dataset_name}. Registered: {sorted(DATA_SETS)}")
@@ -124,6 +131,7 @@ class BenchmarkRunner:
         self.batch_size = batch_size
         self.random_seed = random_seed
         self.log_interval = log_interval
+        self.verbose_ipc = verbose_ipc
 
         self.report_dir: str = report_dir
         # Set device
@@ -140,7 +148,7 @@ class BenchmarkRunner:
 
     def run(
         self,
-        optimizer_class: type[BenchmarkableOptimizer],
+        optimizer_class: type[BenchmarkableOptimizer] | str,
         optimizer_name: str | None = None,
         **optimizer_config,
     ) -> BenchmarkResult:
@@ -148,25 +156,19 @@ class BenchmarkRunner:
         Run benchmark for a single optimizer
 
         Args:
-            optimizer_class: The optimizer class to benchmark
+            optimizer_class: The optimizer class (or file path) to benchmark
             optimizer_name: Name for logging (defaults to class name)
             **optimizer_config: Arguments passed to optimizer.__init__
 
         Returns:
             BenchmarkResult with all metrics
         """
-        name = optimizer_name or optimizer_class.__name__
+        name = optimizer_name or (optimizer_class if isinstance(optimizer_class, str) else optimizer_class.__name__)
 
         model = self.model_factory()
         model.to(self.device)
 
-        initial_params = (
-            PyTorchTensorEvaluatorDto(parameters_to_vector(model.parameters()))
-            .to(optimizer_class.get_output_type())
-            .data()
-        )
-
-        optimizer = optimizer_class(initial_params, **optimizer_config)
+        initial_params = parameters_to_vector(model.parameters()).detach().clone()
 
         # metric counters
         gradient_count = 0
@@ -179,6 +181,23 @@ class BenchmarkRunner:
 
         train_loader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=True)
         criterion = CrossEntropyLoss()
+
+        evaluator = ModelEvaluator(
+            model=model,
+            criterion=criterion,
+            device=self.device,
+            metrics_callback=metrics_callback,
+        )
+        evaluator.set_output_type(PyTorchTensorEvaluatorDto)
+
+        shared, parent_opt, child_opt, opt_process = create_ipc_worker(
+            initial_params=initial_params,
+            initial_batch_size=min(self.batch_size, len(self.dataset)),
+            param_count=evaluator.param_count,
+            optimizer_class=optimizer_class,
+            optimizer_config=optimizer_config,
+            verbose_ipc=self.verbose_ipc,
+        )
 
         log = Log(
             output_file=f"benchmark-{name}-{self.dataset_name}.csv",
@@ -196,83 +215,100 @@ class BenchmarkRunner:
 
         start_time = time.time()
 
-        # main loop
-        while stop_reason is None:
-            epoch_losses = []
-            epoch_correct = 0
-            epoch_total = 0
+        opt_process.start()
+        child_opt.close()
 
-            for inputs, targets in train_loader:
-                # Checking stop conditions BEFORE step
-                if self.stop_condition.max_gradient_count and gradient_count >= self.stop_condition.max_gradient_count:
-                    stop_reason = StopReason.GRADIENT_LIMIT
+        try:
+            converged = False
+            msg = parent_opt.recv()
+
+            # main loop
+            while stop_reason is None:
+                epoch_losses = []
+                epoch_correct = 0
+                epoch_total = 0
+
+                for inputs, targets in train_loader:
+                    # Checking stop conditions BEFORE step
+                    if (
+                        self.stop_condition.max_gradient_count
+                        and gradient_count >= self.stop_condition.max_gradient_count
+                    ):
+                        stop_reason = StopReason.GRADIENT_LIMIT
+                        break
+                    if (
+                        self.stop_condition.max_database_reaches
+                        and database_reaches >= self.stop_condition.max_database_reaches
+                    ):
+                        stop_reason = StopReason.DATABASE_LIMIT
+                        break
+                    if self.stop_condition.max_steps and step_count >= self.stop_condition.max_steps:
+                        stop_reason = StopReason.MAX_STEPS
+                        break
+
+                    evaluator.set_batch(inputs, targets)
+
+                    if int(shared["batch_size"].item()) != evaluator.batch_size:
+                        shared["batch_size"][0] = evaluator.batch_size
+
+                    msg = handle_ipc_operation(msg, parent_opt, evaluator, shared)
+
+                    if msg == Operation.CONVERGED:
+                        converged = True
+
+                    step_count += 1
+
+                    vector_to_parameters(
+                        shared["params"],
+                        model.parameters(),
+                    )
+
+                    model.eval()
+
+                    with torch.no_grad():
+                        outputs = model(inputs.to(self.device))
+                        loss = criterion(outputs, targets.to(self.device))
+                        _, predicted = torch.max(outputs, 1)
+                        correct = (predicted == targets.to(self.device)).sum().item()
+
+                    epoch_losses.append(loss.item())
+                    epoch_correct += correct
+                    epoch_total += targets.size(0)
+
+                    # Log periodically
+                    log.add_number_of_samples(targets.size(0))
+                    log.log(round(loss.item(), 4), self.log_interval)
+
+                    if converged:
+                        stop_reason = StopReason.OPTIMIZER_CONVERGED
+                        break
+
+                if stop_reason is not None:
                     break
-                if (
-                    self.stop_condition.max_database_reaches
-                    and database_reaches >= self.stop_condition.max_database_reaches
-                ):
-                    stop_reason = StopReason.DATABASE_LIMIT
+
+                epoch_count += 1
+
+                if epoch_losses:
+                    avg_loss = sum(epoch_losses) / len(epoch_losses)
+                    accuracy = 100 * epoch_correct / epoch_total
+                    loss_history.append(avg_loss)
+                    accuracy_history.append(accuracy)
+                    gradient_history.append(gradient_count)
+                    database_reaches_history.append(database_reaches)
+                    time_history.append(time.time() - start_time)
+
+                    if not self.verbose_ipc:
+                        print(
+                            f"Epoch {epoch_count}: loss={avg_loss:.4f}, "
+                            f"acc={accuracy:.2f}%, grads={gradient_count}, "
+                            f"db_reaches={database_reaches}"
+                        )
+
+                if self.stop_condition.max_epochs and epoch_count >= self.stop_condition.max_epochs:
+                    stop_reason = StopReason.EPOCH_LIMIT
                     break
-                if self.stop_condition.max_steps and step_count >= self.stop_condition.max_steps:
-                    stop_reason = StopReason.MAX_STEPS
-                    break
-
-                # Create evaluator for this batch
-                evaluator = ModelEvaluator(
-                    model=model,
-                    inputs=inputs,
-                    targets=targets,
-                    criterion=criterion,
-                    device=self.device,
-                    metrics_callback=metrics_callback,
-                )
-
-                evaluator.set_output_type(optimizer.__class__.get_output_type())
-
-                converged = optimizer.step(evaluator)
-                step_count += 1
-
-                if converged:
-                    stop_reason = StopReason.OPTIMIZER_CONVERGED
-                    break
-
-                with torch.no_grad():
-                    outputs = model(inputs.to(self.device))
-                    loss = criterion(outputs, targets.to(self.device))
-                    _, predicted = torch.max(outputs, 1)
-                    correct = (predicted == targets.to(self.device)).sum().item()
-
-                epoch_losses.append(loss.item())
-                epoch_correct += correct
-                epoch_total += targets.size(0)
-
-                # Log periodically
-                log.add_number_of_samples(targets.size(0))
-                log.log(round(loss.item(), 4), self.log_interval)
-
-            if stop_reason is not None:
-                break
-
-            epoch_count += 1
-
-            if epoch_losses:
-                avg_loss = sum(epoch_losses) / len(epoch_losses)
-                accuracy = 100 * epoch_correct / epoch_total
-                loss_history.append(avg_loss)
-                accuracy_history.append(accuracy)
-                gradient_history.append(gradient_count)
-                database_reaches_history.append(database_reaches)
-                time_history.append(time.time() - start_time)
-
-                print(
-                    f"Epoch {epoch_count}: loss={avg_loss:.4f}, "
-                    f"acc={accuracy:.2f}%, grads={gradient_count}, "
-                    f"db_reaches={database_reaches}"
-                )
-
-            if self.stop_condition.max_epochs and epoch_count >= self.stop_condition.max_epochs:
-                stop_reason = StopReason.EPOCH_LIMIT
-                break
+        finally:
+            shutdown_ipc_worker(parent_opt, opt_process)
 
         wall_time = time.time() - start_time
         log.save_to_csv()
