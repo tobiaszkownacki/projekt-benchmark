@@ -7,6 +7,10 @@ data/raw/cifar10
 data/raw/f-mnist
 data/raw/stl10
 data/raw/*.csv
+data/private/
+# Copied and generated from data/private/ by scripts/bundle_data.py (`just bundle`).
+src/benchmark_core/_bundled_key.py
+src/benchmark_core/datasets/data/
 
 # C extensions
 *.so

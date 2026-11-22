@@ -2,7 +2,7 @@ set dotenv-load := false
 
 export PYTHONPATH := "src"
 
-dataset := "iris"
+dataset := "ds01"
 optimizer := "adam"
 epochs := "5"
 model := "light"
@@ -33,6 +33,21 @@ bench-compare *args="":
 # Validate a custom optimizer file against the benchmark protocol
 validate optimizer_path:
     uv run python src/benchmark_core/optimization_engine/optimizers/validation/verify_optimizer.py {{optimizer_path}}
+
+# Options (passed to scripts/encrypt_datasets.py, see `just encrypt --help`):
+#   --private DIR   private folder with csv/, prepare/, manifest.toml, key (default: data/private)
+#   --gen-key       create a new key first; --force allows replacing an existing one
+#   --verify        decrypt each output and compare it with the input
+#   --only ID...    encrypt only these dataset ids
+# Preprocess and encrypt the private datasets (e.g. `just encrypt --gen-key --verify`, `just encrypt --only ds05`)
+encrypt *args="":
+    uv run python scripts/encrypt_datasets.py {{args}}
+
+# Put the encrypted datasets and their key into the package (needed to run on them and before compiling):
+# checks data/private/key against every data/private/encrypted/*.bin, copies the files to
+# src/benchmark_core/datasets/data/ and writes src/benchmark_core/_bundled_key.py (`just bundle --remove` undoes it)
+bundle *args="":
+    uv run python scripts/bundle_data.py {{args}}
 
 # Run unit tests
 test *args="":
