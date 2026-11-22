@@ -85,7 +85,7 @@ def ensure_users(conn) -> dict[str, uuid.UUID]:
         (
             "admin@benchmark.pw.edu.pl",
             "admin",
-            "Administrator systemu",
+            "System Administrator",
             "Politechnika Warszawska",
             "SEED_ADMIN_PASSWORD",
         ),

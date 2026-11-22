@@ -26,7 +26,7 @@ export function Login({ onUserChange }: { onUserChange: (user: User | null) => v
         await api.post('/api/auth/register', {
           email, password, associated_organisation: organisation, join_reason: reason,
         });
-        setNotice('Konto założone. Czeka na zatwierdzenie przez administratora.');
+        setNotice('Account created. Awaiting administrator approval.');
         setMode('login');
       }
     } catch (caught) {
@@ -39,10 +39,10 @@ export function Login({ onUserChange }: { onUserChange: (user: User | null) => v
   return (
     <div className="page" style={{ maxWidth: 460 }}>
       <div className="page-head">
-        <h1>{mode === 'login' ? 'Logowanie' : 'Rejestracja'}</h1>
+        <h1>{mode === 'login' ? 'Sign in' : 'Create an account'}</h1>
         <p className="small">
-          Przeglądanie rankingu i wyników nie wymaga konta. Konto jest potrzebne,
-          żeby zgłosić własny optymalizator.
+          You can browse the leaderboard and results without an account. An account is required
+          to submit your own optimizer.
         </p>
       </div>
 
@@ -52,13 +52,13 @@ export function Login({ onUserChange }: { onUserChange: (user: User | null) => v
       <form onSubmit={submit} className="panel">
         <div className="panel-body">
           <div className="field">
-            <label htmlFor="email">Adres e-mail</label>
+            <label htmlFor="email">Email address</label>
             <input id="email" type="email" required autoComplete="username"
                    style={{ width: '100%' }} value={email}
                    onChange={(e) => setEmail(e.target.value)} />
           </div>
           <div className="field">
-            <label htmlFor="password">Hasło{mode === 'register' ? ' (min. 8 znaków)' : ''}</label>
+            <label htmlFor="password">Password{mode === 'register' ? ' (min. 8 characters)' : ''}</label>
             <input id="password" type="password" required style={{ width: '100%' }}
                    autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                    value={password} onChange={(e) => setPassword(e.target.value)} />
@@ -66,12 +66,12 @@ export function Login({ onUserChange }: { onUserChange: (user: User | null) => v
           {mode === 'register' && (
             <>
               <div className="field">
-                <label htmlFor="org">Instytucja</label>
+                <label htmlFor="org">Organization</label>
                 <input id="org" style={{ width: '100%' }} value={organisation}
                        onChange={(e) => setOrganisation(e.target.value)} />
               </div>
               <div className="field">
-                <label htmlFor="reason">Powód dołączenia</label>
+                <label htmlFor="reason">Reason for joining</label>
                 <textarea id="reason" rows={3} value={reason}
                           onChange={(e) => setReason(e.target.value)} />
               </div>
@@ -79,23 +79,15 @@ export function Login({ onUserChange }: { onUserChange: (user: User | null) => v
           )}
           <div className="row" style={{ justifyContent: 'space-between' }}>
             <button className="primary" type="submit" disabled={busy}>
-              {mode === 'login' ? 'Zaloguj' : 'Załóż konto'}
+              {mode === 'login' ? 'Log in' : 'Create account'}
             </button>
             <button type="button" className="subtle"
                     onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(null); }}>
-              {mode === 'login' ? 'Nie mam konta' : 'Mam już konto'}
+              {mode === 'login' ? 'I do not have an account' : 'I already have an account'}
             </button>
           </div>
         </div>
       </form>
-
-      <div className="note" style={{ marginTop: 'var(--space-4)' }}>
-        <p className="small" style={{ marginBottom: 0 }}>
-          Logowanie przez Google i Microsoft działa w dotychczasowym panelu i jest
-          przeniesione do control plane, ale wymaga publicznego adresu zwrotnego,
-          którego to środowisko nie ma — dlatego nie jest tu włączone.
-        </p>
-      </div>
     </div>
   );
 }
