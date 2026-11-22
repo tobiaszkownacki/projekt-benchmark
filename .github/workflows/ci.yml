@@ -95,7 +95,7 @@ jobs:
       - name: Run engine tests
         env:
           PYTHONPATH: src
-        run: uv run --no-project --with numpy --with pytest pytest src/tests -q
+        run: uv run --no-project --with numpy --with cryptography --with pytest pytest src/tests -q
 
   frontend:
     runs-on: ubuntu-latest

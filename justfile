@@ -34,6 +34,20 @@ bench-compare *args="":
 validate optimizer_path:
     uv run python src/benchmark_core/optimization_engine/optimizers/validation/verify_optimizer.py {{optimizer_path}}
 
+# Options (passed to scripts/encrypt_datasets.py, see `just encrypt --help`):
+#   --private DIR   private folder with csv/, prepare/, manifest.toml, key (default: data/private)
+#   --gen-key       create a new key first; --force allows replacing an existing one
+#   --verify        decrypt each output and compare it with the input
+#   --only ID...    encrypt only these dataset ids
+# Preprocess and encrypt the private datasets (e.g. `just encrypt --gen-key --verify`, `just encrypt --only ds05`)
+encrypt *args="":
+    uv run python scripts/encrypt_datasets.py {{args}}
+
+# Build the key into the package before compiling: writes src/benchmark_core/_bundled_key.py
+# from data/private/key after checking it decrypts every .bin (`just bundle-key --remove` deletes it)
+bundle-key *args="":
+    uv run python scripts/bundle_key.py {{args}}
+
 # Run unit tests
 test *args="":
     uv run --with pytest --with pytest-asyncio pytest {{args}}

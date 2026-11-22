@@ -7,6 +7,9 @@ data/raw/cifar10
 data/raw/f-mnist
 data/raw/stl10
 data/raw/*.csv
+data/private/
+# Generated from data/private/key by scripts/bundle_key.py before compiling.
+src/benchmark_core/_bundled_key.py
 
 # C extensions
 *.so
