@@ -55,7 +55,7 @@ def _bundled_key() -> str | None:
     """The key compiled into a build, if this is one.
 
     ``benchmark_core/_bundled_key.py`` is generated from data/private/key by
-    ``scripts/bundle_key.py`` before compiling and is never committed, so a
+    ``scripts/bundle_data.py`` (``just bundle``) and is never committed, so a
     development checkout has none and falls back to the environment.
     """
     try:
@@ -79,7 +79,7 @@ def get_key() -> bytes:
         if bundled is not None:
             text = bundled
         if text is None:
-            raise ValueError(f"no dataset key: set {KEY_ENV_VAR} or bundle one with scripts/bundle_key.py")
+            raise ValueError(f"no dataset key: set {KEY_ENV_VAR} or bundle one with `just bundle`")
         _cached_key = decode_key(text)
     return _cached_key
 

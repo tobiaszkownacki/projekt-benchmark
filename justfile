@@ -2,7 +2,7 @@ set dotenv-load := false
 
 export PYTHONPATH := "src"
 
-dataset := "iris"
+dataset := "ds01"
 optimizer := "adam"
 epochs := "5"
 model := "light"
@@ -43,10 +43,11 @@ validate optimizer_path:
 encrypt *args="":
     uv run python scripts/encrypt_datasets.py {{args}}
 
-# Build the key into the package before compiling: writes src/benchmark_core/_bundled_key.py
-# from data/private/key after checking it decrypts every .bin (`just bundle-key --remove` deletes it)
-bundle-key *args="":
-    uv run python scripts/bundle_key.py {{args}}
+# Put the encrypted datasets and their key into the package (needed to run on them and before compiling):
+# checks data/private/key against every data/private/encrypted/*.bin, copies the files to
+# src/benchmark_core/datasets/data/ and writes src/benchmark_core/_bundled_key.py (`just bundle --remove` undoes it)
+bundle *args="":
+    uv run python scripts/bundle_data.py {{args}}
 
 # Run unit tests
 test *args="":
