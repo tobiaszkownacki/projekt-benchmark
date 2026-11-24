@@ -2,7 +2,7 @@ set dotenv-load := false
 
 export PYTHONPATH := "src"
 
-dataset := "iris"
+dataset := "ds01"
 optimizer := "adam"
 epochs := "5"
 model := "light"
@@ -33,6 +33,10 @@ bench-compare *args="":
 # Validate a custom optimizer file against the benchmark protocol
 validate optimizer_path:
     uv run python src/benchmark_core/optimization_engine/optimizers/validation/verify_optimizer.py {{optimizer_path}}
+
+# Preprocess the raw datasets in data/private/ into src/benchmark_core/datasets/data/ (e.g. `just prepare --only ds05`)
+prepare *args="":
+    uv run python scripts/prepare_datasets.py {{args}}
 
 # Run unit tests
 test *args="":
