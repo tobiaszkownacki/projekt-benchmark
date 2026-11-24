@@ -115,3 +115,18 @@ def test_invalid_file_name_is_rejected(tmp_path):
     (tmp_path / "not-an-id.npz").write_bytes(b"")
     with pytest.raises(ValueError, match="identifier"):
         registry.discover(tmp_path)
+
+
+def test_unknown_model_is_reported_before_the_data_is_read(data_dir, monkeypatch):
+    from benchmark_core.optimization_engine import BenchmarkRunner, StopCondition, runner
+
+    registry.discover(data_dir)
+    monkeypatch.setattr(runner, "DATA_SETS", registry.DATA_SETS)
+    monkeypatch.setattr(runner, "MODELS", registry.MODELS)
+
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError("the data must not be read")
+
+    monkeypatch.setattr(dataset_files, "load_arrays", forbidden)
+    with pytest.raises(ValueError, match=r"Unknown model for ds01: nope\. Available: \['default', 'heavy'"):
+        BenchmarkRunner("ds01", StopCondition(max_epochs=1), model_name="nope", device="cpu")

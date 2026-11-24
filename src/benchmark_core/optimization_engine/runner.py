@@ -124,6 +124,9 @@ class BenchmarkRunner:
     ):
         if dataset_name not in DATA_SETS:
             raise ValueError(f"Unknown dataset: {dataset_name}. Registered: {sorted(DATA_SETS)}")
+        models = MODELS.get(dataset_name, {})
+        if model_name not in models:
+            raise ValueError(f"Unknown model for {dataset_name}: {model_name}. Available: {sorted(models)}")
 
         self.dataset_name = dataset_name
         self.model_name = model_name
@@ -141,7 +144,7 @@ class BenchmarkRunner:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.dataset = DATA_SETS[dataset_name]["data_set"]()
-        self.model_factory = MODELS[dataset_name][model_name]
+        self.model_factory = models[model_name]
 
         np.random.seed(random_seed)
         torch.manual_seed(random_seed)
