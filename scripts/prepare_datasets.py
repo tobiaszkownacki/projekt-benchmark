@@ -4,8 +4,11 @@ The raw data lives in a directory that is never committed (``data/private/`` by
 default):
 
     csv/            raw CSV files
-    prepare/<id>.py ``prepare(df: pandas.DataFrame) -> (X, y)``, X float32 2-D, y int64 1-D
-    manifest.toml   which datasets exist, see below
+    prepare/<id>.py ``prepare(df: pandas.DataFrame) -> (X, y)``
+    manifest.toml   which datasets exist
+
+``prepare`` returns numeric 2-D features, which are standardised here, and 1-D
+labels of any type: every distinct value becomes a class.
 
 Each dataset is written to ``src/benchmark_core/datasets/data/<id>.npz``, which
 is all it takes to register it.
@@ -28,7 +31,6 @@ import sys
 import tomllib
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -67,12 +69,18 @@ def main() -> int:
             raise SystemExit(f"not in manifest: {sorted(unknown)}")
         manifest = {k: v for k, v in manifest.items() if k in args.only}
 
+    for dataset_id in manifest:
+        try:
+            dataset_files.check_dataset_id(dataset_id)
+        except ValueError as exc:
+            raise SystemExit(f"manifest.toml: {exc}") from None
+
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     for dataset_id, entry in manifest.items():
         df = pd.read_csv(private / "csv" / entry["csv"], **entry.get("read_csv", {}))
         prepare = load_prepare(private / "prepare" / f"{entry.get('prepare', dataset_id)}.py")
         X, y = prepare(df)
-        X, y = np.ascontiguousarray(X, dtype=np.float32), np.ascontiguousarray(y, dtype=np.int64)
+        X, y = dataset_files.standardise(X), dataset_files.to_labels(y)
 
         out_path = OUT_DIR / f"{dataset_id}.npz"
         dataset_files.save_arrays(out_path, X, y)

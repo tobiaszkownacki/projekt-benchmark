@@ -4,11 +4,15 @@ Every dataset gets these architectures without a file of its own: the input
 and output sizes come from the dataset file (feature count and the class count
 stored with it), so registering a dataset needs no model code.
 
-Like the earlier per-dataset networks they start with ``BatchNorm1d`` over the
-inputs, since the features are not scaled, and initialise every linear layer
-with Xavier-uniform weights and zero biases. The initialisation is the
-optimisation's starting point, so it is fixed rather than left to PyTorch's
-default; with the runner's seed every optimizer starts from the same weights.
+They expect standardised features (``just prepare`` writes them that way) and
+contain no batch normalisation: it behaves differently in train mode, which the
+evaluator uses only for gradients, so gradient-free optimizers would be given a
+different function.
+
+Every linear layer is initialised with Xavier-uniform weights and zero biases.
+The initialisation is the optimisation's starting point, so it is fixed rather
+than left to PyTorch's default; the runner seeds every run, so with one seed
+every optimizer starts from the same weights.
 """
 
 from collections.abc import Callable
@@ -38,7 +42,7 @@ def init_xavier(model: nn.Module) -> nn.Module:
 
 
 def mlp(n_features: int, n_classes: int, hidden: tuple[int, ...]) -> nn.Sequential:
-    layers: list[nn.Module] = [nn.BatchNorm1d(n_features)]
+    layers: list[nn.Module] = []
     width = n_features
     for size in hidden:
         layers += [nn.Linear(width, size), nn.ReLU()]

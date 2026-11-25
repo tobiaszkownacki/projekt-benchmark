@@ -81,8 +81,7 @@ def discover(data_dir: Path = DATA_DIR) -> list[str]:
     """Registers every ``*.npz`` in ``data_dir``; returns the ids found."""
     ids = []
     for path in sorted(data_dir.glob("*.npz")):
-        if not path.stem.isidentifier():
-            raise ValueError(f"{path.name}: a dataset id must be a valid Python identifier, e.g. ds01")
+        dataset_files.check_dataset_id(path.stem)
         register(path.stem, path)
         ids.append(path.stem)
     return ids

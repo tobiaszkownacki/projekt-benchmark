@@ -141,7 +141,7 @@ available and lives in the git-ignored `data/private/` folder:
 ```text
 data/private/
 ├── csv/            <- raw CSV files
-├── prepare/<id>.py <- prepare(df) -> (X float32, y int64)
+├── prepare/<id>.py <- prepare(df) -> (X, y)
 └── manifest.toml   <- [datasets.<id>] csv = "file.csv"
 ```
 
@@ -150,6 +150,9 @@ To add a dataset:
 1. Put the CSV in `csv/`, write `prepare/<id>.py` and add the id to
    `manifest.toml`.
 2. Run `just prepare --only <id>`.
+
+`just prepare` standardises every feature (mean 0, standard deviation 1) and numbers the distinct label values as classes 0, 1, 2, ..., Missing labels are an error. Check the number of classes it
+prints.
 
 A dataset that does not come from such a file (for example one that ships with
 a library) can be registered by hand. For `run_benchmark` / `just bench` to see it, add the
@@ -169,10 +172,9 @@ works when that script builds the `BenchmarkRunner` itself: the CLI never runs i
 ## 7. Configuring Model Architectures for a Dataset
 
 Every dataset gets the presets in `src/benchmark_core/networks/presets.py`:
-`light`, `medium` and `heavy` MLPs (`default` is `light`). Each starts with
-`BatchNorm1d` over the inputs and initialises its linear layers with
-Xavier-uniform weights and zero biases. Their input and output sizes come from
-the data, so a new dataset needs no model code.
+`light`, `medium` and `heavy` MLPs (`default` is `light`). Their linear layers
+start from Xavier-uniform weights and zero biases. Their input and output sizes
+come from the data, so a new dataset needs no model code.
 
 To add an architecture for one dataset, create
 `src/benchmark_core/networks/custom/<id>.py`:

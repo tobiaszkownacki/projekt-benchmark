@@ -146,9 +146,6 @@ class BenchmarkRunner:
         self.dataset = DATA_SETS[dataset_name]["data_set"]()
         self.model_factory = models[model_name]
 
-        np.random.seed(random_seed)
-        torch.manual_seed(random_seed)
-
     def run(
         self,
         optimizer_class: type[BenchmarkableOptimizer] | str,
@@ -167,6 +164,9 @@ class BenchmarkRunner:
             BenchmarkResult with all metrics
         """
         name = optimizer_name or (optimizer_class if isinstance(optimizer_class, str) else optimizer_class.__name__)
+
+        np.random.seed(self.random_seed)
+        torch.manual_seed(self.random_seed)
 
         model = self.model_factory()
         model.to(self.device)
