@@ -3,8 +3,8 @@
 Runs a benchmark without SLURM, for development and tests.
 
 ``BenchmarkRunner`` cannot be used here: it loads its problem from
-``benchmark_core.datasets``, whose registries are empty in this repository
-because the competition datasets and networks are not part of it. This runner
+``benchmark_core.datasets``, whose registries are empty in a fresh checkout
+because the competition dataset files are not part of this repository. This runner
 drives the real ``ModelEvaluator`` and the real NumPy optimizers over public
 scikit-learn data instead, so the gradient and sample counters are incremented
 by the project's own evaluator exactly as they would be on the cluster.

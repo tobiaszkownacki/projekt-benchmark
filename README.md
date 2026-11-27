@@ -49,37 +49,37 @@ You can run benchmarks using the `benchmark_core.optimization_engine.run_benchma
 ### Running a single optimizer
 
 ```sh
-    uv run -m benchmark_core.optimization_engine.run_benchmark --dataset digits --optimizer my_optimizer
+    uv run -m benchmark_core.optimization_engine.run_benchmark --dataset ds01 --optimizer my_optimizer
 ```
 
 ### Comparing multiple optimizers
 
 ```sh
-    uv run -m benchmark_core.optimization_engine.run_benchmark --dataset heart_disease --optimizer adam sgd cma-es
+    uv run -m benchmark_core.optimization_engine.run_benchmark --dataset ds02 --optimizer adam sgd cma-es
 ```
 
 ### Using a specific model architecture
 
 ```sh
-    uv run -m benchmark_core.optimization_engine.run_benchmark --dataset digits --model mlp --optimizer adam
+    uv run -m benchmark_core.optimization_engine.run_benchmark --dataset ds01 --model heavy --optimizer adam
 ```
 
 Add the `--plot` flag to generate comparison and performance plots. By default, they are saved to `reports/model_analysis`.
 
 ```sh
-    uv run -m benchmark_core.optimization_engine.run_benchmark --dataset wine_quality --optimizer adam sgd cma-es --max-epochs 10 --max-gradients 100000 --plot
+    uv run -m benchmark_core.optimization_engine.run_benchmark --dataset ds03 --optimizer adam sgd cma-es --max-epochs 10 --max-gradients 100000 --plot
 ```
 
 ### Comparing multiple models and optimizers simultaneously
 
 ```sh
-	uv run -m benchmark_core.optimization_engine.run_benchmark --dataset digits --model default mlp --optimizer adam sgd cma-es
+	uv run -m benchmark_core.optimization_engine.run_benchmark --dataset ds01 --model light medium heavy --optimizer adam sgd cma-es
 ```
 
 ### Available Arguments/Parameters
 
-- `--dataset`: Name of a dataset registered in `src/benchmark_core/datasets.py` (required). The networks and datasets themselves are not part of this repository, so the choices are whatever has been registered -- see section 6.
-- `--model`: Name of the model architecture to use (e.g., `default`, `mlp`). More than one model can be passed to test all combinations with the given optimizers (default: `['default']`).
+- `--dataset`: Id of a dataset (required), e.g. `ds01`. The choices are the dataset files found in `src/benchmark_core/datasets/data/`; the data itself is not part of this repository -- see section 6.
+- `--model`: Name of the model architecture to use: `light`, `medium`, `heavy` (every dataset has these) or one added in section 7. More than one model can be passed to test all combinations with the given optimizers (default: `['light']`).
 - `--optimizer`: Name of a built-in optimizer (e.g., `adam`, `sgd`, `cma-es`) or a file path to a custom optimizer python script. More than one optimizer can be passed for comparison (required).
 - `--max-gradients`: Stop condition for maximum number of gradient evaluations (default: 5000).
 - `--max-db-reaches`: Stop condition for maximum database reaches (optional).
@@ -100,7 +100,9 @@ Add the `--plot` flag to generate comparison and performance plots. By default, 
 ├── scripts/               <- Environment bootstrap, lint baseline, broker definitions.
 ├── src/                   <- Source code for use in this project.
 │   ├── benchmark_core/    <- The engine.
-│   │   ├── datasets.py    <- Registry mapping a dataset name to its data and models.
+│   │   ├── datasets/      <- Registry: discovers the dataset files in datasets/data/.
+│   │   ├── dataset_files.py <- Reading and writing a dataset file.
+│   │   ├── networks/      <- Preset networks for every dataset, custom/ for per-dataset ones.
 │   │   ├── metrics/       <- Stop conditions, stop reasons and budget tracking.
 │   │   ├── optimization_engine/  <- Evaluator, runner, optimizer protocols, optimizers.
 │   │   └── plotting/      <- Plot generation and analyzer modules.
@@ -130,45 +132,63 @@ installing this project; outside a synced environment put `src/` on
 
 ## 6. Adding a New Dataset
 
-The datasets and networks the benchmark runs against are deliberately not in
-this repository, so both registries in `src/benchmark_core/datasets.py` start
-empty and the deployment supplies their contents.
+Every `<id>.npz` in `src/benchmark_core/datasets/data/` is a dataset: it becomes
+a `--dataset` choice and gets the networks of section 7, with nothing to
+register. The files hold the preprocessed arrays and are not part of this
+repository. `just prepare` writes them from the raw data, which is not publicly
+available and lives in the git-ignored `data/private/` folder:
 
-1. Write a callable that returns a PyTorch `Dataset`, wherever the data itself
-   lives.
-2. Register it under the dataset name in `DATA_SETS`:
+```text
+data/private/
+├── csv/            <- raw CSV files
+├── prepare/<id>.py <- prepare(df) -> (X, y)
+└── manifest.toml   <- [datasets.<id>] csv = "file.csv"
+```
 
-   ```python
-   from benchmark_core import datasets
+To add a dataset:
 
-   datasets.DATA_SETS["my_dataset_name"] = {"data_set": load_my_dataset}
-   ```
+1. Put the CSV in `csv/`, write `prepare/<id>.py` and add the id to
+   `manifest.toml`.
+2. Run `just prepare --only <id>`.
 
-3. Register at least a `"default"` model for it, as in section 7. The runner
-   reads both registries by dataset name and raises if either has no entry.
+`just prepare` standardises every feature (mean 0, standard deviation 1) and numbers the distinct label values as classes 0, 1, 2, ..., Missing labels are an error. Check the number of classes it
+prints.
 
-`--dataset` offers exactly what is registered, so there is no second list to
-keep in step with this one.
+A dataset that does not come from such a file (for example one that ships with
+a library) can be registered by hand. For `run_benchmark` / `just bench` to see it, add the
+registration at the end of `src/benchmark_core/datasets/__init__.py`, after
+the `discover()` call:
+
+```python
+# src/benchmark_core/datasets/__init__.py, after discover()
+DATA_SETS["my_dataset"] = {"data_set": load_my_dataset}  # returns a torch Dataset
+MODELS["my_dataset"] = {"light": MyNetwork}  # callables taking no arguments
+```
+
+`--model` defaults to `light`, so register a model under that name or pass
+`--model` explicitly. Registering anywhere else, in a script of your own, only
+works when that script builds the `BenchmarkRunner` itself: the CLI never runs it.
 
 ## 7. Configuring Model Architectures for a Dataset
 
-To add a new model architecture to an existing dataset or hook up a completely
-new dataset:
+Every dataset gets the presets in `src/benchmark_core/networks/presets.py`:
+`light`, `medium` and `heavy` MLPs (`default` is `light`). Their linear layers
+start from Xavier-uniform weights and zero biases. Their input and output sizes
+come from the data, so a new dataset needs no model code.
 
-1. Create a PyTorch model inheriting from `torch.nn.Module`, next to the
-   dataset it belongs to.
-2. Register it in `MODELS` under the dataset name. The key is what `--model`
-   selects, and `"default"` is what it selects when you do not pass one:
+To add an architecture for one dataset, create
+`src/benchmark_core/networks/custom/<id>.py`:
 
-   ```python
-   from benchmark_core import datasets
+```python
+import torch.nn as nn
 
-   datasets.MODELS["my_dataset_name"] = {
-       "default": MyStandardModelClass,
-       "experimental": MyNewModelClass,
-   }
-   ```
+MODELS = {
+    "wide": lambda n_features, n_classes: nn.Sequential(
+        nn.Linear(n_features, 256), nn.ReLU(), nn.Linear(256, n_classes)
+    ),
+}
+```
 
-3. You can now benchmark this architecture by running
-   `--dataset my_dataset_name --model experimental`.
-
+It is picked up by its file name and selected with
+`--dataset <id> --model wide`. Reusing a preset's name replaces that preset for
+the dataset.

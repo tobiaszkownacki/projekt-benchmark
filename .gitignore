@@ -7,6 +7,8 @@ data/raw/cifar10
 data/raw/f-mnist
 data/raw/stl10
 data/raw/*.csv
+data/private/
+src/benchmark_core/datasets/data/
 
 # C extensions
 *.so
